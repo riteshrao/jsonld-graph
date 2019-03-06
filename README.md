@@ -1,2 +1,2 @@
 # jsonld-graph
-A simple library to convert JSON-LD documents into an in-memory graph
+Library to parse, inspect and mutate JSON-LD documents as an in-memory graph.

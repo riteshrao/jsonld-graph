@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "target": "es2018",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "declaration": true,
+        "sourceMap": true,
+        "removeComments": false,
+        "noUnusedLocals": true,
+        "noImplicitAny": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "forceConsistentCasingInFileNames": true,
+        "rootDir": "./src",
+        "outDir": "./lib"
+    },
+    "exclude": [
+        "node_modules",
+        "lib",
+        "test"
+    ],
+    "compileOnSave": false,
+    "buildOnSave": false
+}

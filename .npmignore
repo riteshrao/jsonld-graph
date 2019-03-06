@@ -1,0 +1,15 @@
+/node_modules/
+/src/
+/coverage/
+/.nyc_output/
+/test/
+/typings/
+/definitions/
+/*.tgz
+/jasmine.json
+/tsconfig.json
+/tslint.json
+/wallaby.js
+/lib/**/*.spec.js
+/lib/**/*.spec.js.map
+/lib/**/*.spec.d.ts

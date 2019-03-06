@@ -1,0 +1,41 @@
+{
+  "name": "jsonld-graph",
+  "version": "1.0.0-preview.1",
+  "description": "Library to parse, inspect and mutate JSON-LD documents as an in-memory graph.",
+  "main": "./lib/index.js",
+  "scripts": {
+    "clean": "rimraf ./lib",
+    "build": "npm run clean && tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riteshrao/jsonld-graph.git"
+  },
+  "author": "Ritesh Rao",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/riteshrao/jsonld-graph/issues"
+  },
+  "homepage": "https://github.com/riteshrao/jsonld-graph#readme",
+  "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/debug": "^4.1.2",
+    "@types/events": "^3.0.0",
+    "@types/mocha": "^5.2.6",
+    "chai": "^4.2.0",
+    "mocha": "^6.0.2",
+    "nyc": "^13.3.0",
+    "opener": "^1.5.1",
+    "rimraf": "^2.6.3",
+    "source-map-support": "^0.5.10",
+    "tslint": "^5.13.1",
+    "typescript": "^3.3.3333"
+  },
+  "dependencies": {
+    "@types/node": "^11.10.0",
+    "@types/shortid": "0.0.29",
+    "events": "^3.0.0",
+    "jsonld": "^1.5.4",
+    "shortid": "^2.2.14"
+  }
+}
