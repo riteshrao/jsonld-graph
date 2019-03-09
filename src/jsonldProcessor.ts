@@ -1,6 +1,6 @@
 import * as jsonld from 'jsonld';
 
-import Constants from './constants';
+import { JsonldKeywords } from './constants';
 import Errors from './errors';
 
 const remoteLoader = (typeof process !== 'undefined' && process.versions && process.versions.node)
@@ -83,21 +83,19 @@ export class JsonldProcessor {
      * @returns {Promise<any>}
      * @memberof JsonldProcessor
      */
-    async compact(document: any, contexts: string[] = []): Promise<any> {
+    async compact(document: any, contexts: string | string[] = []): Promise<any> {
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
 
-        if (!document[Constants.jsonldKeywords.context] && contexts.length === 0) {
+        if (!document[JsonldKeywords.context] && contexts.length === 0) {
             throw new Errors.ContextNotSpecifiedError('jsonld.compact');
         }
 
-        const compactionContext = contexts && contexts.length > 0 ? contexts : document[Constants.jsonldKeywords.context];
+        const compactionContext = contexts && contexts.length > 0 ? contexts : document[JsonldKeywords.context];
         return jsonld.compact(document, compactionContext, {
             compactToRelative: true,
             graph: false,
-            compactArrays: false,
-            skipExpansion: true,
             documentLoader: this._contextLoader
         });
     }
@@ -109,16 +107,17 @@ export class JsonldProcessor {
      * @returns {Promise<any>}
      * @memberof JsonldProcessor
      */
-    async expand(document: any, contexts: string[] = []): Promise<any> {
+    async expand(document: any, contexts: string | string[] = [], base?: string): Promise<any> {
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
 
-        if (!document[Constants.jsonldKeywords.context] && contexts.length === 0) {
+        if (!document[JsonldKeywords.context] && contexts.length === 0) {
             throw new Errors.ContextNotSpecifiedError('jsonld.expand');
         }
 
         return jsonld.expand(document, {
+            base,
             expandContext: contexts,
             documentLoader: this._contextLoader
         });
@@ -131,12 +130,12 @@ export class JsonldProcessor {
      * @returns {Promise<any[]>}
      * @memberof JsonldProcessor
      */
-    async flatten(document: any, contexts: string[] = []): Promise<any[]> {
+    async flatten(document: any, contexts: string | string[] = []): Promise<any[]> {
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
 
-        if (!document[Constants.jsonldKeywords.context] && contexts.length === 0) {
+        if (!document[JsonldKeywords.context] && contexts.length === 0) {
             throw new Errors.ContextNotSpecifiedError('jsonld.flatten');
         }
 
@@ -148,12 +147,13 @@ export class JsonldProcessor {
 
     /**
      * @description Performs a JSON-LD framing operation.
-     * @param {*} document
-     * @param {*} frame
+     * @param {*} document The document to frame.
+     * @param {*} frame The JSON-LD frame instruction.
+     * @param {string[]} [contexts] Optional expansion contexts to use for framing.
      * @returns {Promise<any>}
      * @memberof JsonldProcessor
      */
-    async frame(document: any, frame: any): Promise<any> {
+    async frame(document: any, frame: any, contexts: string | string[] = [], base?: string): Promise<any> {
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
@@ -161,7 +161,11 @@ export class JsonldProcessor {
             throw new ReferenceError(`Invalid frame. frame is ${frame}`);
         }
 
-        return jsonld.frame(document, frame, { documentLoader: this._contextLoader });
+        return jsonld.frame(document, frame, { 
+            base,
+            expandContext: contexts,
+            documentLoader: this._contextLoader
+        });
     }
 
     /**

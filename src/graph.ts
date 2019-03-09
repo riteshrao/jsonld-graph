@@ -4,6 +4,7 @@ import Iterable from './iterable';
 import Vertex, { VertexSelector, VertexFilter } from './vertex';
 import { EventEmitter } from 'events';
 import { StrictEventEmitter } from './eventEmitter';
+import { JsonFormatOptions } from './formatOptions';
 
 interface GraphEvents {
     edgeAdded: (edge: Edge) => void;
@@ -22,7 +23,7 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      * Creates an instance of JsonLdGraph.
      * @memberof JsonLdGraph
      */
-    constructor() {
+    constructor(contexts?: [{uri: string, context: any}]) {
         super();
         this._index = new GraphIndex();
         this._index.on('edgeCreated', (indexEdge) => this.emit('edgeAdded', new Edge(indexEdge, this._index)));
@@ -30,6 +31,12 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
         this._index.on('nodeCreated', (indexNode) => this.emit('vertexAdded', new Vertex(indexNode, this._index)));
         this._index.on('nodeDeleted', (indexNode) => this.emit('vertexRemoved', new Vertex(indexNode, this._index)));
         this._index.on('nodeIdChanged', (indexNode, previousId) => this.emit('vertexIdChanged', new Vertex(indexNode, this._index), previousId));
+
+        if (contexts && contexts.length > 0) {
+            for (const {uri, context} of contexts) {
+                this._index.addContext(uri, context);
+            }
+        }
     }
 
     /**
@@ -179,7 +186,7 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      * @returns {boolean}
      * @memberof JsonLdGraph
      */
-    hasNode(id: string): boolean {
+    hasVertex(id: string): boolean {
         return this._index.hasNode(id);
     }
 
@@ -236,8 +243,8 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      * @returns {Promise<any>}
      * @memberof JsonLdGraph
      */
-    toJson(contexts: string[], frame?: any): Promise<any> {
-        return this._index.toJson(contexts);
+    toJson(options?: JsonFormatOptions): Promise<any> {
+        return this._index.toJson(options);
     }
 }
 

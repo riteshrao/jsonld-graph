@@ -1,0 +1,665 @@
+{
+    "@context": [
+        { "@base": "http://alt.universe.net/graph/ "},
+        "http://alt.universe.net/context.json"
+    ],
+    "@graph": [
+        {
+            "@id": "Planet/Alderaan",
+            "@type": "Planet",
+            "name": "alderaan",
+            "displayName": "Alderaan",
+            "terrain": [
+                "grasslands",
+                "mountains"
+            ],
+            "population": 2000000000
+        },
+        {
+            "@id": "Planet/Yavin4",
+            "@type": "Planet",
+            "name": "yavin4",
+            "displayName": "Yavin IV",
+            "terrain": [
+                "jungle",
+                "rainforests"
+            ],
+            "population": 1000
+        },
+        {
+            "@id": "Planet/Hoth",
+            "@type": "Planet",
+            "name": "hoth",
+            "displayName": "Hoth",
+            "terrain": [
+                "tundra",
+                "ice caves",
+                "mountain ranges"
+            ]
+        },
+        {
+            "@id": "Planet/Dagobah",
+            "@type": "Planet",
+            "name": "dagobah",
+            "displayName": "Dagobah",
+            "terrain": [
+                "swamp",
+                "jungles"
+            ]
+        },
+        {
+            "@id": "Planet/Bespin",
+            "@type": "Planet",
+            "name": "bespin",
+            "displayName": "Bespin",
+            "terrain": [
+                "gas giant"
+            ],
+            "population": 6000000
+        },
+        {
+            "@id": "Planet/Endor",
+            "@type": "Planet",
+            "name": "endor",
+            "displayName": "Endor",
+            "terrain": [
+                "forests",
+                "mountains",
+                "lakes"
+            ],
+            "population": 30000000
+        },
+        {
+            "@id": "Planet/Naboo",
+            "@type": "Planet",
+            "name": "naboo",
+            "displayName": "Naboo",
+            "terrain": [
+                "grassy hills",
+                "swamps",
+                "forests",
+                "mountains"
+            ],
+            "population": 4500000000
+        },
+        {
+            "@id": "Planet/Coruscant",
+            "@type": "Planet",
+            "name": "coruscant",
+            "displayName": "Coruscant",
+            "terrain": [
+                "cityscape",
+                "mountains"
+            ],
+            "population": 1000000000000
+        },
+        {
+            "@id": "Planet/Kamino",
+            "@type": "Planet",
+            "name": "kamino",
+            "displayName": "Kamino",
+            "terrain": [
+                "ocean"
+            ],
+            "population": 1000000000
+        },
+        {
+            "@id": "Planet/Geonosis",
+            "@type": "Planet",
+            "name": "geonosis",
+            "displayName": "Geonosis",
+            "terrain": [
+                "rock",
+                "desert",
+                "mountain",
+                "barren"
+            ],
+            "population": 100000000000
+        },
+        {
+            "@id": "Planet/Utapau",
+            "@type": "Planet",
+            "name": "utapau",
+            "displayName": "Utapau",
+            "terrain": [
+                "scrublands",
+                "savanna",
+                "canyons",
+                "sinkholes"
+            ],
+            "population": 95000000
+        },
+        {
+            "@id": "Planet/Mustafar",
+            "@type": "Planet",
+            "name": "mustafar",
+            "displayName": "Mustafar",
+            "terrain": [
+                "volcanoes",
+                "lava rivers",
+                "mountains",
+                "caves"
+            ],
+            "population": 20000
+        },
+        {
+            "@id": "Planet/Kashyyyk",
+            "@type": "Planet",
+            "name": "kashyyyk",
+            "displayName": "Kashyyyk",
+            "terrain": [
+                "jungle",
+                "forests",
+                "lakes",
+                "rivers"
+            ],
+            "population": 45000000
+        },
+        {
+            "@id": "Planet/Polis",
+            "@type": "Planet",
+            "name": "polis",
+            "displayName": "Polis Massa",
+            "terrain": [
+                "airless asteroid"
+            ],
+            "population": 1000000
+        },
+        {
+            "@id": "Planet/Mygeeto",
+            "@type": "Planet",
+            "name": "mygeeto",
+            "displayName": "Mygeeto",
+            "terrain": [
+                "glaciers",
+                "mountains",
+                "ice canyons"
+            ],
+            "population": 19000000
+        },
+        {
+            "@id": "Planet/Felucia",
+            "@type": "Planet",
+            "name": "felucia",
+            "displayName": "Felucia",
+            "terrain": [
+                "fungus forests"
+            ],
+            "population": 8500000
+        },
+        {
+            "@id": "Planet/Catoneimoidia",
+            "@type": "Planet",
+            "name": "catoneimoidia",
+            "displayName": "Cato Neimoidia",
+            "terrain": [
+                "mountains",
+                "fields",
+                "forests",
+                "rock arches"
+            ],
+            "population": 10000000
+        },
+        {
+            "@id": "Planet/Saleucami",
+            "@type": "Planet",
+            "name": "saleucami",
+            "displayName": "Saleucami",
+            "terrain": [
+                "caves",
+                "desert",
+                "mountains",
+                "volcanoes"
+            ],
+            "population": 1400000000
+        },
+        {
+            "@id": "Planet/Stewjon",
+            "@type": "Planet",
+            "name": "stewjon",
+            "displayName": "Stewjon",
+            "terrain": [
+                "grass"
+            ]
+        },
+        {
+            "@id": "Planet/Eriadu",
+            "@type": "Planet",
+            "name": "eriadu",
+            "displayName": "Eriadu",
+            "terrain": [
+                "cityscape"
+            ],
+            "population": 22000000000
+        },
+        {
+            "@id": "Planet/Corellia",
+            "@type": "Planet",
+            "name": "corellia",
+            "displayName": "Corellia",
+            "terrain": [
+                "plains",
+                "urban",
+                "hills",
+                "forests"
+            ],
+            "population": 3000000000
+        },
+        {
+            "@id": "Planet/Rodia",
+            "@type": "Planet",
+            "name": "rodia",
+            "displayName": "Rodia",
+            "terrain": [
+                "jungles",
+                "oceans",
+                "urban",
+                "swamps"
+            ],
+            "population": 1300000000
+        },
+        {
+            "@id": "Planet/Nalhutta",
+            "@type": "Planet",
+            "name": "nalhutta",
+            "displayName": "Nal Hutta",
+            "terrain": [
+                "urban",
+                "oceans",
+                "swamps",
+                "bogs"
+            ],
+            "population": 7000000000
+        },
+        {
+            "@id": "Planet/Dantooine",
+            "@type": "Planet",
+            "name": "dantooine",
+            "displayName": "Dantooine",
+            "terrain": [
+                "oceans",
+                "savannas",
+                "mountains",
+                "grasslands"
+            ],
+            "population": 1000
+        },
+        {
+            "@id": "Planet/Bestine",
+            "@type": "Planet",
+            "name": "bestine",
+            "displayName": "Bestine IV",
+            "terrain": [
+                "rocky islands",
+                "oceans"
+            ],
+            "population": 62000000
+        },
+        {
+            "@id": "Planet/Ord",
+            "@type": "Planet",
+            "name": "ord",
+            "displayName": "Ord Mantell",
+            "terrain": [
+                "plains",
+                "seas",
+                "mesas"
+            ],
+            "population": 4000000000
+        },
+        {
+            "@id": "Planet/Trandosha",
+            "@type": "Planet",
+            "name": "trandosha",
+            "displayName": "Trandosha",
+            "terrain": [
+                "mountains",
+                "seas",
+                "grasslands",
+                "deserts"
+            ],
+            "population": 42000000
+        },
+        {
+            "@id": "Planet/Socorro",
+            "@type": "Planet",
+            "name": "socorro",
+            "displayName": "Socorro",
+            "terrain": [
+                "deserts",
+                "mountains"
+            ],
+            "population": 300000000
+        },
+        {
+            "@id": "Planet/Moncala",
+            "@type": "Planet",
+            "name": "moncala",
+            "displayName": "Mon Cala",
+            "terrain": [
+                "oceans",
+                "reefs",
+                "islands"
+            ],
+            "population": 27000000000
+        },
+        {
+            "@id": "Planet/Chandrila",
+            "@type": "Planet",
+            "name": "chandrila",
+            "displayName": "Chandrila",
+            "terrain": [
+                "plains",
+                "forests"
+            ],
+            "population": 1200000000
+        },
+        {
+            "@id": "Planet/Sullust",
+            "@type": "Planet",
+            "name": "sullust",
+            "displayName": "Sullust",
+            "terrain": [
+                "mountains",
+                "volcanoes",
+                "rocky deserts"
+            ],
+            "population": 18500000000
+        },
+        {
+            "@id": "Planet/Toydaria",
+            "@type": "Planet",
+            "name": "toydaria",
+            "displayName": "Toydaria",
+            "terrain": [
+                "swamps",
+                "lakes"
+            ],
+            "population": 11000000
+        },
+        {
+            "@id": "Planet/Malastare",
+            "@type": "Planet",
+            "name": "malastare",
+            "displayName": "Malastare",
+            "terrain": [
+                "swamps",
+                "deserts",
+                "jungles",
+                "mountains"
+            ],
+            "population": 2000000000
+        },
+        {
+            "@id": "Planet/Dathomir",
+            "@type": "Planet",
+            "name": "dathomir",
+            "displayName": "Dathomir",
+            "terrain": [
+                "forests",
+                "deserts",
+                "savannas"
+            ],
+            "population": 5200
+        },
+        {
+            "@id": "Planet/Ryloth",
+            "@type": "Planet",
+            "name": "ryloth",
+            "displayName": "Ryloth",
+            "terrain": [
+                "mountains",
+                "valleys",
+                "deserts",
+                "tundra"
+            ],
+            "population": 1500000000
+        },
+        {
+            "@id": "Planet/Aleen",
+            "@type": "Planet",
+            "name": "aleen",
+            "displayName": "Aleen Minor"
+        },
+        {
+            "@id": "Planet/Vulpter",
+            "@type": "Planet",
+            "name": "vulpter",
+            "displayName": "Vulpter",
+            "terrain": [
+                "urban",
+                "barren"
+            ],
+            "population": 421000000
+        },
+        {
+            "@id": "Planet/Troiken",
+            "@type": "Planet",
+            "name": "troiken",
+            "displayName": "Troiken",
+            "terrain": [
+                "desert",
+                "tundra",
+                "rainforests",
+                "mountains"
+            ]
+        },
+        {
+            "@id": "Planet/Tund",
+            "@type": "Planet",
+            "name": "tund",
+            "displayName": "Tund",
+            "terrain": [
+                "barren",
+                "ash"
+            ],
+            "population": 0
+        },
+        {
+            "@id": "Planet/Haruun",
+            "@type": "Planet",
+            "name": "haruun",
+            "displayName": "Haruun Kal",
+            "terrain": [
+                "toxic cloudsea",
+                "plateaus",
+                "volcanoes"
+            ],
+            "population": 705300
+        },
+        {
+            "@id": "Planet/Cerea",
+            "@type": "Planet",
+            "name": "cerea",
+            "displayName": "Cerea",
+            "terrain": [
+                "verdant"
+            ],
+            "population": 450000000
+        },
+        {
+            "@id": "Planet/Glee",
+            "@type": "Planet",
+            "name": "glee",
+            "displayName": "Glee Anselm",
+            "terrain": [
+                "lakes",
+                "islands",
+                "swamps",
+                "seas"
+            ],
+            "population": 500000000
+        },
+        {
+            "@id": "Planet/Iridonia",
+            "@type": "Planet",
+            "name": "iridonia",
+            "displayName": "Iridonia",
+            "terrain": [
+                "rocky canyons",
+                "acid pools"
+            ]
+        },
+        {
+            "@id": "Planet/Tholoth",
+            "@type": "Planet",
+            "name": "tholoth",
+            "displayName": "Tholoth"
+        },
+        {
+            "@id": "Planet/Iktotch",
+            "@type": "Planet",
+            "name": "iktotch",
+            "displayName": "Iktotch",
+            "terrain": [
+                "rocky"
+            ]
+        },
+        {
+            "@id": "Planet/Quermia",
+            "@type": "Planet",
+            "name": "quermia",
+            "displayName": "Quermia"
+        },
+        {
+            "@id": "Planet/Dorin",
+            "@type": "Planet",
+            "name": "dorin",
+            "displayName": "Dorin"
+        },
+        {
+            "@id": "Planet/Champala",
+            "@type": "Planet",
+            "name": "champala",
+            "displayName": "Champala",
+            "terrain": [
+                "oceans",
+                "rainforests",
+                "plateaus"
+            ],
+            "population": 3500000000
+        },
+        {
+            "@id": "Planet/Mirial",
+            "@type": "Planet",
+            "name": "mirial",
+            "displayName": "Mirial",
+            "terrain": [
+                "deserts"
+            ]
+        },
+        {
+            "@id": "Planet/Serenno",
+            "@type": "Planet",
+            "name": "serenno",
+            "displayName": "Serenno",
+            "terrain": [
+                "rainforests",
+                "rivers",
+                "mountains"
+            ]
+        },
+        {
+            "@id": "Planet/Concord",
+            "@type": "Planet",
+            "name": "concord",
+            "displayName": "Concord Dawn",
+            "terrain": [
+                "jungles",
+                "forests",
+                "deserts"
+            ]
+        },
+        {
+            "@id": "Planet/Zolan",
+            "@type": "Planet",
+            "name": "zolan",
+            "displayName": "Zolan"
+        },
+        {
+            "@id": "Planet/Ojom",
+            "@type": "Planet",
+            "name": "ojom",
+            "displayName": "Ojom",
+            "terrain": [
+                "oceans",
+                "glaciers"
+            ],
+            "population": 500000000
+        },
+        {
+            "@id": "Planet/Skako",
+            "@type": "Planet",
+            "name": "skako",
+            "displayName": "Skako",
+            "terrain": [
+                "urban",
+                "vines"
+            ],
+            "population": 500000000000
+        },
+        {
+            "@id": "Planet/Muunilinst",
+            "@type": "Planet",
+            "name": "muunilinst",
+            "displayName": "Muunilinst",
+            "terrain": [
+                "plains",
+                "forests",
+                "hills",
+                "mountains"
+            ],
+            "population": 5000000000
+        },
+        {
+            "@id": "Planet/Shili",
+            "@type": "Planet",
+            "name": "shili",
+            "displayName": "Shili",
+            "terrain": [
+                "cities",
+                "savannahs",
+                "seas",
+                "plains"
+            ]
+        },
+        {
+            "@id": "Planet/Kalee",
+            "@type": "Planet",
+            "name": "kalee",
+            "displayName": "Kalee",
+            "terrain": [
+                "rainforests",
+                "cliffs",
+                "canyons",
+                "seas"
+            ],
+            "population": 4000000000
+        },
+        {
+            "@id": "Planet/Umbara",
+            "@type": "Planet",
+            "name": "umbara",
+            "displayName": "Umbara"
+        },
+        {
+            "@id": "Planet/Tatooine",
+            "@type": "Planet",
+            "name": "tatooine",
+            "displayName": "Tatooine",
+            "terrain": [
+                "desert"
+            ],
+            "population": 200000
+        },
+        {
+            "@id": "Planet/Jakku",
+            "@type": "Planet",
+            "name": "jakku",
+            "displayName": "Jakku",
+            "terrain": [
+                "deserts"
+            ]
+        }
+    ]
+}

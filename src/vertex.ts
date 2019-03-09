@@ -1,9 +1,8 @@
-import Constants from './constants';
-import Errors from './errors';
 import GraphIndex, { IndexNode } from './graphIndex';
 import Iterable from './iterable';
-import StrictEventEmitter from './eventEmitter';
-import { EventEmitter } from 'events';
+import { BlankNodePrefix, JsonldKeywords } from './constants';
+import { JsonFormatOptions } from './formatOptions';
+
 /**
  * @description Vertex selector function.
  * @export
@@ -97,7 +96,7 @@ export class Vertex{
      * @memberof Vertex
      */
     get isBlankNode(): boolean {
-        return this._node.id.startsWith(Constants.blankNodePrefix);
+        return this._node.id.startsWith(BlankNodePrefix);
     }
 
     /**
@@ -107,7 +106,7 @@ export class Vertex{
      * @memberof Vertex
      */
     get instances(): Iterable<Vertex> {
-        return this.getIncoming(Constants.jsonldKeywords.type).map(({ fromVertex }) => fromVertex);
+        return this.getIncoming(JsonldKeywords.type).map(({ fromVertex }) => fromVertex);
     }
 
     /**
@@ -117,7 +116,7 @@ export class Vertex{
      * @memberof Vertex
      */
     get types(): Iterable<Vertex> {
-        return this.getOutgoing(Constants.jsonldKeywords.type).map(({ toVertex }) => toVertex);
+        return this.getOutgoing(JsonldKeywords.type).map(({ toVertex }) => toVertex);
     }
 
     /**
@@ -197,6 +196,37 @@ export class Vertex{
     }
 
     /**
+     * @description Checks if an attribute has been defined on the vertex.
+     * @param {string} name The name of the attribute to check.
+     * @returns {boolean} True if the attribute has been defined, else false.
+     * @memberof Vertex
+     */
+    hasAttribute(name: string): boolean {
+        return this._node.hasAttribute(name);
+    }
+
+    /**
+     * @description Checks if an attribute exists and if has the specified value.
+     * @param {string} name The name of the attribute to check.
+     * @param {*} value The value of the attribute to check.
+     * @returns {boolean} True if the value exists, else false.
+     * @memberof Vertex
+     */
+    hasAttributeValue(name: string, value: any): boolean {
+        if (!this.hasAttribute(name)) {
+            return false;
+        }
+
+        const attributeValue = this.getAttributeValue<any>(name);
+        attributeValue /*?*/
+        if (attributeValue instanceof Array) {
+            return attributeValue.some(x => x === value);
+        } else {
+            return attributeValue === value;
+        }
+    }
+
+    /**
      * @description Checks if the vertex is of a specific @type.
      * @param {string} typeId The type id to check for.
      * @returns {boolean} True if the vertex has a @type outgoing edge to the specified type id, else false.
@@ -256,12 +286,12 @@ export class Vertex{
      */
     removeType(...typeIds: string[]): this {
         if (!typeIds || typeIds.length === 0) {
-            for (const typeEdge of this.getOutgoing(Constants.jsonldKeywords.type)) {
-                this.removeOutgoing(Constants.jsonldKeywords.type, typeEdge.toVertex.id);
+            for (const typeEdge of this.getOutgoing(JsonldKeywords.type)) {
+                this.removeOutgoing(JsonldKeywords.type, typeEdge.toVertex.id);
             }
         } else {
             for (const typeId of typeIds) {
-                this.removeOutgoing(Constants.jsonldKeywords.type, typeId);
+                this.removeOutgoing(JsonldKeywords.type, typeId);
             }
         }
 
@@ -341,14 +371,14 @@ export class Vertex{
             return;
         }
 
-        const existingTypes = new Set(this.getOutgoing(Constants.jsonldKeywords.type).map(({ toVertex }) => toVertex.id));
+        const existingTypes = new Set(this.getOutgoing(JsonldKeywords.type).map(({ toVertex }) => toVertex.id));
         const typesToAdd = typeIds.filter((id) => !existingTypes.has(id));
         for (const typeId of typesToAdd) {
             if (!this._index.hasNode(typeId)) {
                 this._index.createNode(typeId);
             }
 
-            this.setOutgoing(Constants.jsonldKeywords.type, typeId);
+            this.setOutgoing(JsonldKeywords.type, typeId);
         }
 
         return this;
@@ -361,12 +391,13 @@ export class Vertex{
      * @returns {Promise<any>}
      * @memberof Vertex
      */
-    async toJson(contexts: string[], frame?: any): Promise<any> {
-        const vertexFrame = Object.assign(frame || {}, {
-            [Constants.jsonldKeywords.id]: this.id
+    async toJson(options: JsonFormatOptions = {}): Promise<any> {
+        options.frame = Object.assign(options.frame || {}, {
+            [JsonldKeywords.id]: this.id
         });
 
-        return this._index.toJson(contexts, vertexFrame);
+        const json = await this._index.toJson(options);
+        return json['@graph'][0];
     }
 }
 

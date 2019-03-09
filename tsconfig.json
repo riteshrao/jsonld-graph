@@ -1,17 +1,21 @@
 {
     "compilerOptions": {
         "target": "es2018",
+        "declaration": true,
+        "forceConsistentCasingInFileNames": true,
         "module": "commonjs",
         "moduleResolution": "node",
-        "declaration": true,
-        "sourceMap": true,
-        "removeComments": false,
-        "noUnusedLocals": true,
         "noImplicitAny": true,
+        "noUnusedLocals": true,
+        "sourceMap": true,
         "suppressImplicitAnyIndexErrors": true,
-        "forceConsistentCasingInFileNames": true,
+        "removeComments": false,
         "rootDir": "./src",
-        "outDir": "./lib"
+        "outDir": "./lib",
+        "baseUrl": ".",
+        "paths": {
+            "jsonld": ["types/jsonld.d.ts"]
+        }
     },
     "exclude": [
         "node_modules",

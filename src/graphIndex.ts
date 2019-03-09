@@ -1,9 +1,10 @@
-import Constants from './constants';
+import { JsonldKeywords } from './constants';
 import Errors from './errors';
 import IdentityMap from './identityMap';
 import JsonldProcessor from './jsonldProcessor';
 import { EventEmitter } from 'events';
 import StrictEventEmitter from './eventEmitter';
+import { JsonFormatOptions } from './formatOptions';
 
 interface IndexEvents {
     /**
@@ -116,6 +117,19 @@ export class IndexNode {
         }
 
         return this._attributes.get(name);
+    }
+
+    /**
+     * @description Checks if an attribute has been defined on the node.
+     * @param {string} name The name of the attribute to check.
+     * @returns {boolean} True if the attribute has been defined, else false.
+     * @memberof IndexNode
+     */
+    hasAttribute(name: string): boolean {
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is ${name}`);
+        }
+        return this._attributes.has(name);
     }
 
     /**
@@ -698,19 +712,28 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
     /**
      * @description Gets a JSON representation of the index.
-     * @param {string[]} contexts The contexts to use for compaction.
      * @param {frame} [any] Optional frame instruction.
      * @returns {Promise<any>}
      * @memberof GraphIndex
      */
-    async toJson(contexts: string[], frame?: any): Promise<any> {
+    async toJson(options: JsonFormatOptions = {}): Promise<any> {
         const entities: any[] = [];
 
         for (const node of this.getNodes()) {
-            const entity: any = { [Constants.jsonldKeywords.id]: node.id };
+            const entity: any = { [JsonldKeywords.id]: node.id };
 
             for (const [key, value] of node.attributes) {
-                entity[key] = value;
+                if (!entity[key]) {
+                    entity[key] = [];
+                }
+
+                if (value instanceof Array) {
+                    for (const item of value) {
+                        entity[key].push({ [JsonldKeywords.value]: item });
+                    }
+                } else {
+                    entity[key].push({ [JsonldKeywords.value]: value });
+                }
             }
 
             for (const { edge } of this.getNodeOutgoing(node.id)) {
@@ -718,19 +741,30 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                     entity[edge.label] = [];
                 }
 
-                entity[edge.label].push({ [Constants.jsonldKeywords.id]: edge.toNodeId });
+                if (edge.label === JsonldKeywords.type) {
+                    entity[edge.label].push(edge.toNodeId)
+                } else {
+                    entity[edge.label].push({ [JsonldKeywords.id]: edge.toNodeId })
+                }
             }
 
             entities.push(entity);
         }
 
-        const document = { [Constants.jsonldKeywords.graph]: entities };
-
-        if (frame) {
-            frame[Constants.jsonldKeywords.context] = contexts;
-            return this._processor.frame(document, frame)
+        let document = { [JsonldKeywords.graph]: entities };
+        if (options.frame) {
+            if (options.frameContext) {
+                options.frame[JsonldKeywords.context] = options.frameContext;
+            } else if (options.context) {
+                options.frame[JsonldKeywords.context] = options.context;
+            }
+            
+            return this._processor.frame(document, options.frame, options.context, options.base)
+        } else if (options.context) {
+            const expanded = await this._processor.expand(document, options.context, options.base);
+            return this._processor.compact(expanded, options.context);
         } else {
-            return this._processor.compact(document, contexts);
+            return document;
         }
     }
 
@@ -760,7 +794,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         const identityMap = new IdentityMap();
         for (const subject of triples) {
             const id = identityMap.get(subject);
-            const types = subject[Constants.jsonldKeywords.type] || [];
+            const types = subject[JsonldKeywords.type] || [];
             let subjectNode: IndexNode;
 
             if (this.hasNode(id)) {
@@ -774,19 +808,19 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                 if (!this.hasNode(typeId)) {
                     this.createNode(typeId);
                 }
-                this.createEdge(Constants.jsonldKeywords.type, subjectNode.id, typeId);
+                this.createEdge(JsonldKeywords.type, subjectNode.id, typeId);
             }
 
             // Process each predicate for the object.
             for (const predicate in subject) {
-                if (predicate === Constants.jsonldKeywords.id || predicate === Constants.jsonldKeywords.type) {
+                if (predicate === JsonldKeywords.id || predicate === JsonldKeywords.type) {
                     continue;
                 }
 
                 // Process each predicate of the subject.
                 const objects = subject[predicate];
                 for (const obj of objects) {
-                    if (obj[Constants.jsonldKeywords.id]) {
+                    if (obj[JsonldKeywords.id]) {
                         // Predicate object is a reference to another entity, create an edge to model the relationship.
                         const objectId = identityMap.get(obj);
                         if (!this.hasNode(objectId)) {
@@ -796,12 +830,12 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                         this.createEdge(predicate, subjectNode.id, objectId);
                     }
 
-                    if (obj[Constants.jsonldKeywords.value]) {
+                    if (obj[JsonldKeywords.value]) {
                         // Predicate object is a value. Inline the value as a attribute of the subject vertex.
                         if (mergeAttributes) {
-                            subjectNode.replaceAttribute(predicate, obj[Constants.jsonldKeywords.value]);
+                            subjectNode.replaceAttribute(predicate, obj[JsonldKeywords.value]);
                         } else {
-                            subjectNode.addAttributeValue(predicate, obj[Constants.jsonldKeywords.value]);
+                            subjectNode.addAttributeValue(predicate, obj[JsonldKeywords.value]);
                         }
                     }
                 }

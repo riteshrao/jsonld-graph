@@ -1,11 +1,12 @@
 {
   "name": "jsonld-graph",
-  "version": "1.0.0-preview.1",
+  "version": "1.0.0",
   "description": "Library to parse, inspect and mutate JSON-LD documents as an in-memory graph.",
   "main": "./lib/index.js",
   "scripts": {
     "clean": "rimraf ./lib",
-    "build": "npm run clean && tsc"
+    "build": "tsc",
+    "test": "mocha --require ts-node/register test/**/*.test.ts"
   },
   "repository": {
     "type": "git",
@@ -28,6 +29,7 @@
     "opener": "^1.5.1",
     "rimraf": "^2.6.3",
     "source-map-support": "^0.5.10",
+    "ts-node": "^8.0.2",
     "tslint": "^5.13.1",
     "typescript": "^3.3.3333"
   },

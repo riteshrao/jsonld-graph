@@ -1,22 +1,18 @@
-namespace Constants {
-    /**
-     * Prefix for a blank node.
-     */
-    export const blankNodePrefix = '_:b';
+/**
+ * Prefix for a blank node.
+ */
+export const BlankNodePrefix = '_:b';
 
-    /**
-     * JSON-LD keywords.
-     */
-    export const jsonldKeywords = {
-        context: '@context',
-        id: '@id',
-        graph: '@graph',
-        type: '@type',
-        value: '@value',
-        version: '@version',
-        vocabulary: '@vocabulary'
-    }
+/**
+ * JSON-LD keywords.
+ */
+export const JsonldKeywords = {
+    context: '@context',
+    id: '@id',
+    graph: '@graph',
+    type: '@type',
+    value: '@value',
+    version: '@version',
+    vocabulary: '@vocabulary'
 }
-
-export default Constants;
 

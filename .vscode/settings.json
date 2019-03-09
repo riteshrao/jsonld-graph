@@ -9,5 +9,6 @@
         "**/*.js.map": true,
         "dist/**/*.d.ts": true,
         ".nyc_output": true,
+        "test/**/*.js": true
     }
 }

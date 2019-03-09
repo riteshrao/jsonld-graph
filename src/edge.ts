@@ -67,6 +67,7 @@ export class Edge {
         }
 
         this._graphEdge = indexEdge;
+        this._index = index;
     }
 
     /**

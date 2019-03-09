@@ -1,5 +1,5 @@
 import * as shortid from 'shortid';
-import Constants from './constants';
+import { JsonldKeywords, BlankNodePrefix } from './constants';
 
 /**
  * @description Node identity map that keeps a map of blank node ids to unique node ids.
@@ -20,8 +20,8 @@ export class IdentityMap {
             return null;
         }
 
-        const nodeId: string = node[Constants.jsonldKeywords.id];
-        if (!nodeId || !nodeId.startsWith(Constants.blankNodePrefix)) {
+        const nodeId: string = node[JsonldKeywords.id];
+        if (!nodeId || !nodeId.startsWith(BlankNodePrefix)) {
             return nodeId;
         }
 
@@ -29,7 +29,7 @@ export class IdentityMap {
             return this.map.get(nodeId);
         }
 
-        const newNodeId = `${Constants.blankNodePrefix}-${shortid()}`;
+        const newNodeId = `${BlankNodePrefix}-${shortid()}`;
         this.map.set(nodeId, newNodeId);
         return newNodeId;
     }
