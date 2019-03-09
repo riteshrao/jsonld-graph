@@ -1,6 +1,5 @@
 import 'mocha';
 import * as fs from 'fs';
-import * as path from 'path';
 
 import { expect } from 'chai';
 import { JsonldGraph } from '../src';
@@ -21,7 +20,7 @@ describe('JsonldGraph parse', () => {
         await graph.load(planets);
     });
 
-    it('should ', async () => {
+    it('works', async () => {
         expect(graph.vertexCount).to.be.greaterThan(0);
         expect(graph.edgeCount).to.be.greaterThan(0);
 
@@ -41,7 +40,7 @@ describe('JsonldGraph parse', () => {
         expect(luke_residences.length).to.equal(1);
         expect(luke_residences[0]).to.equal(makeId('Planet/Tatooine'));
 
-        // Inverse of above, get the incoming relationships for
+        // Inverse of above, get the incoming relationships for a specific vertex
         const tatooine_residents = graph.getVertex(luke_residences[0])
             .getIncoming(makeTypeId('Person/residence'))
             .map(x => x.fromVertex.id)
@@ -56,9 +55,20 @@ describe('JsonldGraph parse', () => {
             .filter(x => x.toVertex.hasAttributeValue(makeTypeId('Planet/terrain'), 'mountains'))
             .map(x => x.fromVertex.id)
             .items();
- 
+
         expect(residents_in_mountains.length).to.be.greaterThan(0);
         expect(residents_in_mountains.some(x => x === makeId('Person/r2_d2'))).to.be.true;
+
+        // Find types instances and find all types that refer to it
+        const types_relating_to_planet_type = graph.getVertex(makeTypeId('Planet'))
+            .instances
+            .mapMany(x => x.getIncoming())
+            .mapMany((x) => x.fromVertex.types)
+            .map(x => x.id)
+            .items();
+
+        expect(types_relating_to_planet_type.length).to.be.greaterThan(0);
+        expect(types_relating_to_planet_type.some(x => x === makeTypeId('Person'))).to.be.true;
     });
 
 

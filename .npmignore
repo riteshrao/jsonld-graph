@@ -2,12 +2,11 @@
 /src/
 /coverage/
 /.nyc_output/
-/test/
-/typings/
 /*.tgz
-/jasmine.json
 /tsconfig.json
 /tslint.json
 /wallaby.js
 /src/
+/sample/
 /test/
+/types/
