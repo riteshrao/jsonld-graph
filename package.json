@@ -45,7 +45,8 @@
     "@types/shortid": "0.0.29",
     "events": "^3.0.0",
     "jsonld": "^1.5.4",
-    "shortid": "^2.2.14"
+    "shortid": "^2.2.14",
+    "uri-js": "^4.2.2"
   },
   "nyc": {
     "all": true,
