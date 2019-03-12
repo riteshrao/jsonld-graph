@@ -27,6 +27,15 @@ export class Iterable<T> implements Iterable<T> {
         return this._source;
     }
 
+    distinct(): Iterable<T> {
+        const set = new Set<T>();
+        for (const item of this._source) {
+            set.add(item);
+        }
+
+        return new Iterable(set.values());
+    }
+
     /**
      * @description Returns an iterable that returns only filtered elements from the source.
      * @param {(item: T) => boolean} filter The filter to apply on the source.

@@ -15,8 +15,12 @@ export class IRI {
             throw new ReferenceError(`Invalid iri. iri is ${iri}`);
         }
 
-        if (prefix === 'http' || prefix === 'https' || prefix === 'urn') {
+        if (prefix.startsWith('http') || prefix.startsWith('https') || prefix.startsWith('urn')) {
             throw new Errors.InvalidPrefixError(prefix, 'Cannot use reserved prefixes `http`, `https` or `urn`');
+        }
+
+        if (prefix.startsWith(':') || prefix.endsWith(':')) {
+            throw new Errors.InvalidPrefixError(prefix, 'Prefixes cannot start or end with the ":" character1');
         }
 
         if (this._prefixes.has(prefix)) {
@@ -58,7 +62,7 @@ export class IRI {
             case 'https':
             case 'urn': {
                 for (const [prefix, mappedIRI] of this._prefixes) {
-                    if (iri.startsWith(mappedIRI)) {
+                    if (iri.startsWith(mappedIRI) && !urijs.equal(mappedIRI, iri)) {
                         let compacted = iri.replace(mappedIRI, '');
                         if (compacted.startsWith('/')) {
                             compacted = compacted.slice(1, compacted.length);
@@ -118,7 +122,7 @@ export class IRI {
             }
             default: {
                 if (!this._prefixes.has(parsed.scheme)) {
-                    expandedIRI =  iri;
+                    expandedIRI = iri;
                     break;
                 }
 

@@ -699,7 +699,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
         for (const edgeId of this._index.get(indexKey)) {
             const edge = this._edges.get(edgeId);
-            const node = this._nodes.get(edge.fromNodeId);
+            const node = this._nodes.get(this.iri.expand(edge.fromNodeId));
             yield { edge, node };
         }
     }

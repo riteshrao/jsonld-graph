@@ -115,7 +115,7 @@ describe('JSON formatting', () => {
             };
 
             graph = new JsonldGraph();
-            graph.addPrefix('vocab', 'http://test/classes/');
+            graph.addPrefix('vocab', 'http://test/classes');
             graph.addPrefix('persons', 'http://persons');
             graph.addContext('http://persons/context.json', context);
 
