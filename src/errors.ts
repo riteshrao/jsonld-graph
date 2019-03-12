@@ -25,6 +25,41 @@ export namespace Errors {
     }
 
     /**
+     * @description Error thrown when a duplicate prefix is detected.
+     * @export
+     * @class DuplicatePrefixError
+     * @extends {GraphError}
+     */
+    export class DuplicatePrefixError extends GraphError {
+        /**
+         * Creates an instance of DuplicatePrefixError.
+         * @param {string} prefix The duplicate prefix name.
+         * @memberof DuplicatePrefixError
+         */
+        constructor(readonly prefix: string) {
+            super(`The prefix ${prefix} has already been defined.`);
+        }
+    }
+
+    /**
+     * @description Error thrown when multiple prefixes are detected for a URI
+     * @export
+     * @class DuplicatePrefixUriError
+     * @extends {GraphError}
+     */
+    export class DuplicatePrefixUriError extends GraphError {
+        /**
+         * Creates an instance of DuplicatePrefixUriError.
+         * @param {string} prefix The prefix that has already been registered for the URI.
+         * @param {string} uri The URI for which a prefix has already been registered.
+         * @memberof DuplicatePrefixUriError
+         */
+        constructor(readonly prefix: string, readonly uri: string) {
+            super(`A prefix for uri ${uri} has already been registered with prefix ${prefix}`);
+        }
+    }
+
+    /**
      * @description Error thrown when an referenced context is not found.
      * @export
      * @class ContextNotFoundError
@@ -116,8 +151,8 @@ export namespace Errors {
          * @memberof IndexEdgeDuplicateError
          */
         constructor(
-            public readonly label: string, 
-            public readonly fromNodeId: string, 
+            public readonly label: string,
+            public readonly fromNodeId: string,
             public readonly toNodeId: string) {
 
             super(`Duplicate edge ${label} from node ${fromNodeId} to node ${toNodeId}`);
@@ -182,6 +217,42 @@ export namespace Errors {
         constructor(public readonly nodeId: string) {
             super(`A node with the id ${nodeId} was not found`);
             this.name = 'IndexNodeNotFoundError';
+        }
+    }
+
+    /**
+     * @description Error thrown when an invalid IRI is found.
+     * @export
+     * @class InvalidIriError
+     * @extends {GraphError}
+     */
+    export class InvalidIriError extends GraphError {
+        /**
+         * Creates an instance of InvalidIriError.
+         * @param {string} iri The invalid iri string.
+         * @param {string} error Error details.
+         * @memberof InvalidIriError
+         */
+        constructor(public readonly iri: string, error: string) {
+            super(`Invalid iri ${iri}. Error: ${error}`);
+        }
+    }
+    
+    /**
+     * @description Error thrown when an invalid prefix format is found.
+     * @export
+     * @class InvalidPrefixError
+     * @extends {GraphError}
+     */
+    export class InvalidPrefixError extends GraphError {
+        /**
+         * Creates an instance of InvalidPrefixError.
+         * @param {string} prefix The invalid prefix string.
+         * @param {string} error Error details.
+         * @memberof InvalidPrefixError
+         */
+        constructor(public readonly prefix: string, error: string) {
+            super(`Invalid prefix ${prefix}. Error: ${error}`);
         }
     }
 }

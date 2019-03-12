@@ -3,7 +3,7 @@
  * @export
  * @interface JsonFormatOptions
  */
-export interface JsonFormatOptions {
+export default interface JsonFormatOptions {
     /**
      * @description The base URI of the document.
      * @type {string}

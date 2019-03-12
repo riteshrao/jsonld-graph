@@ -1,7 +1,7 @@
+import { BlankNodePrefix, JsonldKeywords } from './constants';
 import GraphIndex, { IndexNode } from './graphIndex';
 import Iterable from './iterable';
-import { BlankNodePrefix, JsonldKeywords } from './constants';
-import { JsonFormatOptions } from './formatOptions';
+import JsonFormatOptions from './formatOptions';
 
 /**
  * @description Vertex selector function.
@@ -120,12 +120,12 @@ export class Vertex{
     }
 
     /**
-     * @description Gets all attributes of the vertex.
+     * @description Gets all attributes defined in the vertex.
      * @readonly
-     * @type {{ label: string, value: any }[]}
+     * @type {Iterable<[string, any]>}
      * @memberof Vertex
      */
-    get attributes(): IterableIterator<[string, any]> {
+    get attributes(): Iterable<[string, any]> {
         return this._node.attributes;
     }
 
@@ -218,7 +218,6 @@ export class Vertex{
         }
 
         const attributeValue = this.getAttributeValue<any>(name);
-        attributeValue /*?*/
         if (attributeValue instanceof Array) {
             return attributeValue.some(x => x === value);
         } else {
@@ -391,13 +390,8 @@ export class Vertex{
      * @returns {Promise<any>}
      * @memberof Vertex
      */
-    async toJson(options: JsonFormatOptions = {}): Promise<any> {
-        options.frame = Object.assign(options.frame || {}, {
-            [JsonldKeywords.id]: this.id
-        });
-
-        const json = await this._index.toJson(options);
-        return json['@graph'][0];
+    toJson(options: JsonFormatOptions = {}): Promise<any> {
+        return this._node.toJson(options)
     }
 }
 
