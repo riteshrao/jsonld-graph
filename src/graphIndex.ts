@@ -1,10 +1,13 @@
+import { EventEmitter } from 'events';
+
 import { JsonldKeywords } from './constants';
 import Errors from './errors';
 import IdentityMap from './identityMap';
+import IRI from './iri';
 import JsonldProcessor from './jsonldProcessor';
-import { EventEmitter } from 'events';
 import StrictEventEmitter from './eventEmitter';
-import { JsonFormatOptions } from './formatOptions';
+import JsonFormatOptions from './formatOptions';
+import Iterable from './iterable';
 
 interface IndexEvents {
     /**
@@ -42,24 +45,53 @@ type IndexEventEmitter = StrictEventEmitter<EventEmitter, IndexEvents>;
  * @class IndexNode
  */
 export class IndexNode {
+    private readonly _id: string;
+    private readonly _index: GraphIndex;
     private readonly _attributes = new Map<string, any>()
 
     /**
      * @description Creates an instance of IndexNode.
      * @param {string} id The id of the node.
+     * @param {GraphIndex} The index the node belongs to.
      * @param {GraphIndex} index The index containing this node.
      * @memberof IndexNode
      */
-    constructor(public readonly id: string) { }
+    constructor(id: string, index: GraphIndex) {
+        if (!id) {
+            throw new ReferenceError(`Invalid id. id is ${id}`);
+        }
+
+        if (!index) {
+            throw new ReferenceError(`Invalid index. index is ${index}`);
+        }
+
+        this._id = id;
+        this._index = index;
+    }
 
     /**
-     * @description
+     * @description Gets the id of the node.
      * @readonly
-     * @type {IterableIterator<[string, any]>}
      * @memberof IndexNode
      */
-    get attributes(): IterableIterator<[string, any]> {
-        return this._attributes.entries();
+    get id() {
+        return this._index.iri.compact(this._id);
+    }
+
+    /**
+     * @description Gets all the attributes defined on the node.
+     * @readonly
+     * @type {Iterable<[string, any]>}
+     * @memberof IndexNode
+     */
+    get attributes(): Iterable<[string, any]> {
+        return new Iterable(this._attributes.entries())
+            .map(([key, val]) => {
+                return <[string, any]>[
+                    this._index.iri.compact(key),
+                    val
+                ]
+            });
     }
 
     /**
@@ -78,13 +110,15 @@ export class IndexNode {
             throw new ReferenceError(`Invalid value. value is ${value}`);
         }
 
-        if (this._attributes.has(name) && this._attributes.get(name) instanceof Array) {
-            this._attributes.get(name).push(value);
-        } else if (this._attributes.has(name)) {
-            const values = [this._attributes.get(name), value];
-            this._attributes.set(name, values);
+        const normalizedName = this._index.iri.expand(name);
+
+        if (this._attributes.has(normalizedName) && this._attributes.get(normalizedName) instanceof Array) {
+            this._attributes.get(normalizedName).push(value);
+        } else if (this._attributes.has(normalizedName)) {
+            const values = [this._attributes.get(normalizedName), value];
+            this._attributes.set(normalizedName, values);
         } else {
-            this._attributes.set(name, value);
+            this._attributes.set(normalizedName, value);
         }
 
         return this;
@@ -100,7 +134,8 @@ export class IndexNode {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is ${name}`);
         }
-        this._attributes.delete(name)
+
+        this._attributes.delete(this._index.iri.expand(name));
         return this;
     }
 
@@ -116,7 +151,7 @@ export class IndexNode {
             throw new ReferenceError(`Invalid name. name is ${name}`);
         }
 
-        return this._attributes.get(name);
+        return this._attributes.get(this._index.iri.expand(name));
     }
 
     /**
@@ -129,7 +164,8 @@ export class IndexNode {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is ${name}`);
         }
-        return this._attributes.has(name);
+
+        return this._attributes.has(this._index.iri.expand(name));
     }
 
     /**
@@ -148,8 +184,71 @@ export class IndexNode {
             throw new ReferenceError(`Invalid value. value is ${value}`);
         }
 
-        this._attributes.set(name, value);
+        this._attributes.set(this._index.iri.expand(name), value);
         return this;
+    }
+
+    /**
+     * @description Returns a JSON representation of the node.
+     * @param {JsonFormatOptions} [options={}] Formatting options for the node.
+     * @returns {Promise<any>}
+     * @memberof IndexNode
+     */
+    async toJson(options: JsonFormatOptions = {}): Promise<any> {
+        options.frame = Object.assign(options.frame || {}, {
+            [JsonldKeywords.id]: this._id
+        });
+
+        const json = await this._index.toJson(options);
+        return json['@graph'][0];
+    }
+
+    /**
+     * @description Converts the vertex into a triple form.
+     * @returns {*} JSON object containing the triple
+     * @memberof IndexNode
+     */
+    toTriple(): any {
+        const triple: any = {
+            [JsonldKeywords.id]: this._id
+        };
+
+        for (const [id, value] of this._attributes) {
+            if (!triple[id]) {
+                triple[id] = [];
+            }
+
+            if (value instanceof Array) {
+                for (const item of value) {
+                    triple[id].push({
+                        [JsonldKeywords.value]: item
+                    });
+                }
+            } else {
+                triple[id].push({
+                    [JsonldKeywords.value]: value
+                });
+            }
+        }
+
+        for (const { edge, node } of this._index.getNodeOutgoing(this._id)) {
+            const edgeLabelId = this._index.iri.expand(edge.label);
+            const edgeNodeId = node._id;
+
+            if (!triple[edgeLabelId]) {
+                triple[edgeLabelId] = [];
+            }
+
+            if (edgeLabelId === JsonldKeywords.type) {
+                triple[edgeLabelId].push(edgeNodeId);
+            } else {
+                triple[edgeLabelId].push({
+                    [JsonldKeywords.id]: edgeNodeId
+                })
+            }
+        }
+
+        return triple;
     }
 }
 
@@ -159,6 +258,11 @@ export class IndexNode {
  * @class IndexEdge
  */
 export class IndexEdge {
+    private readonly _label: string;
+    private readonly _fromNodeId: string;
+    private readonly _toNodeId: string;
+    private readonly _index: GraphIndex;
+
     /**
      *Creates an instance of IndexEdge.
      * @param {string} label The edge label.
@@ -168,10 +272,32 @@ export class IndexEdge {
      * @memberof IndexEdge
      */
     constructor(
-        public readonly label: string,
-        public readonly fromNodeId: string,
-        public readonly toNodeId: string) { }
+        label: string,
+        fromNodeId: string,
+        toNodeId: string,
+        index: GraphIndex) {
 
+        if (!label) {
+            throw new ReferenceError(`Invalid label. label is ${label}`);
+        }
+
+        if (!fromNodeId) {
+            throw new ReferenceError(`Invalid fromNodeId. fromNodeId is ${fromNodeId}`);
+        }
+
+        if (!toNodeId) {
+            throw new ReferenceError(`Invalid toNodeId. toNodeId is ${toNodeId}`);
+        }
+
+        if (!index) {
+            throw new ReferenceError(`Invalid index. index is ${index}`);
+        }
+
+        this._label = label;
+        this._fromNodeId = fromNodeId;
+        this._toNodeId = toNodeId;
+        this._index = index;
+    }
 
     /**
      * @description Gets the id of the index.
@@ -180,9 +306,38 @@ export class IndexEdge {
      * @memberof IndexEdge
      */
     get id(): string {
-        return IndexEdge.toId(this.label, this.fromNodeId, this.toNodeId);
+        return IndexEdge.toId(this._label, this._fromNodeId, this._toNodeId);
     }
 
+    /**
+     * @description Gets the label of the edge.
+     * @readonly
+     * @type {string}
+     * @memberof IndexEdge
+     */
+    get label(): string {
+        return this._index.iri.compact(this._label);
+    }
+
+    /**
+     * @description Gets the outgoing node id of the edge.
+     * @readonly
+     * @type {string}
+     * @memberof IndexEdge
+     */
+    get fromNodeId(): string {
+        return this._index.iri.compact(this._fromNodeId);
+    }
+
+    /**
+     * @description Gets the incoming node id of the edge.
+     * @readonly
+     * @type {string}
+     * @memberof IndexEdge
+     */
+    get toNodeId(): string {
+        return this._index.iri.compact(this._toNodeId);
+    }
 
     /**
      * @description Generates a deterministic id for an edge.
@@ -204,7 +359,7 @@ export class IndexEdge {
             throw new ReferenceError(`Invalid toNodeId. toNodeId is ${toNodeId}`);
         }
 
-        return `${fromNodeId}->${label}->${toNodeId}`
+        return `${fromNodeId}->${label}->${toNodeId}`;
     }
 }
 
@@ -214,10 +369,11 @@ export class IndexEdge {
  * @class GraphIndex
  */
 export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
+    public readonly iri = new IRI();
 
-    private readonly _nodes = new Map<string, IndexNode>();
     private readonly _edges = new Map<string, IndexEdge>();
     private readonly _index = new Map<string, Set<string>>();
+    private readonly _nodes = new Map<string, IndexNode>();
     private readonly _processor: JsonldProcessor;
 
     private static Index_Edges = (label: string) => `[e]::${label}`;
@@ -255,12 +411,22 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
     /**
      * @description Adds a context to the index.
-     * @param {string} uri The uri of the context to add.
+     * @param {string} id The id of the context to add.
      * @param {value} context The context to add.
      * @memberof GraphIndex
      */
-    addContext(uri: string, context: any): void {
-        this._processor.addContext(uri, context);
+    addContext(id: string, context: any): void {
+        this._processor.addContext(id, context);
+    }
+
+    /**
+     * @description Adds a prefix for a canonical URI
+     * @param {string} prefix The prefix to add.
+     * @param {string} uri The uri the prefix maps to.
+     * @memberof GraphIndex
+     */
+    addPrefix(prefix: string, uri: string) {
+        this.iri.addPrefix(prefix, uri);
     }
 
     /**
@@ -278,34 +444,36 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new ReferenceError(`Invalid newId. newId is ${node}`);
         }
 
+        const expandedId = this.iri.expand(newId, /* validate */ true);
+
         let currentNode: IndexNode = node as IndexNode;
         if (typeof node === 'string') {
-            currentNode = this.getNode(node);
+            currentNode = this.getNode(this.iri.expand(node));
             if (!currentNode) {
                 throw new Errors.IndexNodeNotFoundError(node);
             }
         }
 
-        if (currentNode.id === newId) {
+        if (this.iri.equal(currentNode.id, expandedId)) {
             return currentNode;
         }
 
-        if (this.hasNode(newId)) {
+        if (this.hasNode(expandedId)) {
             throw new Errors.IndexNodeDuplicateError(newId);
         }
 
         // Create a new node
-        const newNode = this.createNode(newId);
+        const newNode = this.createNode(expandedId);
 
         // Recreate the outgoing edges from the new node.
         for (const { edge } of this.getNodeOutgoing(currentNode.id)) {
-            this.createEdge(edge.label, newNode.id, edge.toNodeId);
+            this.createEdge(edge.label, expandedId, edge.toNodeId);
             this.removeEdge(edge);
         }
 
         // Recreate incoming edges to the new node.
         for (const { edge } of this.getNodeIncoming(currentNode.id)) {
-            this.createEdge(edge.label, edge.fromNodeId, newNode.id);
+            this.createEdge(edge.label, edge.fromNodeId, expandedId);
             this.removeEdge(edge);
         }
 
@@ -332,23 +500,28 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         if (!toNodeId) {
             throw new ReferenceError(`Invalid toNodeId. toNodeId is ${toNodeId}`);
         }
-        if (!this._nodes.has(fromNodeId)) {
+
+        const expandedLabel = this.iri.expand(label, true);
+        const expandedFromId = this.iri.expand(fromNodeId, true);
+        const expandedToId = this.iri.expand(toNodeId, true);
+
+        if (!this._nodes.has(expandedFromId)) {
             throw new Errors.IndexEdgeNodeNotFoundError(label, fromNodeId, 'outgoing');
         }
-        if (!this._nodes.has(toNodeId)) {
+        if (!this._nodes.has(expandedToId)) {
             throw new Errors.IndexEdgeNodeNotFoundError(label, toNodeId, 'incoming');
         }
-        if (fromNodeId === toNodeId) {
+        if (expandedFromId === expandedToId) {
             throw new Errors.IndexEdgeCyclicalError(label, toNodeId);
         }
 
-        if (this._edges.has(IndexEdge.toId(label, fromNodeId, toNodeId))) {
+        if (this._edges.has(IndexEdge.toId(expandedLabel, expandedFromId, expandedToId))) {
             throw new Errors.IndexEdgeDuplicateError(label, fromNodeId, toNodeId);
         }
 
-        const edge = new IndexEdge(label, fromNodeId, toNodeId);
+        const edge = new IndexEdge(expandedLabel, expandedFromId, expandedToId, this);
         this._edges.set(edge.id, edge);
-        this._indexEdge(edge);
+        this._indexEdge(expandedLabel, expandedFromId, expandedToId);
         this.emit('edgeCreated', edge);
         return edge;
     }
@@ -363,12 +536,14 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         if (!id) {
             throw new ReferenceError(`Invalid id. id is ${id}`);
         }
-        if (this._nodes.has(id)) {
+
+        const expandedId = this.iri.expand(id, true);
+        if (this._nodes.has(expandedId)) {
             throw new Errors.IndexNodeDuplicateError(id);
         }
 
-        const node = new IndexNode(id);
-        this._nodes.set(id, node);
+        const node = new IndexNode(expandedId, this);
+        this._nodes.set(expandedId, node);
         this.emit('nodeCreated', node);
         return node;
     }
@@ -392,7 +567,10 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new ReferenceError(`Invalid toNodeId. toNodeId is ${toNodeId}`);
         }
 
-        return this._edges.get(IndexEdge.toId(label, fromNodeId, toNodeId));
+        return this._edges.get(IndexEdge.toId(
+            this.iri.expand(label),
+            this.iri.expand(fromNodeId),
+            this.iri.expand(toNodeId)));
     }
 
     /**
@@ -407,7 +585,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                 yield edge;
             }
         } else {
-            const indexKey = GraphIndex.Index_Edges(label);
+            const indexKey = GraphIndex.Index_Edges(this.iri.expand(label));
             if (!this._index.has(indexKey)) {
                 return;
             }
@@ -429,7 +607,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new ReferenceError(`Invalid label. label is ${label}`);
         }
 
-        const indexKey = GraphIndex.Index_EdgeIncoming(label);
+        const indexKey = GraphIndex.Index_EdgeIncoming(this.iri.expand(label));
         if (!this._index.has(indexKey)) {
             return;
         }
@@ -455,7 +633,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new ReferenceError(`Invalid label. label is ${label}`);
         }
 
-        const indexKey = GraphIndex.Index_EdgeOutgoing(label);
+        const indexKey = GraphIndex.Index_EdgeOutgoing(this.iri.expand(label));
         if (!this._index.has(indexKey)) {
             return;
         }
@@ -481,7 +659,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new ReferenceError(`Invalid id. id is ${id}`);
         }
 
-        return this._nodes.get(id);
+        return this._nodes.get(this.iri.expand(id));
     }
 
     /**
@@ -508,9 +686,11 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         }
         let indexKey: string;
         if (!label) {
-            indexKey = GraphIndex.Index_NodeIncomingAll(id);
+            indexKey = GraphIndex.Index_NodeIncomingAll(this.iri.expand(id));
         } else {
-            indexKey = GraphIndex.Index_NodeIncomingEdges(id, label);
+            indexKey = GraphIndex.Index_NodeIncomingEdges(
+                this.iri.expand(id),
+                this.iri.expand(label));
         }
 
         if (!this._index.has(indexKey)) {
@@ -519,7 +699,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
         for (const edgeId of this._index.get(indexKey)) {
             const edge = this._edges.get(edgeId);
-            const node = this._nodes.get(edge.fromNodeId);
+            const node = this._nodes.get(this.iri.expand(edge.fromNodeId));
             yield { edge, node };
         }
     }
@@ -534,9 +714,11 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
     *getNodeOutgoing(id: string, label?: string): IterableIterator<{ edge: IndexEdge, node: IndexNode }> {
         let indexKey: string;
         if (!label) {
-            indexKey = GraphIndex.Index_NodeOutgoingAll(id);
+            indexKey = GraphIndex.Index_NodeOutgoingAll(this.iri.expand(id));
         } else {
-            indexKey = GraphIndex.Index_NodeOutgoingEdges(id, label);
+            indexKey = GraphIndex.Index_NodeOutgoingEdges(
+                this.iri.expand(id),
+                this.iri.expand(label));
         }
 
         if (!this._index.has(indexKey)) {
@@ -545,7 +727,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
         for (const edgeId of this._index.get(indexKey)) {
             const edge = this._edges.get(edgeId);
-            const node = this._nodes.get(edge.toNodeId);
+            const node = this._nodes.get(this.iri.expand(edge.toNodeId));
             yield { edge, node };
         }
     }
@@ -571,21 +753,24 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new ReferenceError(`Invalid toNodeId. toNodeId is ${toNodeId}`);
         }
 
-        return this._edges.has(IndexEdge.toId(label, fromNodeId, toNodeId));
+        return this._edges.has(IndexEdge.toId(
+            this.iri.expand(label),
+            this.iri.expand(fromNodeId),
+            this.iri.expand(toNodeId)));
     }
 
     /**
      * @description Checks if a specific node exists.
-     * @param {string} nodeId The id of the node to check for.
+     * @param {string} id The id of the node to check for.
      * @returns {boolean} True if the node exists, else false.
      * @memberof GraphIndex
      */
-    hasNode(nodeId: string): boolean {
-        if (!nodeId) {
-            throw new ReferenceError(`Invalid nodeId. nodeId is ${nodeId}`);
+    hasNode(id: string): boolean {
+        if (!id) {
+            throw new ReferenceError(`Invalid nodeId. nodeId is ${id}`);
         }
 
-        return this._nodes.has(nodeId);
+        return this._nodes.has(this.iri.expand(id));
     }
 
     /**
@@ -656,13 +841,17 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
         let indexEdge = edge as IndexEdge;
         if (typeof edge === 'string') {
-            indexEdge = this._edges.get(edge);
+            indexEdge = this._edges.get(this.iri.expand(edge));
             if (!indexEdge) {
                 return;
             }
         }
 
-        this._deleteEdgeIndex(indexEdge);
+        this._deleteEdgeIndex(
+            this.iri.expand(indexEdge.label),
+            this.iri.expand(indexEdge.toNodeId),
+            this.iri.expand(indexEdge.fromNodeId));
+
         if (this._edges.delete(indexEdge.id)) {
             this.emit('edgeDeleted', indexEdge);
         }
@@ -681,7 +870,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
         let indexNode = node as IndexNode;
         if (typeof node === 'string') {
-            indexNode = this._nodes.get(node);
+            indexNode = this._nodes.get(this.iri.expand(node));
             if (!indexNode) {
                 return;
             }
@@ -711,54 +900,34 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
     }
 
     /**
+     * @description Removes a prefix from the index.
+     * @param {string} prefix The prefix string to remove.
+     * @memberof GraphIndex
+     */
+    removePrefix(prefix: string) {
+        this.iri.removePrefix(prefix);
+    }
+
+    /**
      * @description Gets a JSON representation of the index.
      * @param {frame} [any] Optional frame instruction.
      * @returns {Promise<any>}
      * @memberof GraphIndex
      */
     async toJson(options: JsonFormatOptions = {}): Promise<any> {
-        const entities: any[] = [];
-
+        const triples: any[] = [];
         for (const node of this.getNodes()) {
-            const entity: any = { [JsonldKeywords.id]: node.id };
-
-            for (const [key, value] of node.attributes) {
-                if (!entity[key]) {
-                    entity[key] = [];
-                }
-
-                if (value instanceof Array) {
-                    for (const item of value) {
-                        entity[key].push({ [JsonldKeywords.value]: item });
-                    }
-                } else {
-                    entity[key].push({ [JsonldKeywords.value]: value });
-                }
-            }
-
-            for (const { edge } of this.getNodeOutgoing(node.id)) {
-                if (!entity[edge.label]) {
-                    entity[edge.label] = [];
-                }
-
-                if (edge.label === JsonldKeywords.type) {
-                    entity[edge.label].push(edge.toNodeId)
-                } else {
-                    entity[edge.label].push({ [JsonldKeywords.id]: edge.toNodeId })
-                }
-            }
-
-            entities.push(entity);
+            triples.push(node.toTriple());
         }
 
-        let document = { [JsonldKeywords.graph]: entities };
+        let document = { [JsonldKeywords.graph]: triples };
         if (options.frame) {
             if (options.frameContext) {
                 options.frame[JsonldKeywords.context] = options.frameContext;
             } else if (options.context) {
                 options.frame[JsonldKeywords.context] = options.context;
             }
-            
+
             return this._processor.frame(document, options.frame, options.context, options.base)
         } else if (options.context) {
             const expanded = await this._processor.expand(document, options.context, options.base);
@@ -768,21 +937,35 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         }
     }
 
-    private _indexEdge(edge: IndexEdge) {
-        for (const key of GraphIndex.createEdgeIndexKeys(edge)) {
+    private _createEdgeIndexKeys(label: string, fromNodeId: string, toNodeId: string) {
+        return [
+            GraphIndex.Index_Edges(label),
+            GraphIndex.Index_EdgeIncoming(label),
+            GraphIndex.Index_EdgeOutgoing(label),
+            GraphIndex.Index_NodeIncomingAll(toNodeId),
+            GraphIndex.Index_NodeIncomingEdges(toNodeId, label),
+            GraphIndex.Index_NodeOutgoingAll(fromNodeId),
+            GraphIndex.Index_NodeOutgoingEdges(fromNodeId, label)
+        ];
+    }
+
+    private _indexEdge(label: string, fromNodeId: string, toNodeId: string) {
+        const edgeId = IndexEdge.toId(label, fromNodeId, toNodeId);
+        for (const key of this._createEdgeIndexKeys(label, fromNodeId, toNodeId)) {
             if (!this._index.has(key)) {
                 this._index.set(key, new Set<string>());
             }
 
-            this._index.get(key).add(edge.id);
+            this._index.get(key).add(edgeId);
         }
     }
 
-    private _deleteEdgeIndex(edge: IndexEdge) {
-        const indexKeys = GraphIndex.createEdgeIndexKeys(edge);
+    private _deleteEdgeIndex(label: string, fromNodeId: string, toNodeId: string) {
+        const edgeId = IndexEdge.toId(label, fromNodeId, toNodeId);
+        const indexKeys = this._createEdgeIndexKeys(label, fromNodeId, toNodeId);
         for (const key of indexKeys) {
             if (this._index.has(key)) {
-                this._index.get(key).delete(edge.id);
+                this._index.get(key).delete(edgeId);
                 if (this._index.get(key).size === 0) {
                     this._index.delete(key);
                 }
@@ -843,17 +1026,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         }
     }
 
-    private static createEdgeIndexKeys(edge: IndexEdge) {
-        return [
-            GraphIndex.Index_Edges(edge.label),
-            GraphIndex.Index_EdgeIncoming(edge.label),
-            GraphIndex.Index_EdgeOutgoing(edge.label),
-            GraphIndex.Index_NodeIncomingAll(edge.toNodeId),
-            GraphIndex.Index_NodeIncomingEdges(edge.toNodeId, edge.label),
-            GraphIndex.Index_NodeOutgoingAll(edge.fromNodeId),
-            GraphIndex.Index_NodeOutgoingEdges(edge.fromNodeId, edge.label)
-        ];
-    }
+    
 }
 
 export default GraphIndex;

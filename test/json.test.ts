@@ -14,7 +14,7 @@ describe('JSON formatting', () => {
                     '@vocab': 'http://test/classes/',
                     firstName: 'Entity/firstName',
                     lastName: 'Entity/lastName',
-                    relatedTo: { '@id': 'http://test/classes/Entity/relatedTo', '@type': '@id' },
+                    relatedTo: { '@id': 'Entity/relatedTo', '@type': '@id' },
                     worksFor: { '@id': 'Entity/worksFor', '@type': '@id' }
                 }
             };
@@ -109,36 +109,39 @@ describe('JSON formatting', () => {
                     '@vocab': 'http://test/classes/',
                     firstName: 'Entity/firstName',
                     lastName: 'Entity/lastName',
-                    relatedTo: { '@id': 'http://test/classes/Entity/relatedTo', '@type': '@id' },
+                    relatedTo: { '@id': 'Entity/relatedTo', '@type': '@id' },
                     worksFor: { '@id': 'Entity/worksFor', '@type': '@id' }
                 }
             };
 
             graph = new JsonldGraph();
+            graph.addPrefix('vocab', 'http://test/classes');
+            graph.addPrefix('persons', 'http://persons');
             graph.addContext('http://persons/context.json', context);
-            graph.createVertex('http://persons/johnd')
-                .setType('Person', 'Manager')
-                .addAttributeValue('firstName', 'John')
-                .addAttributeValue('lastName', 'Doe')
-                .setOutgoing('relatedTo', 'http://persons/janed', true)
-                .setIncoming('worksFor', 'http://persons/jaked', true);
 
-            graph.createVertex('http://persons/janed')
-                .setType('Person', 'Employee')
-                .addAttributeValue('firstName', 'Jane')
-                .addAttributeValue('lastName', 'Doe')
-                .setOutgoing('worksFor', 'http://persons/jilld', true);
+            graph.createVertex('persons:johnd')
+                .setType('vocab:Person', 'vocab:Manager')
+                .addAttributeValue('vocab:Entity/firstName', 'John')
+                .addAttributeValue('vocab:Entity/lastName', 'Doe')
+                .setOutgoing('vocab:Entity/relatedTo', 'persons:janed', true)
+                .setIncoming('vocab:Entity/worksFor', 'persons:jaked', true);
 
-            graph.createVertex('http://persons/jilld')
-                .setType('Person', 'Manager')
-                .addAttributeValue('firstName', 'Jill')
-                .addAttributeValue('lastName', 'Doe')
-                .setIncoming('relatedTo', 'http://persons/johnd', true);
+            graph.createVertex('persons:janed')
+                .setType('vocab:Person', 'vocab:Employee')
+                .addAttributeValue('vocab:Entity/firstName', 'Jane')
+                .addAttributeValue('vocab:Entity/lastName', 'Doe')
+                .setOutgoing('vocab:Entity/worksFor', 'persons:jilld', true);
 
-            graph.createVertex('http://persons/jaked')
-                .setType('Person')
-                .addAttributeValue('firstName', 'Jake')
-                .addAttributeValue('lastName', 'Doe');
+            graph.createVertex('persons:jilld')
+                .setType('vocab:Person', 'vocab:Manager')
+                .addAttributeValue('vocab:Entity/firstName', 'Jill')
+                .addAttributeValue('vocab:Entity/lastName', 'Doe')
+                .setIncoming('vocab:Entity/relatedTo', 'http://persons/johnd', true);
+
+            graph.createVertex('persons:jaked')
+                .setType('vocab:Person')
+                .addAttributeValue('vocab:Entity/firstName', 'Jake')
+                .addAttributeValue('vocab:Entity/lastName', 'Doe');
         });
 
         it('should be able to format the full graph', async () => {

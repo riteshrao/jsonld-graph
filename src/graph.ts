@@ -1,10 +1,11 @@
+import { EventEmitter } from 'events';
+
 import Edge from './edge';
 import GraphIndex from './graphIndex';
 import Iterable from './iterable';
 import Vertex, { VertexSelector, VertexFilter } from './vertex';
-import { EventEmitter } from 'events';
-import { StrictEventEmitter } from './eventEmitter';
-import { JsonFormatOptions } from './formatOptions';
+import StrictEventEmitter from './eventEmitter';
+import JsonFormatOptions from './formatOptions';
 
 interface GraphEvents {
     edgeAdded: (edge: Edge) => void;
@@ -67,6 +68,16 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      */
     addContext(uri: string, context: any): void {
         this._index.addContext(uri, context);
+    }
+
+    /**
+     * @description Adds a prefix to the graph that allows accessing and creating edges & vertices using short ids containing the prefix.
+     * @param {string} prefix The prefix to add.
+     * @param {string} uri A valid URI that the prefix maps to.
+     * @memberof JsonldGraph
+     */
+    addPrefix(prefix: string, uri: string): void {
+        this._index.addPrefix(prefix, uri);
     }
 
     /**
@@ -220,6 +231,16 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      */
     removeContext(uri: string): void {
         return this._index.removeContext(uri);
+    }
+
+    /**
+     * @description Removes a prefix previously added to the graph.
+     * @param {string} prefix The prefix to remove from the graph.
+     * @returns {void}
+     * @memberof JsonldGraph
+     */
+    removePrefix(prefix: string): void {
+        return this._index.removePrefix(prefix);
     }
 
     /**
