@@ -127,7 +127,7 @@ export class IRI {
                 }
 
                 let mappedIRI = this._prefixes.get(parsed.scheme);
-                if (!mappedIRI.endsWith('/')) {
+                if (!mappedIRI.endsWith('/') && !mappedIRI.endsWith('#')) {
                     mappedIRI = mappedIRI + '/';
                 }
 
