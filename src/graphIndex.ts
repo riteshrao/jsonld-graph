@@ -381,7 +381,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
     private static Index_EdgeOutgoing = (label: string) => `[e]::${label}_[out]`;
     private static Index_NodeIncomingAll = (id: string) => `[v]::${id}_[in]`;
     private static Index_NodeIncomingEdges = (id: string, label: string) => `[v]::${id}_[in]_[e]::${label}`;
-    private static Index_NodeOutgoingAll = (id: string) => `ix:[v]:${id}:[out]`;
+    private static Index_NodeOutgoingAll = (id: string) => `[v]::${id}_[out]`;
     private static Index_NodeOutgoingEdges = (id: string, label: string) => `[v]::${id}_[out]_[e]::${label}`;
 
     constructor() {
@@ -849,8 +849,8 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
         this._deleteEdgeIndex(
             this.iri.expand(indexEdge.label),
-            this.iri.expand(indexEdge.toNodeId),
-            this.iri.expand(indexEdge.fromNodeId));
+            this.iri.expand(indexEdge.fromNodeId),
+            this.iri.expand(indexEdge.toNodeId));
 
         if (this._edges.delete(indexEdge.id)) {
             this.emit('edgeDeleted', indexEdge);
