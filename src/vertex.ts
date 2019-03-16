@@ -1,6 +1,7 @@
+import Iterable from 'jsiterable';
+
 import { BlankNodePrefix, JsonldKeywords } from './constants';
 import GraphIndex, { IndexNode } from './graphIndex';
-import Iterable from './iterable';
 import JsonFormatOptions from './formatOptions';
 
 /**
@@ -170,7 +171,6 @@ export class Vertex{
      * @memberof Vertex
      */
     getIncoming(edgeLabel?: string): Iterable<{ label: string, fromVertex: Vertex }> {
-        console.log([...this._index.getNodeIncoming(this._node.id, edgeLabel)]);
         return new Iterable(this._index.getNodeIncoming(this._node.id, edgeLabel))
             .map(({ edge, node }) => {
                 return {

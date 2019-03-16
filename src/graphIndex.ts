@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import Iterable from 'jsiterable';
 
 import { JsonldKeywords } from './constants';
 import Errors from './errors';
@@ -7,7 +8,6 @@ import IRI from './iri';
 import JsonldProcessor from './jsonldProcessor';
 import StrictEventEmitter from './eventEmitter';
 import JsonFormatOptions from './formatOptions';
-import Iterable from './iterable';
 
 interface IndexEvents {
     /**

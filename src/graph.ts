@@ -1,8 +1,8 @@
 import { EventEmitter } from 'events';
+import Iterable from 'jsiterable';
 
 import Edge from './edge';
 import GraphIndex from './graphIndex';
-import Iterable from './iterable';
 import Vertex, { VertexSelector, VertexFilter } from './vertex';
 import StrictEventEmitter from './eventEmitter';
 import JsonFormatOptions from './formatOptions';

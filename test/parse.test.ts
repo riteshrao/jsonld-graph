@@ -75,7 +75,6 @@ describe('JsonldGraph parse', () => {
             .distinct()
             .items();
 
-            console.log(types_relating_to_planet_type);
         expect(types_relating_to_planet_type.length).to.be.greaterThan(0);
         expect(types_relating_to_planet_type.some(x => x === 'class:Person')).to.be.true;
     });
