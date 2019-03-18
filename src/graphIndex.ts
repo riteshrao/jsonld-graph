@@ -975,9 +975,9 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
     private _loadTriples(triples: any[], mergeAttributes: boolean = false): void {
         const identityMap = new IdentityMap();
-        for (const subject of triples) {
-            const id = identityMap.get(subject);
-            const types = subject[JsonldKeywords.type] || [];
+        for (const triple of triples) {
+            const id = identityMap.get(triple);
+            const types = triple[JsonldKeywords.type] || [];
             let subjectNode: IndexNode;
 
             if (this.hasNode(id)) {
@@ -995,38 +995,54 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             }
 
             // Process each predicate for the object.
-            for (const predicate in subject) {
-                if (predicate === JsonldKeywords.id || predicate === JsonldKeywords.type) {
-                    continue;
-                }
-
-                // Process each predicate of the subject.
-                const objects = subject[predicate];
-                for (const obj of objects) {
-                    if (obj[JsonldKeywords.id]) {
-                        // Predicate object is a reference to another entity, create an edge to model the relationship.
-                        const objectId = identityMap.get(obj);
-                        if (!this.hasNode(objectId)) {
-                            this.createNode(objectId);
-                        }
-
-                        this.createEdge(predicate, subjectNode.id, objectId);
-                    }
-
-                    if (obj[JsonldKeywords.value]) {
-                        // Predicate object is a value. Inline the value as a attribute of the subject vertex.
-                        if (mergeAttributes) {
-                            subjectNode.replaceAttribute(predicate, obj[JsonldKeywords.value]);
-                        } else {
-                            subjectNode.addAttributeValue(predicate, obj[JsonldKeywords.value]);
-                        }
-                    }
-                }
+            for (const predicate in triple) {
+                this._loadPredicate(
+                    identityMap,
+                    subjectNode,
+                    predicate,
+                    triple[predicate],
+                    mergeAttributes);
             }
         }
     }
 
-    
+    private _loadPredicate(
+        identityMap: IdentityMap,
+        subjectNode: IndexNode, 
+        predicate: string, 
+        objects: any[],
+        mergeAttributes: boolean): void {
+        for (const obj of objects) {
+            if (obj[JsonldKeywords.list]) {
+                // Predicate object is a @list container, Load individual items in the @list array.
+                return this._loadPredicate(
+                    identityMap,
+                    subjectNode, 
+                    predicate, 
+                    obj[JsonldKeywords.list],
+                    mergeAttributes);
+            }
+
+            if (obj[JsonldKeywords.id]) {
+                // Predicate object is a reference to another entity, create an edge to model the relationship.
+                const objectId = identityMap.get(obj);
+                if (!this.hasNode(objectId)) {
+                    this.createNode(objectId);
+                }
+
+                this.createEdge(predicate, subjectNode.id, objectId);
+            }
+
+            if (obj[JsonldKeywords.value]) {
+                // Predicate object is a value. Inline the value as a attribute of the subject vertex.
+                if (mergeAttributes) {
+                    subjectNode.replaceAttribute(predicate, obj[JsonldKeywords.value]);
+                } else {
+                    subjectNode.addAttributeValue(predicate, obj[JsonldKeywords.value]);
+                }
+            }
+        }
+    }
 }
 
 export default GraphIndex;
