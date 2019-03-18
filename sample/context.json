@@ -11,7 +11,7 @@
         "range": { "@id": "rdfs:range", "@type": "@id" },
         "domain": { "@id": "rdfs:domain", "@type": "@id" },
         "birthYear": "Person/birthYear",
-        "residence": { "@id": "Person/residence", "@type": "@id" },
+        "residence": { "@id": "Person/residence", "@type": "@id", "@container": "@list" },
         "appearsIn": { "@id": "Person/appearsIn", "@type": "@id" },
         "terrain": "Planet/terrain"
     }

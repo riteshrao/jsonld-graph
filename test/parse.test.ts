@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { expect } from 'chai';
 import { JsonldGraph } from '../src';
 
-describe('JsonldGraph parse', () => {
+describe.only('JsonldGraph parse', () => {
     let graph: JsonldGraph;
 
     before(async () => {
