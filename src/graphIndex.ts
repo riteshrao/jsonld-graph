@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import Iterable from 'jsiterable';
+import clonedeep from 'lodash.clonedeep';
 
 import { JsonldKeywords } from './constants';
 import Errors from './errors';
@@ -915,23 +916,25 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @memberof GraphIndex
      */
     async toJson(options: JsonFormatOptions = {}): Promise<any> {
-        const triples: any[] = [];
+        const document: any = { [JsonldKeywords.graph]: [] };
         for (const node of this.getNodes()) {
-            triples.push(node.toTriple());
+            document[JsonldKeywords.graph].push(node.toTriple());
         }
+        
+        const formatOptions = clonedeep(options);      
 
-        let document = { [JsonldKeywords.graph]: triples };
-        if (options.frame) {
-            if (options.frameContext) {
-                options.frame[JsonldKeywords.context] = options.frameContext;
+        if (formatOptions.frame) {
+            this._expandIdReferences(formatOptions.frame);
+            if (formatOptions.frameContext) {
+                formatOptions.frame[JsonldKeywords.context] = options.frameContext;
             } else if (options.context) {
-                options.frame[JsonldKeywords.context] = options.context;
+                formatOptions.frame[JsonldKeywords.context] = options.context;
             }
 
-            return this._processor.frame(document, options.frame, options.context, options.base)
+            return this._processor.frame(document, formatOptions.frame, options.context, options.base)
         } else if (options.context) {
-            const expanded = await this._processor.expand(document, options.context, options.base);
-            return this._processor.compact(expanded, options.context);
+            const expanded = await this._processor.expand(document, formatOptions.context, options.base);
+            return this._processor.compact(expanded, formatOptions.context);
         } else {
             return document;
         }
@@ -949,17 +952,6 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         ];
     }
 
-    private _indexEdge(label: string, fromNodeId: string, toNodeId: string) {
-        const edgeId = IndexEdge.toId(label, fromNodeId, toNodeId);
-        for (const key of this._createEdgeIndexKeys(label, fromNodeId, toNodeId)) {
-            if (!this._index.has(key)) {
-                this._index.set(key, new Set<string>());
-            }
-
-            this._index.get(key).add(edgeId);
-        }
-    }
-
     private _deleteEdgeIndex(label: string, fromNodeId: string, toNodeId: string) {
         const edgeId = IndexEdge.toId(label, fromNodeId, toNodeId);
         const indexKeys = this._createEdgeIndexKeys(label, fromNodeId, toNodeId);
@@ -970,6 +962,51 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                     this._index.delete(key);
                 }
             }
+        }
+    }
+
+    private _expandIdReferences(source: any) {
+        // This function is primarily looking for objects with @id keys and processing the identity references.
+        // 1. Start by only accepting Array or object types.
+        // 2. If source is an array, loop over elements in the array and recursively call self.
+        // 3. If source is an object
+        // 4. Get all own property keys. Loop through each key.
+        // 4.a.Key is @id, process the value
+        // 4.a @id value can either b a string or an array. If string replace the id with expanded id value. If an array then go through and expand each element.
+        // 4.b 
+        if (source instanceof Array) {
+            for (const element of source) {
+                this._expandIdReferences(element);
+            }
+        } else if (typeof source === 'object') {
+            const keys = Object.getOwnPropertyNames(source);
+            for (const key of keys) {
+                if (key === JsonldKeywords.id) {
+                    if (source[key] instanceof Array) {
+                        const elements = [...source[key]];
+                        for (const element of elements) {
+                            if (typeof element === 'string') {
+                                source[key].splice(source[key].indexOf(element), 1, this.iri.expand(element));
+                            }
+                        }
+                    } else if (typeof source[key] === 'string') {
+                        source[key] = this.iri.expand(source[key]);
+                    }
+                } else if (source[key] instanceof Array || typeof source[key] === 'object') {
+                    this._expandIdReferences(source[key]);
+                }
+            }
+        }
+    }
+
+    private _indexEdge(label: string, fromNodeId: string, toNodeId: string) {
+        const edgeId = IndexEdge.toId(label, fromNodeId, toNodeId);
+        for (const key of this._createEdgeIndexKeys(label, fromNodeId, toNodeId)) {
+            if (!this._index.has(key)) {
+                this._index.set(key, new Set<string>());
+            }
+
+            this._index.get(key).add(edgeId);
         }
     }
 
@@ -1008,8 +1045,8 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
     private _loadPredicate(
         identityMap: IdentityMap,
-        subjectNode: IndexNode, 
-        predicate: string, 
+        subjectNode: IndexNode,
+        predicate: string,
         objects: any[],
         mergeAttributes: boolean): void {
         for (const obj of objects) {
@@ -1017,8 +1054,8 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                 // Predicate object is a @list container, Load individual items in the @list array.
                 return this._loadPredicate(
                     identityMap,
-                    subjectNode, 
-                    predicate, 
+                    subjectNode,
+                    predicate,
                     obj[JsonldKeywords.list],
                     mergeAttributes);
             }
