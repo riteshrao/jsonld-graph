@@ -103,12 +103,13 @@ export class IRI {
         if (!iri) {
             throw new ReferenceError(`Invalid iri. iri is ${iri}`);
         }
-        if (iri.startsWith(BlankNodePrefix) || iri === JsonldKeywords.type || this._prefixes.size === 0) {
+        if (iri.startsWith(BlankNodePrefix) || iri === JsonldKeywords.type || iri === JsonldKeywords.id || this._prefixes.size === 0) {
             return iri;
         }
 
         const parsed = urijs.parse(iri, { iri: true });
         if (!parsed.scheme) {
+            console.log(iri);
             throw new Errors.InvalidIriError(iri, 'IRI scheme not specified');
         }
 
