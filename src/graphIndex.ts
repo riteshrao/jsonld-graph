@@ -896,7 +896,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             this._index.delete(outgoingEdgesKey);
         }
 
-        this._nodes.delete(indexNode.id);
+        this._nodes.delete(this.iri.expand(indexNode.id));
         this.emit('nodeDeleted', indexNode);
     }
 

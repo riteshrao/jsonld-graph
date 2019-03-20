@@ -232,6 +232,16 @@ describe('graph', () => {
             expect(graph.vertexCount).to.equal(1);
             expect(graph.hasVertex('urn:person:johnd')).to.be.false;
         });
+
+        it('should remove vertex using prefixes', () => {
+            graph.addPrefix('test', 'urn:person:test');
+            graph.createVertex('test:personA')
+
+            expect(graph.getVertex('test:personA')).to.be.ok;
+            
+            graph.removeVertex('test:personA');
+            expect(graph.getVertex('test:personA')).not.to.be.ok;
+        })
     });
 
     describe('events', () => {
