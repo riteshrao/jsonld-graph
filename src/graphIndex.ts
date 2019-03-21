@@ -877,8 +877,8 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             }
         }
 
-        const incomingEdgesKey = GraphIndex.Index_NodeIncomingAll(indexNode.id);
-        const outgoingEdgesKey = GraphIndex.Index_NodeOutgoingAll(indexNode.id);
+        const incomingEdgesKey = GraphIndex.Index_NodeIncomingAll(this.iri.expand(indexNode.id));
+        const outgoingEdgesKey = GraphIndex.Index_NodeOutgoingAll(this.iri.expand(indexNode.id));
 
         if (this._index.has(incomingEdgesKey)) {
             for (const edgeId of this._index.get(incomingEdgesKey)) {
