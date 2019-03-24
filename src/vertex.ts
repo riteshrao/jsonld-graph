@@ -50,7 +50,7 @@ export class VertexFilter {
  * @export
  * @class Vertex
  */
-export class Vertex{
+export class Vertex {
 
     private _node: IndexNode;
     private readonly _index: GraphIndex;
@@ -311,6 +311,18 @@ export class Vertex{
     }
 
     /**
+     * @description Removes an attribute value.
+     * @param {string} name The attribute name whose value should be removed.
+     * @param {*} value The value to remove.
+     * @returns {this}
+     * @memberof Vertex
+     */
+    removeAttributeValue(name: string, value: any): this {
+        this._node.removeAttributeValue(name, value);
+        return this;
+    }
+
+    /**
      * @description Sets an incoming relationship to another vertex.
      * @param {string} label The label of the incoming edge relationship.
      * @param {string} fromVertexId Id of the vertex to set the incoming relationship from.
@@ -322,11 +334,11 @@ export class Vertex{
         if (!label) {
             throw new ReferenceError(`Invalid label. label is ${label}`);
         }
-       
+
         if (!fromVertexId) {
             throw new ReferenceError(`Invalid id. id is ${fromVertexId}`);
         }
-       
+
         if (!this._index.hasNode(fromVertexId) && createIfNotExists) {
             this._index.createNode(fromVertexId);
         }
@@ -392,7 +404,7 @@ export class Vertex{
      * @memberof Vertex
      */
     toJson(options: JsonFormatOptions = {}): Promise<any> {
-        return this._node.toJson(options)
+        return this._node.toJson(options);
     }
 }
 

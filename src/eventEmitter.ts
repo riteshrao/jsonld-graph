@@ -5,7 +5,7 @@ declare const meta: unique symbol;
 type Base<M> = { [P in Extract<keyof M, string | symbol>]: (...args: any[]) => void };
 type Args<M, E extends keyof M> = M[E] extends (...args: infer A) => void ? A : never;
 type Listener<M, E extends keyof M, T> = (this: T, ...args: Args<M, E>) => void;
-type Evented<On, Emit> = { [meta]?: [On, Emit] }
+type Evented<On, Emit> = { [meta]?: [On, Emit] };
 
 interface Methods<On, Emit> {
     addListener<E extends keyof On>(event: E, listener: Listener<On, E, this>): this;

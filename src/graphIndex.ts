@@ -48,7 +48,7 @@ type IndexEventEmitter = StrictEventEmitter<EventEmitter, IndexEvents>;
 export class IndexNode {
     private readonly _id: string;
     private readonly _index: GraphIndex;
-    private readonly _attributes = new Map<string, any>()
+    private readonly _attributes = new Map<string, any>();
 
     /**
      * @description Creates an instance of IndexNode.
@@ -88,10 +88,10 @@ export class IndexNode {
     get attributes(): Iterable<[string, any]> {
         return new Iterable(this._attributes.entries())
             .map(([key, val]) => {
-                return <[string, any]>[
+                return <[string, any]> [
                     this._index.iri.compact(key),
                     val
-                ]
+                ];
             });
     }
 
@@ -170,6 +170,39 @@ export class IndexNode {
     }
 
     /**
+     * @description Removes an attribute value.
+     * @param {string} name The name of the attribute whose value should be removed.
+     * @param {string} value The value to remove.
+     * @returns {this}
+     * @memberof IndexNode
+     */
+    removeAttributeValue(name: string, value: string): this {
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is '${name}'`);
+        }
+        if (!value) {
+            throw new ReferenceError(`Invalid value. value is '${value}'`);
+        }
+
+        const currentValue = this._attributes.get(name);
+        if (!currentValue) {
+            return this;
+        }
+
+        if (currentValue instanceof Array) {
+            const valueIndex = currentValue.indexOf(value);
+            if (valueIndex > -1) {
+                currentValue.splice(valueIndex, 1);
+                this.replaceAttribute(name, currentValue.length > 1 ? currentValue : currentValue[0]);
+            }
+        } else if (currentValue === value) {
+            this.deleteAttribute(name);
+        }
+
+        return this;
+    }
+
+    /**
      * @description Replace an attribute value
      * @param {string} name The name of the attribute to replace.
      * @param {*} value The value to replace.
@@ -245,7 +278,7 @@ export class IndexNode {
             } else {
                 triple[edgeLabelId].push({
                     [JsonldKeywords.id]: edgeNodeId
-                })
+                });
             }
         }
 
@@ -823,7 +856,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
     /**
      * @description Removes a context.
      * @param {string} uri The uri of the context to remove.
-     * @memberof GraphIndex 
+     * @memberof GraphIndex
      */
     removeContext(uri: string): void {
         this._processor.removeContext(uri);
@@ -920,8 +953,8 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         for (const node of this.getNodes()) {
             document[JsonldKeywords.graph].push(node.toTriple());
         }
-        
-        const formatOptions = clonedeep(options);      
+
+        const formatOptions = clonedeep(options);
 
         if (formatOptions.frame) {
             this._expandIdReferences(formatOptions.frame);
@@ -931,7 +964,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                 formatOptions.frame[JsonldKeywords.context] = options.context;
             }
 
-            return this._processor.frame(document, formatOptions.frame, options.context, options.base)
+            return this._processor.frame(document, formatOptions.frame, options.context, options.base);
         } else if (options.context) {
             const expanded = await this._processor.expand(document, formatOptions.context, options.base);
             return this._processor.compact(expanded, formatOptions.context);
@@ -973,7 +1006,6 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         // 4. Get all own property keys. Loop through each key.
         // 4.a.Key is @id, process the value
         // 4.a @id value can either b a string or an array. If string replace the id with expanded id value. If an array then go through and expand each element.
-        // 4.b 
         if (source instanceof Array) {
             for (const element of source) {
                 this._expandIdReferences(element);

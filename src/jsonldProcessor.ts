@@ -161,7 +161,7 @@ export class JsonldProcessor {
             throw new ReferenceError(`Invalid frame. frame is ${frame}`);
         }
 
-        return jsonld.frame(document, frame, { 
+        return jsonld.frame(document, frame, {
             base,
             expandContext: contexts,
             documentLoader: this._contextLoader
@@ -177,7 +177,7 @@ export class JsonldProcessor {
         if (!uri) {
             throw new ReferenceError(`Invalid uri. uri is ${uri}`);
         }
-        
+
         this._contexts.delete(uri);
     }
 }

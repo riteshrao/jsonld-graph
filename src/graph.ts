@@ -24,7 +24,7 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      * Creates an instance of JsonLdGraph.
      * @memberof JsonLdGraph
      */
-    constructor(contexts?: [{uri: string, context: any}]) {
+    constructor(contexts?: [{ uri: string, context: any }]) {
         super();
         this._index = new GraphIndex();
         this._index.on('edgeCreated', (indexEdge) => this.emit('edgeAdded', new Edge(indexEdge, this._index)));
@@ -34,7 +34,7 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
         this._index.on('nodeIdChanged', (indexNode, previousId) => this.emit('vertexIdChanged', new Vertex(indexNode, this._index), previousId));
 
         if (contexts && contexts.length > 0) {
-            for (const {uri, context} of contexts) {
+            for (const { uri, context } of contexts) {
                 this._index.addContext(uri, context);
             }
         }
@@ -253,7 +253,7 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
             throw new ReferenceError(`Invalid vertex. vertex is ${vertex}`);
         }
 
-        let nodeId = typeof vertex === 'string' ? vertex : vertex.id;
+        const nodeId = typeof vertex === 'string' ? vertex : vertex.id;
         this._index.removeNode(nodeId);
     }
 

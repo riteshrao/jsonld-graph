@@ -33,5 +33,5 @@ export default interface JsonFormatOptions {
      * @type {boolean}
      * @memberof JsonFormatOptions
      */
-    skipExpansion?: boolean
+    skipExpansion?: boolean;
 }

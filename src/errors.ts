@@ -86,7 +86,7 @@ export namespace Errors {
     export class ContextNotSpecifiedError extends GraphError {
         /**
          *Creates an instance of ContextNotSpecifiedError.
-         * @param {string} operationContext The operation context the error occured.
+         * @param {string} operationContext The operation context the error occurred.
          * @memberof ContextNotSpecifiedError
          */
         constructor(operationContext: string) {
@@ -108,7 +108,7 @@ export namespace Errors {
          * @memberof DuplicateContextError
          */
         constructor(public readonly uri: string) {
-            super(`Anotehr context with uri ${uri} already exists.`);
+            super(`Another context with uri ${uri} already exists.`);
             this.name = 'DuplicateContextError';
         }
     }
@@ -156,7 +156,7 @@ export namespace Errors {
             public readonly toNodeId: string) {
 
             super(`Duplicate edge ${label} from node ${fromNodeId} to node ${toNodeId}`);
-            this.name = 'IndexEdgeDuplicateError'
+            this.name = 'IndexEdgeDuplicateError';
         }
     }
 
@@ -171,7 +171,7 @@ export namespace Errors {
          *Creates an instance of IndexEdgeNodeNotFoundError.
          * @param {string} label The edge label.
          * @param {string} fromNodeId The id of the outgoing node.
-         * @param {string} direction The edge direction. 
+         * @param {string} direction The edge direction.
          * @memberof IndexEdgeNodeNotFoundError
          */
         constructor(
@@ -179,7 +179,7 @@ export namespace Errors {
             public fromNodeId: string,
             public direction: string) {
 
-            super(`Expected ${direction} node with id ${fromNodeId} was not found for edge ${label}`)
+            super(`Expected ${direction} node with id ${fromNodeId} was not found for edge ${label}`);
             this.name = 'IndexEdgeNotFoundError';
         }
     }
@@ -237,7 +237,7 @@ export namespace Errors {
             super(`Invalid iri ${iri}. Error: ${error}`);
         }
     }
-    
+
     /**
      * @description Error thrown when an invalid prefix format is found.
      * @export

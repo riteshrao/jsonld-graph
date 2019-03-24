@@ -151,6 +151,85 @@ describe('vertex', () => {
         });
     });
 
+    describe('hasAttributeValue', () => {
+        it('should return true when attribute value matches', () => {
+            const vertex = graph.createVertex('urn:person:johnd');
+            vertex.addAttributeValue('urn:entity:firstName', 'John');
+
+            expect(vertex.hasAttributeValue('urn:entity:firstName', 'John')).to.be.true;
+        });
+
+        it('should return true when attribute contains value', () => {
+            const vertex = graph.createVertex('urn:person:johnd');
+            vertex.addAttributeValue('urn:entity:firstName', 'John');
+            vertex.addAttributeValue('urn:entity:firstName', 'john');
+
+            expect(vertex.hasAttributeValue('urn:entity:firstName', 'John')).to.be.true;
+            expect(vertex.hasAttributeValue('urn:entity:firstName', 'john')).to.be.true;
+        });
+
+        it('should return false when attribute value does not match', () => {
+            const vertex = graph.createVertex('urn:person:johnd');
+            vertex.addAttributeValue('urn:entity:firstName', 'John');
+
+            expect(vertex.hasAttributeValue('urn:entity:firstName', 'john')).to.be.false;
+        });
+
+        it('should return false when attribute does not contains value', () => {
+            const vertex = graph.createVertex('urn:person:johnd');
+            vertex.addAttributeValue('urn:entity:firstName', 'John');
+            vertex.addAttributeValue('urn:entity:firstName', 'john');
+
+            expect(vertex.hasAttributeValue('urn:entity:firstName', '_john_')).to.be.false;
+        });
+    });
+
+    describe('.removeAttributeValue', () => {
+        it('should remove value from list', () => {
+            const vertex = graph.createVertex('urn:person:johnd');
+            vertex.addAttributeValue('urn:entity:firstName', 'John');
+            vertex.addAttributeValue('urn:entity:firstName', 'jj');
+            expect(vertex.getAttributeValue('urn:entity:firstName')).to.be.instanceOf(Array);
+            expect(vertex.getAttributeValue<string[]>('urn:entity:firstName').length).to.equal(2);
+
+            vertex.removeAttributeValue('urn:entity:firstName', 'jj');
+            expect(vertex.getAttributeValue('urn:entity:firstName')).to.not.be.instanceOf(Array);
+            expect(vertex.getAttributeValue('urn:entity:firstName')).to.equal('John');
+        });
+
+        it('should delete attribute value when all values are removed', () => {
+            const vertex = graph.createVertex('urn:person:johnd');
+            vertex.addAttributeValue('urn:entity:firstName', 'John');
+            vertex.addAttributeValue('urn:entity:firstName', 'jj');
+            expect(vertex.getAttributeValue('urn:entity:firstName')).to.be.instanceOf(Array);
+            expect(vertex.getAttributeValue<string[]>('urn:entity:firstName').length).to.equal(2);
+
+            vertex.removeAttributeValue('urn:entity:firstName', 'John');
+            vertex.removeAttributeValue('urn:entity:firstName', 'jj');
+
+            expect(vertex.hasAttribute('urn:entity:firstName')).to.be.false;
+        });
+
+        it('should convert array to bare value when only one value remains', () => {
+            const vertex = graph.createVertex('urn:person:johnd');
+            vertex.addAttributeValue('urn:entity:firstName', 'John');
+            vertex.addAttributeValue('urn:entity:firstName', 'jj');
+            expect(vertex.getAttributeValue('urn:entity:firstName')).to.be.instanceOf(Array);
+
+            vertex.removeAttributeValue('urn:entity:firstName', 'jj');
+            expect(vertex.getAttributeValue('urn:entity.firstName')).not.to.be.instanceOf(Array);
+        });
+
+        it('should delete attribute when value is removed', () => {
+            const vertex = graph.createVertex('urn:person:johnd');
+            vertex.addAttributeValue('urn:person:johnd', 'John');
+            expect(vertex.hasAttribute('urn:person:johnd')).to.be.true;
+
+            vertex.removeAttributeValue('urn:person:johnd', 'John');
+            expect(vertex.hasAttribute('urn:person:johnd')).to.be.false;
+        });
+    });
+
     describe('.replaceAttributeValue', () => {
         it('should replace existing value', () => {
             const vertex = graph.createVertex('urn:person:johnd');

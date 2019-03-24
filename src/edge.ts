@@ -63,7 +63,7 @@ export class Edge {
         }
 
         if (!index) {
-            throw new ReferenceError(`Invalid `)
+            throw new ReferenceError(`Invalid `);
         }
 
         this._graphEdge = indexEdge;
