@@ -130,7 +130,7 @@ export class JsonldProcessor {
      * @returns {Promise<any[]>}
      * @memberof JsonldProcessor
      */
-    async flatten(document: any, contexts: string | string[] = []): Promise<any[]> {
+    async flatten(document: any, contexts: string | string[] = [], base?: string): Promise<any[]> {
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
@@ -140,6 +140,7 @@ export class JsonldProcessor {
         }
 
         return jsonld.flatten(document, null, {
+            base,
             expandContext: contexts,
             documentLoader: this._contextLoader
         });
