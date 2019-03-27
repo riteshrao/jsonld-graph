@@ -109,7 +109,6 @@ export class IRI {
 
         const parsed = urijs.parse(iri, { iri: true });
         if (!parsed.scheme) {
-            console.log(iri);
             throw new Errors.InvalidIriError(iri, 'IRI scheme not specified');
         }
 
