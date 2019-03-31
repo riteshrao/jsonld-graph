@@ -423,6 +423,17 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         this._processor = new JsonldProcessor({ remoteContexts: false });
     }
 
+    
+    /**
+     * @description Gets the contexts registered with the index.
+     * @readonly
+     * @type {Iterable<[string, any]>}
+     * @memberof GraphIndex
+     */
+    get contexts(): Iterable<[string, any]> {
+        return this._processor.contexts;
+    }
+
     /**
      * @description Gets the count of nodes in the index.
      * @readonly

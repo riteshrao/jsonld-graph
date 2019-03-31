@@ -1,3 +1,4 @@
+import Iterable from 'jsiterable';
 import * as jsonld from 'jsonld';
 
 import { JsonldKeywords } from './constants';
@@ -39,6 +40,17 @@ export class JsonldProcessor {
         }
 
         throw new Errors.ContextNotFoundError(url);
+    }
+
+    
+    /**
+     * @description Gets all contexts registered with the processor.
+     * @readonly
+     * @type {Iterable<[string, any]>}
+     * @memberof JsonldProcessor
+     */
+    get contexts(): Iterable<[string, any]> {
+        return new Iterable(this._contexts);
     }
 
     /**

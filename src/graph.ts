@@ -41,6 +41,16 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
     }
 
     /**
+     * @description Gets the contexts registered with the graph.
+     * @readonly
+     * @type {Iterable<[string, any]>}
+     * @memberof JsonldGraph
+     */
+    get contexts(): Iterable<[string, any]> {
+        return this._index.contexts;
+    }
+
+    /**
      * @description Gets the count of edges in the graph.
      * @readonly
      * @type {number}
