@@ -1,5 +1,4 @@
 // Cut down implementation of StrictEventEmitter from rbuckton (https://github.com/bterlson/strict-event-emitter-types/issues/5)
-
 declare const meta: unique symbol;
 
 type Base<M> = { [P in Extract<keyof M, string | symbol>]: (...args: any[]) => void };

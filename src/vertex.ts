@@ -91,6 +91,16 @@ export class Vertex {
     }
 
     /**
+     * @description Gets all attributes defined in the vertex.
+     * @readonly
+     * @type {Iterable<[string, any]>}
+     * @memberof Vertex
+     */
+    get attributes(): Iterable<[string, any]> {
+        return this._node.attributes;
+    }
+
+    /**
      * @description Returns true if the vertex is a blank node, else false.
      * @readonly
      * @type {boolean}
@@ -111,6 +121,16 @@ export class Vertex {
     }
 
     /**
+     * @description Gets metadata stored for the vertex.
+     * @readonly
+     * @type {*}
+     * @memberof Vertex
+     */
+    get metadata(): any {
+        return this._node.metadata;
+    }
+
+    /**
      * @description Gets all vertices that this vertex is a @type of.
      * @readonly
      * @type {Iterable<Vertex>}
@@ -118,16 +138,6 @@ export class Vertex {
      */
     get types(): Iterable<Vertex> {
         return this.getOutgoing(JsonldKeywords.type).map(({ toVertex }) => toVertex);
-    }
-
-    /**
-     * @description Gets all attributes defined in the vertex.
-     * @readonly
-     * @type {Iterable<[string, any]>}
-     * @memberof Vertex
-     */
-    get attributes(): Iterable<[string, any]> {
-        return this._node.attributes;
     }
 
     /**

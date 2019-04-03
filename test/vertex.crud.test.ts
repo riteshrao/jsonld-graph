@@ -88,6 +88,19 @@ describe('vertex', () => {
         });
     });
 
+    describe('.metadata', () => {
+        beforeEach(() => {
+            graph.createVertex('urn:instances:instanceA');
+        });
+
+        it('should allow storing and retrieving arbitrary metadata', () => {
+            const vertex = graph.getVertex('urn:instances:instanceA');
+            vertex.metadata.foo = 'test';
+            expect(vertex.metadata.foo).to.equal('test');
+            expect(graph.getVertex('urn:instances:instanceA').metadata.foo).to.equal('test');
+        });
+    });
+
     describe('.attributes', () => {
         beforeEach(() => {
             graph.createVertex('urn:person:johnd')
