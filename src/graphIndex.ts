@@ -567,8 +567,9 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new Errors.IndexEdgeCyclicalError(label, toNodeId);
         }
 
-        if (this._edges.has(IndexEdge.toId(expandedLabel, expandedFromId, expandedToId))) {
-            throw new Errors.IndexEdgeDuplicateError(label, fromNodeId, toNodeId);
+        const edgeId = IndexEdge.toId(expandedLabel, expandedFromId, expandedToId);
+        if (this._edges.has(edgeId)) {
+            return this._edges.get(edgeId);
         }
 
         const edge = new IndexEdge(expandedLabel, expandedFromId, expandedToId, this);
