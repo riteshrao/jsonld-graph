@@ -11,7 +11,7 @@
   "scripts": {
     "clean": "rimraf ./lib && rimraf ./coverage",
     "coverage": "rimraf ,/coverage && npm run test && opener ./coverage/index.html",
-    "build": "tsc",
+    "build": "tsc && cp src/eventEmitter.d.ts lib",
     "build-dist": "npm run clean && npm run build && npm run test",
     "prepublishOnly": "npm run build-dist",
     "test": "nyc mocha"
@@ -45,6 +45,7 @@
   "dependencies": {
     "@types/node": "^11.10.0",
     "@types/shortid": "0.0.29",
+    "events": "^3.0.0",
     "jsiterable": "^1.0.2",
     "jsonld": "^1.5.4",
     "lodash.clonedeep": "^4.5.0",

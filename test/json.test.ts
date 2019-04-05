@@ -292,15 +292,15 @@ describe('JSON formatting', () => {
         expect(vertex.relatedTo.some((x: any) => x['@id'] === 'http://persons/janed')).to.be.true;
         expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/janed').firstName).to.equal('Jane');
         expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/janed').lastName).to.equal('Doe');
-        expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/janed')['@type'].includes('Person')).to.be.true
-        expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/janed')['@type'].includes('Employee')).to.be.true
+        expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/janed')['@type'].includes('Person')).to.be.true;
+        expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/janed')['@type'].includes('Employee')).to.be.true;
         expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/janed').worksFor).to.equal('http://persons/jilld');
 
         expect(vertex.relatedTo.some((x: any) => x['@id'] === 'http://persons/jilld')).to.be.true;
         expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/jilld').firstName).to.equal('Jill');
         expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/jilld').lastName).to.equal('Doe');
-        expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/jilld')['@type'].includes('Person')).to.be.true
-        expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/jilld')['@type'].includes('Manager')).to.be.true
+        expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/jilld')['@type'].includes('Person')).to.be.true;
+        expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/jilld')['@type'].includes('Manager')).to.be.true;
 
         vertex = json['@graph'].find((x: any) => x['@id'] === 'http://persons/janed');
         expect(vertex).to.be.ok;

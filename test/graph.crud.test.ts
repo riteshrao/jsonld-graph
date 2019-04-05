@@ -1,7 +1,7 @@
 import 'mocha';
 import { expect } from 'chai';
 
-import { JsonldGraph } from '../src'
+import { JsonldGraph } from '../src';
 
 describe('graph', () => {
     describe('.createVertex', () => {
@@ -235,13 +235,13 @@ describe('graph', () => {
 
         it('should remove vertex using prefixes', () => {
             graph.addPrefix('test', 'urn:person:test');
-            graph.createVertex('test:personA')
+            graph.createVertex('test:personA');
 
             expect(graph.getVertex('test:personA')).to.be.ok;
-            
+
             graph.removeVertex('test:personA');
             expect(graph.getVertex('test:personA')).not.to.be.ok;
-        })
+        });
     });
 
     describe('events', () => {

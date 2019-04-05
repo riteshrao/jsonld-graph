@@ -56,7 +56,7 @@ describe('JsonldGraph parse', () => {
         expect(tatooine_residents.length).to.be.greaterThan(0);
         expect(tatooine_residents.some(x => x === 'persons:luke_skywalker')).to.be.true;
 
-        // Get filtered edges 
+        // Get filtered edges
         const residents_in_mountains = graph
             .getEdges('person:residence')
             .filter(x => x.toVertex.hasAttributeValue('planet:terrain', 'mountains'))
