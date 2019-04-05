@@ -49,13 +49,12 @@ export class IndexNode {
     private readonly _id: string;
     private readonly _index: GraphIndex;
     private readonly _attributes = new Map<string, any>();
-    
-    
+
     /**
      * @description Metadata object for tracking.
      * @memberof IndexNode
      */
-    public readonly metadata = { };
+    public readonly metadata = {};
 
     /**
      * @description Creates an instance of IndexNode.
@@ -430,7 +429,6 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         this._processor = new JsonldProcessor({ remoteContexts: false });
     }
 
-    
     /**
      * @description Gets the contexts registered with the index.
      * @readonly
