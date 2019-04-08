@@ -56,8 +56,7 @@ describe('JSON formatting', () => {
 
         it('should format framed graph', async () => {
             const json = await graph.toJson({
-                skipExpansion: true,
-                frameContext: 'http://persons/context.json',
+                context: 'http://persons/context.json',
                 frame: {
                     '@type': 'Person',
                     relatedTo: {
@@ -77,14 +76,13 @@ describe('JSON formatting', () => {
         });
 
         it('should format vertex', async () => {
-            const json = await graph.getVertex('http://persons/johnd').toJson({ skipExpansion: true, context: 'http://persons/context.json' });
+            const json = await graph.getVertex('http://persons/johnd').toJson({ context: 'http://persons/context.json' });
             validateVertex(json);
         });
 
         it('should format framed vertex', async () => {
             const json = await graph.getVertex('http://persons/johnd').toJson({
-                skipExpansion: true,
-                frameContext: 'http://persons/context.json',
+                context: 'http://persons/context.json',
                 frame: {
                     relatedTo: {
                         '@embed': '@never'
@@ -156,7 +154,6 @@ describe('JSON formatting', () => {
         it('should format framed graph', async () => {
             const json = await graph.toJson({
                 context: 'http://persons/context.json',
-                frameContext: 'http://persons/context.json',
                 frame: {
                     '@type': 'Person',
                     relatedTo: {
@@ -177,7 +174,6 @@ describe('JSON formatting', () => {
         it('should format framed graph with compact ids', async () => {
             const json = await graph.toJson({
                 context: 'http://persons/context.json',
-                frameContext: 'http://persons/context.json',
                 frame: {
                     '@id': [
                         'persons:johnd',
@@ -221,7 +217,6 @@ describe('JSON formatting', () => {
         it('should format framed vertex', async () => {
             const json = await graph.getVertex('http://persons/johnd').toJson({
                 context: 'http://persons/context.json',
-                frameContext: 'http://persons/context.json',
                 frame: {
                     relatedTo: {
                         '@embed': '@never'

@@ -42,7 +42,6 @@ export class JsonldProcessor {
         throw new Errors.ContextNotFoundError(url);
     }
 
-    
     /**
      * @description Gets all contexts registered with the processor.
      * @readonly
@@ -91,11 +90,11 @@ export class JsonldProcessor {
     /**
      * @description Performs a JSON-LD compaction.
      * @param {*} document The document to compact. NOTE: The document should already be in expanded form.
-     * @param {string[]} [contexts]
+     * @param {any|any[]} [contexts]
      * @returns {Promise<any>}
      * @memberof JsonldProcessor
      */
-    async compact(document: any, contexts: string | string[] = []): Promise<any> {
+    async compact(document: any, contexts: any | any[] = []): Promise<any> {
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
@@ -115,11 +114,11 @@ export class JsonldProcessor {
     /**
      * @description Performs a JSON-LD expansion.
      * @param {*} document The document to expand.
-     * @param {string[]} [contexts] Optional contexts to use for expansion.
+     * @param {any|any[]} [contexts] Optional contexts to use for expansion.
      * @returns {Promise<any>}
      * @memberof JsonldProcessor
      */
-    async expand(document: any, contexts: string | string[] = [], base?: string): Promise<any> {
+    async expand(document: any, contexts: any | any[] = [], base?: string): Promise<any> {
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
@@ -138,11 +137,11 @@ export class JsonldProcessor {
     /**
      * @description Performs a JSON=LD flatten operation.
      * @param {*} document The document to flatten.
-     * @param {string[]} [contexts] Optional contexts to use for expansion before flattening.
+     * @param {any|any[]} [contexts] Optional contexts to use for expansion before flattening.
      * @returns {Promise<any[]>}
      * @memberof JsonldProcessor
      */
-    async flatten(document: any, contexts: string | string[] = [], base?: string): Promise<any[]> {
+    async flatten(document: any, contexts: any | any[] = [], base?: string): Promise<any[]> {
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
@@ -162,11 +161,11 @@ export class JsonldProcessor {
      * @description Performs a JSON-LD framing operation.
      * @param {*} document The document to frame.
      * @param {*} frame The JSON-LD frame instruction.
-     * @param {string[]} [contexts] Optional expansion contexts to use for framing.
+     * @param {any|any[]} [contexts] Optional expansion contexts to use for framing.
      * @returns {Promise<any>}
      * @memberof JsonldProcessor
      */
-    async frame(document: any, frame: any, contexts: string | string[] = [], base?: string): Promise<any> {
+    async frame(document: any, frame: any, contexts: any | any[] = [], base?: string): Promise<any> {
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }

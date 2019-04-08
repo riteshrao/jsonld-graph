@@ -8,6 +8,7 @@ export const BlankNodePrefix = '_:b';
  */
 export const JsonldKeywords = {
     context: '@context',
+    container: '@container',
     id: '@id',
     graph: '@graph',
     list: '@list',
@@ -16,5 +17,5 @@ export const JsonldKeywords = {
     value: '@value',
     version: '@version',
     vocabulary: '@vocabulary'
-}
+};
 

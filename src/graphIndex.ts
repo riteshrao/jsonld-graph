@@ -977,13 +977,11 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
         if (formatOptions.frame) {
             this._expandIdReferences(formatOptions.frame);
-            if (formatOptions.frameContext) {
-                formatOptions.frame[JsonldKeywords.context] = options.frameContext;
-            } else if (options.context) {
+            if (formatOptions.context && !formatOptions.frame[JsonldKeywords.container]) {
                 formatOptions.frame[JsonldKeywords.context] = options.context;
             }
 
-            return this._processor.frame(document, formatOptions.frame, options.context, options.base);
+            return this._processor.frame(document, formatOptions.frame, [], options.base);
         } else if (options.context) {
             const expanded = await this._processor.expand(document, formatOptions.context, options.base);
             return this._processor.compact(expanded, formatOptions.context);
