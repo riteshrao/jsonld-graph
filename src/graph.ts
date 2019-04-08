@@ -214,12 +214,12 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
     /**
      * @description Loads one or more documents into the graph.
      * @param {(any | any[])} inputs Input documents to load into the graph.
-     * @param {string[]} [contexts] Optional contexts to use for importing the documents.
+     * @param {string|string[]|object|object[]} [contexts] Optional contexts to use for importing the documents.
      * @param {string} [base] Optional base IRI of the inputs.
      * @returns {Promise<void>}
      * @memberof JsonLdGraph
      */
-    async load(inputs: any | any[], contexts?: string[], base?: string): Promise<void> {
+    async load(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<void> {
         return this._index.load(inputs, contexts, base);
     }
 
@@ -231,7 +231,7 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      * @returns {Promise<void>}
      * @memberof JsonLdGraph
      */
-    async merge(inputs: any | any[], contexts?: string[], base?: string): Promise<void> {
+    async merge(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<void> {
         return this._index.merge(inputs, contexts, base);
     }
 

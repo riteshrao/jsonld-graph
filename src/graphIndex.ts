@@ -827,12 +827,12 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
     /**
      * @description Loads a set of input JSON-LD documents into the index.
      * @param {(any | any[])} inputs The inputs to load.
-     * @param {string[]} [contexts] The contexts to load.
+     * @param {string|string[]|object|object[]} [contexts] The contexts to load.
      * @param {string} [base] The base IRI of the context.
      * @returns {Promise<void>}
      * @memberof GraphIndex
      */
-    async load(inputs: any | any[], contexts?: string[], base?: string): Promise<void> {
+    async load(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<void> {
         if (!inputs) {
             throw new ReferenceError(`Invalid inputs. inputs is ${inputs}`);
         }
@@ -851,12 +851,12 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
     /**
      * @description Loads and merges a set of input JSON-LD documents into the index.
      * @param {(any | any[])} inputs The inputs to merge.
-     * @param {string[]} [contexts] The contexts to merge.
+     * @param {string|string[]|object|object[]} [contexts] The contexts to merge.
      * @param {string} [base] The base IRI of inputs.
      * @returns {Promise<void>}
      * @memberof GraphIndex
      */
-    async merge(inputs: any | any[], contexts?: string[], base?: string): Promise<void> {
+    async merge(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<void> {
         if (!inputs) {
             throw new ReferenceError(`Invalid inputs. inputs is ${inputs}`);
         }
