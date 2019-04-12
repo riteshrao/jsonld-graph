@@ -16,6 +16,8 @@ describe('vertex', () => {
         beforeEach(() => {
             vertex = graph.createVertex('urn:person:johnd');
             vertex
+                .addAttributeValue('urn:hr:firstName', 'John')
+                .addAttributeValue('urn:hr:lastName', 'Doe')
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:jilld', true)
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:janed', true)
                 .setIncoming('urn:hr:worksFor', 'urn:person:jaked', true)
@@ -40,6 +42,11 @@ describe('vertex', () => {
             expect(incoming.length).to.equal(2);
             expect(incoming.some(x => x.fromVertex.id === 'urn:person:jaked')).to.be.true;
             expect(incoming.some(x => x.fromVertex.id === 'urn:person:jimmyd')).to.be.true;
+        });
+
+        it('should retain attributes', () => {
+            expect(vertex.hasAttributeValue('urn:hr:firstName', 'John')).to.be.true;
+            expect(vertex.hasAttributeValue('urn:hr:lastName', 'Doe')).to.be.true;
         });
     });
 

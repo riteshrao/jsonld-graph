@@ -46,7 +46,7 @@ type IndexEventEmitter = StrictEventEmitter<EventEmitter, IndexEvents>;
  * @class IndexNode
  */
 export class IndexNode {
-    private readonly _id: string;
+    private _id: string;
     private readonly _index: GraphIndex;
     private readonly _attributes = new Map<string, any>();
 
@@ -86,6 +86,45 @@ export class IndexNode {
     }
 
     /**
+     * @description Sets the id of the node.
+     * @memberof IndexNode
+     */
+    set id(id: string) {
+        if (!id) {
+            throw new ReferenceError(`Invalid newId. newId is ${id}`);
+        }
+
+        const expandedId = this._index.iri.expand(id, /* validate */ true);
+        if (this._index.iri.equal(this._id, expandedId)) {
+            return;
+        }
+
+        if (this._index.hasNode(expandedId)) {
+            throw new Errors.IndexNodeDuplicateError(id);
+        }
+
+        // Change the id of the node and re-add it to the index with the new id.
+        const outgoingEdges = [...this._index.getNodeOutgoing(this._id)];
+        const incomingEdges = [...this._index.getNodeIncoming(this._id)];
+        this._index.removeNode(this);
+
+        this._id = expandedId;
+        this._index.addNode(this);
+
+        // Recreate the outgoing edges from the new node.
+        for (const { edge } of outgoingEdges) {
+            this._index.createEdge(edge.label, this._id, edge.toNodeId);
+        }
+
+        // Recreate incoming edges to the new node.
+        for (const { edge } of incomingEdges) {
+            this._index.createEdge(edge.label, edge.fromNodeId, this._id);
+        }
+
+        this._index.emit('nodeIdChanged', this, this._id);
+    }
+
+    /**
      * @description Gets all the attributes defined on the node.
      * @readonly
      * @type {Iterable<[string, any]>}
@@ -94,7 +133,7 @@ export class IndexNode {
     get attributes(): Iterable<[string, any]> {
         return new Iterable(this._attributes.entries())
             .map(([key, val]) => {
-                return <[string, any]> [
+                return <[string, any]>[
                     this._index.iri.compact(key),
                     val
                 ];
@@ -480,57 +519,20 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
     }
 
     /**
-     * @description Changes the id of an existing node.
-     * @param {(string | IndexNode)} node The node whose id should be changed.
-     * @param {string} newId The new id of the node.
+     * @description Adds a new node to the index.
+     * @param {IndexNode} node The node instance to add.
      * @memberof GraphIndex
      */
-    changeNodeId(node: string | IndexNode, newId: string): IndexNode {
+    addNode(node: IndexNode) {
         if (!node) {
             throw new ReferenceError(`Invalid node. node is ${node}`);
         }
 
-        if (!newId) {
-            throw new ReferenceError(`Invalid newId. newId is ${node}`);
+        if (this._nodes.has(node.id)) {
+            throw new Errors.IndexNodeDuplicateError(node.id);
         }
 
-        const expandedId = this.iri.expand(newId, /* validate */ true);
-
-        let currentNode: IndexNode = node as IndexNode;
-        if (typeof node === 'string') {
-            currentNode = this.getNode(this.iri.expand(node));
-            if (!currentNode) {
-                throw new Errors.IndexNodeNotFoundError(node);
-            }
-        }
-
-        if (this.iri.equal(currentNode.id, expandedId)) {
-            return currentNode;
-        }
-
-        if (this.hasNode(expandedId)) {
-            throw new Errors.IndexNodeDuplicateError(newId);
-        }
-
-        // Create a new node
-        const newNode = this.createNode(expandedId);
-
-        // Recreate the outgoing edges from the new node.
-        for (const { edge } of this.getNodeOutgoing(currentNode.id)) {
-            this.createEdge(edge.label, expandedId, edge.toNodeId);
-            this.removeEdge(edge);
-        }
-
-        // Recreate incoming edges to the new node.
-        for (const { edge } of this.getNodeIncoming(currentNode.id)) {
-            this.createEdge(edge.label, edge.fromNodeId, expandedId);
-            this.removeEdge(edge);
-        }
-
-        // Remove the old node
-        this.removeNode(currentNode);
-        this.emit('nodeIdChanged', newNode, currentNode.id);
-        return newNode;
+        this._nodes.set(node.id, node);
     }
 
     /**

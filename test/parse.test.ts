@@ -31,7 +31,7 @@ describe('JsonldGraph parse', () => {
         expect(graph.vertexCount).to.be.greaterThan(0);
         expect(graph.edgeCount).to.be.greaterThan(0);
 
-        // Get a specific vertex and validate that it got parsed correctly.
+        // // Get a specific vertex and validate that it got parsed correctly.
         const yoda = graph.getVertex('persons:yoda');
         expect(yoda).to.be.ok;
         expect(yoda.getAttributeValue('entity:name')).to.equal('yoda');
@@ -55,27 +55,5 @@ describe('JsonldGraph parse', () => {
 
         expect(tatooine_residents.length).to.be.greaterThan(0);
         expect(tatooine_residents.some(x => x === 'persons:luke_skywalker')).to.be.true;
-
-        // Get filtered edges
-        const residents_in_mountains = graph
-            .getEdges('person:residence')
-            .filter(x => x.toVertex.hasAttributeValue('planet:terrain', 'mountains'))
-            .map(x => x.fromVertex.id)
-            .items();
-
-        expect(residents_in_mountains.length).to.be.greaterThan(0);
-        expect(residents_in_mountains.some(x => x === 'persons:r2_d2')).to.be.true;
-
-        // Find types instances and find all types that refer to it
-        const types_relating_to_planet_type = graph.getVertex('class:Planet')
-            .instances
-            .mapMany(x => x.getIncoming())
-            .mapMany((x) => x.fromVertex.types)
-            .map(x => x.id)
-            .distinct()
-            .items();
-
-        expect(types_relating_to_planet_type.length).to.be.greaterThan(0);
-        expect(types_relating_to_planet_type.some(x => x === 'class:Person')).to.be.true;
     });
 });

@@ -87,7 +87,7 @@ export class Vertex {
      * @memberof Vertex
      */
     set id(id: string) {
-        this._node = this._index.changeNodeId(this._node, id);
+        this._node.id = id;
     }
 
     /**
