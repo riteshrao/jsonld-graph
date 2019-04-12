@@ -104,6 +104,7 @@ export class IndexNode {
         }
 
         // Change the id of the node and re-add it to the index with the new id.
+        const previousId = this._id;
         const outgoingEdges = [...this._index.getNodeOutgoing(this._id)];
         const incomingEdges = [...this._index.getNodeIncoming(this._id)];
         this._index.removeNode(this);
@@ -121,7 +122,7 @@ export class IndexNode {
             this._index.createEdge(edge.label, edge.fromNodeId, this._id);
         }
 
-        this._index.emit('nodeIdChanged', this, this._id);
+        this._index.emit('nodeIdChanged', this, previousId);
     }
 
     /**
