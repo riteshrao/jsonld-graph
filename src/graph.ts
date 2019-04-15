@@ -216,10 +216,10 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      * @param {(any | any[])} inputs Input documents to load into the graph.
      * @param {string|string[]|object|object[]} [contexts] Optional contexts to use for importing the documents.
      * @param {string} [base] Optional base IRI of the inputs.
-     * @returns {Promise<void>}
+     * @returns {Promise<Set<string>>} A set containing all vertices that were created / added as part of the load.
      * @memberof JsonLdGraph
      */
-    async load(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<void> {
+    async load(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<Set<string>> {
         return this._index.load(inputs, contexts, base);
     }
 
@@ -228,10 +228,10 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      * @param {(any | any[])} inputs The inputs to merge.
      * @param {string[]} [contexts] The contexts to merge.
      * @param {string} [base] The base IRI of the document.
-     * @returns {Promise<void>}
+     * @returns {Promise<Set<string>>} A set containing all vertices that were created / added as part of the load.
      * @memberof JsonLdGraph
      */
-    async merge(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<void> {
+    async merge(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<Set<string>> {
         return this._index.merge(inputs, contexts, base);
     }
 

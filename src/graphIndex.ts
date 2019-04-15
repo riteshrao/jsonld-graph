@@ -134,7 +134,7 @@ export class IndexNode {
     get attributes(): Iterable<[string, any]> {
         return new Iterable(this._attributes.entries())
             .map(([key, val]) => {
-                return <[string, any]>[
+                return <[string, any]> [
                     this._index.iri.compact(key),
                     val
                 ];
@@ -832,23 +832,26 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @param {(any | any[])} inputs The inputs to load.
      * @param {string|string[]|object|object[]} [contexts] The contexts to load.
      * @param {string} [base] The base IRI of the context.
-     * @returns {Promise<void>}
+     * @returns {Promise<Set<string>>}
      * @memberof GraphIndex
      */
-    async load(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<void> {
+    async load(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<Set<string>> {
         if (!inputs) {
             throw new ReferenceError(`Invalid inputs. inputs is ${inputs}`);
         }
 
+        const vertexTracker = new Set<string>();
         const documents: any[] = (inputs instanceof Array) ? inputs : [inputs];
         for (const document of documents) {
             try {
                 const triples = await this._processor.flatten(document, contexts, base);
-                this._loadTriples(triples, false);
+                this._loadTriples(triples, vertexTracker, false);
             } catch (err) {
                 throw new Errors.DocumentParseError(err);
             }
         }
+
+        return vertexTracker;
     }
 
     /**
@@ -856,23 +859,26 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @param {(any | any[])} inputs The inputs to merge.
      * @param {string|string[]|object|object[]} [contexts] The contexts to merge.
      * @param {string} [base] The base IRI of inputs.
-     * @returns {Promise<void>}
+     * @returns {Promise<Set<string>>}
      * @memberof GraphIndex
      */
-    async merge(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<void> {
+    async merge(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<Set<string>> {
         if (!inputs) {
             throw new ReferenceError(`Invalid inputs. inputs is ${inputs}`);
         }
 
+        const vertexTracker = new Set<string>();
         const documents: any[] = (inputs instanceof Array) ? inputs : [inputs];
         for (const document of documents) {
             try {
                 const triples = await this._processor.flatten(document, contexts, base);
-                this._loadTriples(triples, true);
+                this._loadTriples(triples, vertexTracker, true);
             } catch (err) {
                 throw new Errors.DocumentParseError(err);
             }
         }
+
+        return vertexTracker;
     }
 
     /**
@@ -1062,8 +1068,9 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         }
     }
 
-    private _loadTriples(triples: any[], mergeAttributes: boolean = false): void {
+    private _loadTriples(triples: any[], vertexTrakcer: Set<string>, mergeAttributes: boolean = false): void {
         const identityMap = new IdentityMap();
+
         for (const triple of triples) {
             const id = identityMap.get(triple);
             const types = triple[JsonldKeywords.type] || [];
@@ -1073,6 +1080,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                 subjectNode = this.getNode(id);
             } else {
                 subjectNode = this.createNode(id);
+                vertexTrakcer.add(id);
             }
 
             // Add outgoing edges to type nodes.
@@ -1090,6 +1098,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                     subjectNode,
                     predicate,
                     triple[predicate],
+                    vertexTrakcer,
                     mergeAttributes);
             }
         }
@@ -1100,6 +1109,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         subjectNode: IndexNode,
         predicate: string,
         objects: any[],
+        vertexTracker: Set<string>,
         mergeAttributes: boolean): void {
         for (const obj of objects) {
             if (obj[JsonldKeywords.list]) {
@@ -1109,6 +1119,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                     subjectNode,
                     predicate,
                     obj[JsonldKeywords.list],
+                    vertexTracker,
                     mergeAttributes);
             }
 
@@ -1117,6 +1128,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                 const objectId = identityMap.get(obj);
                 if (!this.hasNode(objectId)) {
                     this.createNode(objectId);
+                    vertexTracker.add(objectId);
                 }
 
                 this.createEdge(predicate, subjectNode.id, objectId);

@@ -5,19 +5,23 @@ import { expect } from 'chai';
 import { JsonldGraph } from '../src';
 
 describe('JsonldGraph parse', () => {
-    let graph: JsonldGraph;
-
-    before(async () => {
+    it('works', async () => {
         const context = JSON.parse(fs.readFileSync('./sample/context.json', { encoding: 'utf8' }));
         const persons = JSON.parse(fs.readFileSync('./sample/persons.json', { encoding: 'utf8' }));
         const planets = JSON.parse(fs.readFileSync('./sample/planets.json', { encoding: 'utf8' }));
 
-        graph = new JsonldGraph([
+        const graph = new JsonldGraph([
             { uri: 'http://alt.universe.net/context.json', context }
         ]);
 
-        await graph.load(persons);
-        await graph.load(planets);
+        const personVertices = await graph.load(persons);
+        const planetVertices = await graph.load(planets);
+
+        expect(personVertices.size).to.be.greaterThan(0);
+        expect(planetVertices.size).to.be.greaterThan(0);
+        expect(personVertices.has('http://alt.universe.net/graph/Person/luke_skywalker')).to.eq(true);
+        expect(planetVertices.has('http://alt.universe.net/graph/Planet/Aleen')).to.eq(true);
+        expect(planetVertices.has('http://alt.universe.net/graph/Planet/Alderaan')).to.eq(false); // Loaded as part of persons
 
         graph.addPrefix('persons', 'http://alt.universe.net/graph/Person');
         graph.addPrefix('planets', 'http://alt.universe.net/graph/Planet');
@@ -25,9 +29,7 @@ describe('JsonldGraph parse', () => {
         graph.addPrefix('person', 'http://alt.universe.net/classes/Person');
         graph.addPrefix('planet', 'http://alt.universe.net/classes/Planet');
         graph.addPrefix('class', 'http://alt.universe.net/classes/');
-    });
 
-    it('works', async () => {
         expect(graph.vertexCount).to.be.greaterThan(0);
         expect(graph.edgeCount).to.be.greaterThan(0);
 
