@@ -14,21 +14,22 @@ describe('JsonldGraph parse', () => {
             { uri: 'http://alt.universe.net/context.json', context }
         ]);
 
-        const personVertices = await graph.load(persons);
-        const planetVertices = await graph.load(planets);
-
-        expect(personVertices.size).to.be.greaterThan(0);
-        expect(planetVertices.size).to.be.greaterThan(0);
-        expect(personVertices.has('http://alt.universe.net/graph/Person/luke_skywalker')).to.eq(true);
-        expect(planetVertices.has('http://alt.universe.net/graph/Planet/Aleen')).to.eq(true);
-        expect(planetVertices.has('http://alt.universe.net/graph/Planet/Alderaan')).to.eq(false); // Loaded as part of persons
-
         graph.addPrefix('persons', 'http://alt.universe.net/graph/Person');
         graph.addPrefix('planets', 'http://alt.universe.net/graph/Planet');
         graph.addPrefix('entity', 'http://alt.universe.net/classes/Entity');
         graph.addPrefix('person', 'http://alt.universe.net/classes/Person');
         graph.addPrefix('planet', 'http://alt.universe.net/classes/Planet');
         graph.addPrefix('class', 'http://alt.universe.net/classes/');
+
+        const personVertices = await graph.load(persons);
+        const planetVertices = await graph.load(planets);
+
+        expect(personVertices.size).to.be.greaterThan(0);
+        expect(planetVertices.size).to.be.greaterThan(0);
+        expect(personVertices.has('persons:luke_skywalker')).to.eq(true);
+        expect(planetVertices.has('planets:Aleen')).to.eq(true);
+        expect(planetVertices.has('planets:Alderaan')).to.eq(false); // Loaded as part of persons
+
 
         expect(graph.vertexCount).to.be.greaterThan(0);
         expect(graph.edgeCount).to.be.greaterThan(0);
