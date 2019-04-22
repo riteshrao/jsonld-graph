@@ -1068,7 +1068,10 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         }
     }
 
-    private _loadTriples(triples: any[], vertexTracker: Set<string>, mergeAttributes: boolean = false): void {
+    private _loadTriples(
+        triples: any[],
+        vertexTracker: Set<string>,
+        mergeAttributes: boolean = false): void {
         const identityMap = new IdentityMap();
 
         for (const triple of triples) {
@@ -1128,9 +1131,9 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                 const objectId = identityMap.get(obj);
                 if (!this.hasNode(objectId)) {
                     this.createNode(objectId);
-                    vertexTracker.add(this.iri.compact(objectId));
                 }
 
+                vertexTracker.add(this.iri.compact(objectId));
                 this.createEdge(predicate, subjectNode.id, objectId);
             }
 
