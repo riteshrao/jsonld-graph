@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { JsonldGraph } from '../src';
 
 describe('JsonldGraph parse', () => {
-    it.only('works', async () => {
+    it('works', async () => {
         const context = JSON.parse(fs.readFileSync('./sample/context.json', { encoding: 'utf8' }));
         const persons = JSON.parse(fs.readFileSync('./sample/persons.json', { encoding: 'utf8' }));
         const planets = JSON.parse(fs.readFileSync('./sample/planets.json', { encoding: 'utf8' }));
