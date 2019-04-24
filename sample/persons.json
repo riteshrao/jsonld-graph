@@ -5,6 +5,15 @@
     ],
     "@graph": [
         {
+            "@id": "Person/unknown",
+            "@type": "Person",
+            "name": "",
+            "displayName": "Unknown",
+            "birthYear": "Unknown",
+            "gender": "Unknown",
+            "code": 0
+        },
+        {
             "@id": "Person/luke_skywalker",
             "@type": "Person",
             "name": "luke_skywalker",

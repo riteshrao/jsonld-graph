@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { JsonldGraph } from '../src';
 
 describe('JsonldGraph parse', () => {
-    it('works', async () => {
+    it.only('works', async () => {
         const context = JSON.parse(fs.readFileSync('./sample/context.json', { encoding: 'utf8' }));
         const persons = JSON.parse(fs.readFileSync('./sample/persons.json', { encoding: 'utf8' }));
         const planets = JSON.parse(fs.readFileSync('./sample/planets.json', { encoding: 'utf8' }));
@@ -58,5 +58,10 @@ describe('JsonldGraph parse', () => {
 
         expect(tatooine_residents.length).to.be.greaterThan(0);
         expect(tatooine_residents.some(x => x === 'persons:luke_skywalker')).to.be.true;
+
+        // Empty string and number test
+        const unknownPerson = graph.getVertex('persons:unknown');
+        expect(unknownPerson.getAttributeValue('person:code')).to.equal(0);
+        expect(unknownPerson.getAttributeValue('entity:name')).to.equal('');
     });
 });

@@ -13,6 +13,7 @@
         "birthYear": "Person/birthYear",
         "residence": { "@id": "Person/residence", "@type": "@id", "@container": "@list" },
         "appearsIn": { "@id": "Person/appearsIn", "@type": "@id" },
-        "terrain": "Planet/terrain"
+        "terrain": "Planet/terrain",
+        "code": "Person/code"
     }
 }

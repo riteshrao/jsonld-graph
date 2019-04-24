@@ -1137,7 +1137,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                 this.createEdge(predicate, subjectNode.id, objectId);
             }
 
-            if (obj[JsonldKeywords.value]) {
+            if (obj[JsonldKeywords.value] !== null && obj[JsonldKeywords.value] !== undefined) {
                 // Predicate object is a value. Inline the value as a attribute of the subject vertex.
                 if (mergeAttributes) {
                     subjectNode.replaceAttribute(predicate, obj[JsonldKeywords.value]);
