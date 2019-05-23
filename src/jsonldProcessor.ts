@@ -35,6 +35,15 @@ export class JsonldProcessor {
             });
         }
 
+        // Check for lower-case contexts
+        if (this._contexts.has(url.toLowerCase())) {
+            return callback(null, {
+                url: null,
+                documentUrl: url,
+                document: this._contexts.get(url.toLowerCase())
+            });
+        }
+
         if (this._options.remoteContexts) {
             return remoteLoader(url, callback);
         }
