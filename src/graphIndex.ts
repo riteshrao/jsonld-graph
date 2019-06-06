@@ -525,6 +525,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @memberof GraphIndex
      */
     addNode(node: IndexNode) {
+        setTimeout(() => {}, 0);
         if (!node) {
             throw new ReferenceError(`Invalid node. node is ${node}`);
         }
@@ -544,6 +545,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @memberof GraphIndex
      */
     createEdge(label: string, fromNodeId: string, toNodeId: string): IndexEdge {
+        setTimeout(() => {}, 0);
         if (!label) {
             throw new ReferenceError(`Invalid label. label is ${label}`);
         }
@@ -587,6 +589,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @memberof GraphIndex
      */
     createNode(id: string): IndexNode {
+        setTimeout(() => {}, 0);
         if (!id) {
             throw new ReferenceError(`Invalid id. id is ${id}`);
         }
@@ -1072,6 +1075,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         triples: any[],
         vertexTracker: Set<string>,
         mergeAttributes: boolean = false): void {
+        setTimeout(() => {}, 0);
         const identityMap = new IdentityMap();
 
         for (const triple of triples) {
@@ -1114,6 +1118,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         objects: any[],
         vertexTracker: Set<string>,
         mergeAttributes: boolean): void {
+        setTimeout(() => {}, 0);
         for (const obj of objects) {
             if (obj[JsonldKeywords.list]) {
                 // Predicate object is a @list container, Load individual items in the @list array.

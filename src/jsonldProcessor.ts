@@ -104,6 +104,7 @@ export class JsonldProcessor {
      * @memberof JsonldProcessor
      */
     async compact(document: any, contexts: any | any[] = []): Promise<any> {
+        setTimeout(() => {}, 0);
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
@@ -128,6 +129,7 @@ export class JsonldProcessor {
      * @memberof JsonldProcessor
      */
     async expand(document: any, contexts: any | any[] = [], base?: string): Promise<any> {
+        setTimeout(() => {}, 0);
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
@@ -151,6 +153,7 @@ export class JsonldProcessor {
      * @memberof JsonldProcessor
      */
     async flatten(document: any, contexts: any | any[] = [], base?: string): Promise<any[]> {
+        setTimeout(() => {}, 0);
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
@@ -175,6 +178,7 @@ export class JsonldProcessor {
      * @memberof JsonldProcessor
      */
     async frame(document: any, frame: any, contexts: any | any[] = [], base?: string): Promise<any> {
+        setTimeout(() => {}, 0);
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
