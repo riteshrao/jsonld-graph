@@ -525,7 +525,6 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @memberof GraphIndex
      */
     addNode(node: IndexNode) {
-        setTimeout(() => {}, 0);
         if (!node) {
             throw new ReferenceError(`Invalid node. node is ${node}`);
         }
@@ -545,7 +544,6 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @memberof GraphIndex
      */
     createEdge(label: string, fromNodeId: string, toNodeId: string): IndexEdge {
-        setTimeout(() => {}, 0);
         if (!label) {
             throw new ReferenceError(`Invalid label. label is ${label}`);
         }
@@ -589,7 +587,6 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @memberof GraphIndex
      */
     createNode(id: string): IndexNode {
-        setTimeout(() => {}, 0);
         if (!id) {
             throw new ReferenceError(`Invalid id. id is ${id}`);
         }
@@ -848,7 +845,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         for (const document of documents) {
             try {
                 const triples = await this._processor.flatten(document, contexts, base);
-                this._loadTriples(triples, vertexTracker, false);
+                await this._loadTriples(triples, vertexTracker, false);
             } catch (err) {
                 throw new Errors.DocumentParseError(err);
             }
@@ -875,7 +872,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         for (const document of documents) {
             try {
                 const triples = await this._processor.flatten(document, contexts, base);
-                this._loadTriples(triples, vertexTracker, true);
+                await this._loadTriples(triples, vertexTracker, true);
             } catch (err) {
                 throw new Errors.DocumentParseError(err);
             }
@@ -1071,14 +1068,14 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         }
     }
 
-    private _loadTriples(
+    private async _loadTriples(
         triples: any[],
         vertexTracker: Set<string>,
-        mergeAttributes: boolean = false): void {
-        setTimeout(() => {}, 0);
+        mergeAttributes: boolean = false): Promise<void> {
         const identityMap = new IdentityMap();
 
         for (const triple of triples) {
+            await setImmediatePromise();
             const id = identityMap.get(triple);
             const types = triple[JsonldKeywords.type] || [];
             let subjectNode: IndexNode;
@@ -1100,7 +1097,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
             // Process each predicate for the object.
             for (const predicate in triple) {
-                this._loadPredicate(
+                await this._loadPredicate(
                     identityMap,
                     subjectNode,
                     predicate,
@@ -1111,14 +1108,14 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         }
     }
 
-    private _loadPredicate(
+    private async _loadPredicate(
         identityMap: IdentityMap,
         subjectNode: IndexNode,
         predicate: string,
         objects: any[],
         vertexTracker: Set<string>,
-        mergeAttributes: boolean): void {
-        setTimeout(() => {}, 0);
+        mergeAttributes: boolean): Promise<void> {
+        await setImmediatePromise();
         for (const obj of objects) {
             if (obj[JsonldKeywords.list]) {
                 // Predicate object is a @list container, Load individual items in the @list array.
@@ -1152,6 +1149,12 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             }
         }
     }
+}
+
+function setImmediatePromise() {
+    return new Promise((resolve) => {
+        setImmediate(() => resolve());
+    });
 }
 
 export default GraphIndex;
