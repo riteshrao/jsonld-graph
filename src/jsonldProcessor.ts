@@ -4,9 +4,11 @@ import * as jsonld from 'jsonld';
 import { JsonldKeywords } from './constants';
 import Errors from './errors';
 
-const remoteLoader = (typeof process !== 'undefined' && process.versions && process.versions.node)
-    ? jsonld.documentLoaders.node()
-    : jsonld.documentLoaders.xhr();
+// tslint:disable-next-line:no-typeof-undefined
+const remoteLoader =
+    typeof process !== undefined && process.versions && process.versions.node
+        ? jsonld.documentLoaders.node()
+        : jsonld.documentLoaders.xhr();
 
 /**
  * @description JsonldProcessor options.
@@ -31,7 +33,7 @@ export class JsonldProcessor {
             return callback(null, {
                 url: null,
                 documentUrl: url,
-                document: this._contexts.get(url)
+                document: this._contexts.get(url),
             });
         }
 
@@ -40,7 +42,7 @@ export class JsonldProcessor {
             return callback(null, {
                 url: null,
                 documentUrl: url,
-                document: this._contexts.get(url.toLowerCase())
+                document: this._contexts.get(url.toLowerCase()),
             });
         }
 
@@ -49,7 +51,7 @@ export class JsonldProcessor {
         }
 
         throw new Errors.ContextNotFoundError(url);
-    }
+    };
 
     /**
      * @description Gets all contexts registered with the processor.
@@ -86,7 +88,9 @@ export class JsonldProcessor {
         }
 
         if (typeof context !== 'object') {
-            throw new ReferenceError(`Invalid context. Expected context to be a JSON object, but got ${typeof context}`);
+            throw new ReferenceError(
+                `Invalid context. Expected context to be a JSON object, but got ${typeof context}`
+            );
         }
 
         if (this._contexts.has(uri)) {
@@ -116,7 +120,7 @@ export class JsonldProcessor {
         return jsonld.compact(document, compactionContext, {
             compactToRelative: true,
             graph: false,
-            documentLoader: this._contextLoader
+            documentLoader: this._contextLoader,
         });
     }
 
@@ -139,7 +143,7 @@ export class JsonldProcessor {
         return jsonld.expand(document, {
             base,
             expandContext: contexts,
-            documentLoader: this._contextLoader
+            documentLoader: this._contextLoader,
         });
     }
 
@@ -162,7 +166,7 @@ export class JsonldProcessor {
         return jsonld.flatten(document, null, {
             base,
             expandContext: contexts,
-            documentLoader: this._contextLoader
+            documentLoader: this._contextLoader,
         });
     }
 
@@ -185,7 +189,7 @@ export class JsonldProcessor {
         return jsonld.frame(document, frame, {
             base,
             expandContext: contexts,
-            documentLoader: this._contextLoader
+            documentLoader: this._contextLoader,
         });
     }
 

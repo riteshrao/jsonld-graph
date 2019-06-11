@@ -1,8 +1,5 @@
 {
-    "@context": [
-        { "@base": "http://alt.universe.net/graph/"},
-        "http://alt.universe.net/context.json"
-    ],
+    "@context": [{ "@base": "http://alt.universe.net/graph/" }, "http://alt.universe.net/context.json"],
     "@graph": [
         {
             "@id": "Person/unknown",
@@ -17,7 +14,10 @@
             "@id": "Person/luke_skywalker",
             "@type": "Person",
             "name": "luke_skywalker",
-            "displayName": "Luke Skywalker",
+            "displayName": {
+                "en": "Luke Skywalker",
+                "fr": "Lucas Skywalker"
+            },
             "birthYear": "19BBY",
             "gender": "MALE",
             "residence": ["Planet/Tatooine"],
@@ -170,7 +170,6 @@
             "birthYear": "21BBY",
             "gender": "MALE",
             "residence": ["Planet/Corellia"]
-            
         },
         {
             "@id": "Person/jek_tono_porkins",
@@ -183,7 +182,10 @@
             "@id": "Person/yoda",
             "@type": "Person",
             "name": "yoda",
-            "displayName": "Yoda",
+            "displayName": {
+                "en": "Yoda",
+                "fr": "Yodå"
+            },
             "birthYear": "896BBY"
         },
         {

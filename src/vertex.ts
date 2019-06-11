@@ -1,7 +1,7 @@
 import Iterable from 'jsiterable';
 
 import { BlankNodePrefix, JsonldKeywords } from './constants';
-import GraphIndex, { IndexNode } from './graphIndex';
+import GraphIndex, { IndexNode, AttributeValue } from './graphIndex';
 import JsonFormatOptions from './formatOptions';
 
 /**
@@ -19,12 +19,16 @@ export interface VertexSelector {
  * @class VertexFilter
  */
 export class VertexFilter {
+    private readonly _selector: string | VertexSelector;
+
     /**
      * @description Creates an instance of VertexFilter.
      * @param {(string | types.VertexSelector)} selector The filter definition to use.
      * @memberof VertexFilter
      */
-    constructor(private readonly selector: string | VertexSelector) { }
+    constructor(selector?: string | VertexSelector) {
+        this._selector = selector;
+    }
 
     /**
      * @description Checks if the filter matches the specified vertex.
@@ -33,15 +37,15 @@ export class VertexFilter {
      * @memberof VertexFilter
      */
     match(vertex: Vertex): boolean {
-        if (!this.selector) {
+        if (!this._selector) {
             return true;
         }
 
-        if (typeof this.selector === 'string') {
-            return vertex.id === this.selector;
+        if (typeof this._selector === 'string') {
+            return vertex.id === this._selector;
         }
 
-        return this.selector(vertex);
+        return this._selector(vertex);
     }
 }
 
@@ -51,7 +55,6 @@ export class VertexFilter {
  * @class Vertex
  */
 export class Vertex {
-
     private _node: IndexNode;
     private readonly _index: GraphIndex;
 
@@ -96,7 +99,7 @@ export class Vertex {
      * @type {Iterable<[string, any]>}
      * @memberof Vertex
      */
-    get attributes(): Iterable<[string, any]> {
+    get attributes(): Iterable<[string, AttributeValue[]]> {
         return this._node.attributes;
     }
 
@@ -144,11 +147,12 @@ export class Vertex {
      * @description Adds an attribute value.
      * @param {string} name The name of the attribute.
      * @param {*} value The value to add.
+     * @param {string} language The language the add an attribute value.
      * @returns {this}
      * @memberof Vertex
      */
-    addAttributeValue(name: string, value: any): this {
-        this._node.addAttributeValue(name, value);
+    addAttributeValue(name: string, value: any, language?: string): this {
+        this._node.addAttributeValue(name, value, language);
         return this;
     }
 
@@ -167,11 +171,34 @@ export class Vertex {
      * @description Gets the value of an attribute.
      * @template T
      * @param {string} name The attribute label to get.
+     * @param {string} [language] Optional localized language of the value.
      * @returns {T}
      * @memberof Vertex
      */
-    getAttributeValue<T = string>(name: string): T {
-        return this._node.getAttribute(name);
+    getAttributeValue<T = string>(name: string, language?: string): T {
+        const values = this._node.getAttributeValues<T>(name);
+        if (!values || values.length === 0) {
+            return undefined;
+        }
+
+        if (language) {
+            const localizedValue = values.find(x => x.language === language);
+            return localizedValue ? localizedValue.value : undefined;
+        } else {
+            return values[0].value;
+        }
+    }
+
+    /**
+     * @description Gets all values set for an attribute.
+     * @template T
+     * @param {string} name
+     * @param {string} [language]
+     * @returns {T[]}
+     * @memberof Vertex
+     */
+    getAttributeValues<T = string>(name: string): AttributeValue<T>[] {
+        return this._node.getAttributeValues<T>(name);
     }
 
     /**
@@ -180,14 +207,13 @@ export class Vertex {
      * @returns {Iterable<{ label: string, fromVertex: Vertex }>}
      * @memberof Vertex
      */
-    getIncoming(edgeLabel?: string): Iterable<{ label: string, fromVertex: Vertex }> {
-        return new Iterable(this._index.getNodeIncoming(this._node.id, edgeLabel))
-            .map(({ edge, node }) => {
-                return {
-                    label: edge.label,
-                    fromVertex: new Vertex(node, this._index)
-                };
-            });
+    getIncoming(edgeLabel?: string): Iterable<{ label: string; fromVertex: Vertex }> {
+        return new Iterable(this._index.getNodeIncoming(this._node.id, edgeLabel)).map(({ edge, node }) => {
+            return {
+                label: edge.label,
+                fromVertex: new Vertex(node, this._index),
+            };
+        });
     }
 
     /**
@@ -196,14 +222,13 @@ export class Vertex {
      * @returns {Iterable<{ label: string, toVertex: Vertex }>}
      * @memberof Vertex
      */
-    getOutgoing(edgeLabel?: string): Iterable<{ label: string, toVertex: Vertex }> {
-        return new Iterable(this._index.getNodeOutgoing(this._node.id, edgeLabel))
-            .map(({ edge, node }) => {
-                return {
-                    label: edge.label,
-                    toVertex: new Vertex(node, this._index)
-                };
-            });
+    getOutgoing(edgeLabel?: string): Iterable<{ label: string; toVertex: Vertex }> {
+        return new Iterable(this._index.getNodeOutgoing(this._node.id, edgeLabel)).map(({ edge, node }) => {
+            return {
+                label: edge.label,
+                toVertex: new Vertex(node, this._index),
+            };
+        });
     }
 
     /**
@@ -223,17 +248,8 @@ export class Vertex {
      * @returns {boolean} True if the value exists, else false.
      * @memberof Vertex
      */
-    hasAttributeValue(name: string, value: any): boolean {
-        if (!this.hasAttribute(name)) {
-            return false;
-        }
-
-        const attributeValue = this.getAttributeValue<any>(name);
-        if (attributeValue instanceof Array) {
-            return attributeValue.some(x => x === value);
-        } else {
-            return attributeValue === value;
-        }
+    hasAttributeValue(name: string, value: any, language?: string): boolean {
+        return this._node.hasAttributeValue(name, value, language);
     }
 
     /**
@@ -315,8 +331,8 @@ export class Vertex {
      * @returns {this}
      * @memberof Vertex
      */
-    replaceAttributeValue(name: string, value: any): this {
-        this._node.replaceAttribute(name, value);
+    replaceAttributeValue(name: string, value: any, language?: string): this {
+        this._node.setAttributeValue(name, value, language);
         return this;
     }
 
@@ -394,7 +410,7 @@ export class Vertex {
         }
 
         const existingTypes = new Set(this.getOutgoing(JsonldKeywords.type).map(({ toVertex }) => toVertex.id));
-        const typesToAdd = typeIds.filter((id) => !existingTypes.has(id));
+        const typesToAdd = typeIds.filter(id => !existingTypes.has(id));
         for (const typeId of typesToAdd) {
             if (!this._index.hasNode(typeId)) {
                 this._index.createNode(typeId);

@@ -11,11 +11,11 @@ export const JsonldKeywords = {
     container: '@container',
     id: '@id',
     graph: '@graph',
+    language: '@language',
     list: '@list',
     set: '@set',
     type: '@type',
     value: '@value',
     version: '@version',
-    vocabulary: '@vocabulary'
+    vocabulary: '@vocabulary',
 };
-

@@ -16,12 +16,16 @@ export interface EdgeSelector {
  * @class EdgeFilter
  */
 export class EdgeFilter {
+    private readonly _filter: string | EdgeSelector;
+
     /**
      * @description Creates an instance of EdgeFilter.
      * @param {(string | types.EdgeSelector)} filter The filter definition to use.
      * @memberof EdgeFilter
      */
-    constructor(private readonly filter: string | EdgeSelector) { }
+    constructor(filter?: string | EdgeSelector) {
+        this._filter = filter;
+    }
 
     /**
      * @description Checks if the configured filter matches the specified edge.
@@ -30,15 +34,15 @@ export class EdgeFilter {
      * @memberof EdgeFilter
      */
     match(edge: Edge) {
-        if (!this.filter) {
+        if (!this._filter) {
             return true;
         }
 
-        if (typeof this.filter === 'string') {
-            return edge.label === this.filter;
+        if (typeof this._filter === 'string') {
+            return edge.label === this._filter;
         }
 
-        return this.filter(edge);
+        return this._filter(edge);
     }
 }
 
@@ -48,7 +52,6 @@ export class EdgeFilter {
  * @class Edge
  */
 export class Edge {
-
     private readonly _graphEdge: IndexEdge;
     private readonly _index: GraphIndex;
 

@@ -1,6 +1,6 @@
+import clonedeep from 'lodash.clonedeep';
 import { EventEmitter } from 'events';
 import Iterable from 'jsiterable';
-import clonedeep from 'lodash.clonedeep';
 
 import { JsonldKeywords } from './constants';
 import Errors from './errors';
@@ -15,30 +15,51 @@ interface IndexEvents {
      * @description Event raised when an edge gets created.
      * @memberof IndexEvents
      */
-    edgeCreated: (edge: IndexEdge) => void;
+    edgeCreated(edge: IndexEdge): void;
     /**
      * @description Event raised when an edge is deleted.
      * @memberof IndexEvents
      */
-    edgeDeleted: (edge: IndexEdge) => void;
+    edgeDeleted(edge: IndexEdge): void;
     /**
      * @description Event raised when node is created.
      * @memberof IndexEvents
      */
-    nodeCreated: (node: IndexNode) => void;
+    nodeCreated(node: IndexNode): void;
     /** Event raised when the id of a node in the index changes.
      * @description
      * @memberof IndexEvents
      */
-    nodeIdChanged: (node: IndexNode, previousId: string) => void;
+    nodeIdChanged(node: IndexNode, previousId: string): void;
     /**
      * @description Event raised when a node gets deleted.
      * @memberof IndexEvents
      */
-    nodeDeleted: (node: IndexNode) => void;
+    nodeDeleted(node: IndexNode): void;
 }
 
 type IndexEventEmitter = StrictEventEmitter<EventEmitter, IndexEvents>;
+
+/**
+ * @description Attribute value type.
+ * @export
+ * @interface AttributeValue
+ * @template T
+ */
+export interface AttributeValue<T = any> {
+    /**
+     * @description Optional language of string values.
+     * @type {string}
+     * @memberof AttributeValue
+     */
+    language?: string;
+    /**
+     * @description The attribute value.
+     * @type {T}
+     * @memberof AttributeValue
+     */
+    value: T;
+}
 
 /**
  * @description Node in an index.
@@ -46,15 +67,16 @@ type IndexEventEmitter = StrictEventEmitter<EventEmitter, IndexEvents>;
  * @class IndexNode
  */
 export class IndexNode {
-    private _id: string;
+    private _nodeId: string;
+    private _nodeIndex: string;
     private readonly _index: GraphIndex;
-    private readonly _attributes = new Map<string, any>();
+    private readonly _attributes = new Map<string, { '@value': any; '@language'?: string }[]>();
 
     /**
      * @description Metadata object for tracking.
      * @memberof IndexNode
      */
-    public readonly metadata = {};
+    readonly metadata = {};
 
     /**
      * @description Creates an instance of IndexNode.
@@ -72,7 +94,7 @@ export class IndexNode {
             throw new ReferenceError(`Invalid index. index is ${index}`);
         }
 
-        this._id = id;
+        this._nodeId = id;
         this._index = index;
     }
 
@@ -82,7 +104,7 @@ export class IndexNode {
      * @memberof IndexNode
      */
     get id() {
-        return this._index.iri.compact(this._id);
+        return this._index.iri.compact(this._nodeId);
     }
 
     /**
@@ -95,7 +117,7 @@ export class IndexNode {
         }
 
         const expandedId = this._index.iri.expand(id, /* validate */ true);
-        if (this._index.iri.equal(this._id, expandedId)) {
+        if (this._index.iri.equal(this._nodeId, expandedId)) {
             return;
         }
 
@@ -104,25 +126,41 @@ export class IndexNode {
         }
 
         // Change the id of the node and re-add it to the index with the new id.
-        const previousId = this._id;
-        const outgoingEdges = [...this._index.getNodeOutgoing(this._id)];
-        const incomingEdges = [...this._index.getNodeIncoming(this._id)];
+        const previousId = this._nodeId;
+        const outgoingEdges = [...this._index.getNodeOutgoing(this._nodeId)];
+        const incomingEdges = [...this._index.getNodeIncoming(this._nodeId)];
         this._index.removeNode(this);
 
-        this._id = expandedId;
+        this._nodeId = expandedId;
         this._index.addNode(this);
 
         // Recreate the outgoing edges from the new node.
         for (const { edge } of outgoingEdges) {
-            this._index.createEdge(edge.label, this._id, edge.toNodeId);
+            this._index.createEdge(edge.label, this._nodeId, edge.toNodeId);
         }
 
         // Recreate incoming edges to the new node.
         for (const { edge } of incomingEdges) {
-            this._index.createEdge(edge.label, edge.fromNodeId, this._id);
+            this._index.createEdge(edge.label, edge.fromNodeId, this._nodeId);
         }
 
         this._index.emit('nodeIdChanged', this, previousId);
+    }
+
+    /**
+     * @description Gets the @index attribute of this node.
+     * @memberof IndexNode
+     */
+    get index() {
+        return this._nodeIndex;
+    }
+
+    /**
+     * @description Sets the @index attribute of this node.
+     * @memberof IndexNode
+     */
+    set index(value: string) {
+        this._nodeIndex = value;
     }
 
     /**
@@ -131,14 +169,18 @@ export class IndexNode {
      * @type {Iterable<[string, any]>}
      * @memberof IndexNode
      */
-    get attributes(): Iterable<[string, any]> {
-        return new Iterable(this._attributes.entries())
-            .map(([key, val]) => {
-                return <[string, any]> [
-                    this._index.iri.compact(key),
-                    val
-                ];
-            });
+    get attributes(): Iterable<[string, AttributeValue[]]> {
+        return new Iterable(this._attributes.entries()).map(([key, val]) => {
+            return [
+                this._index.iri.compact(key),
+                val.map(x => {
+                    return {
+                        value: x['@value'],
+                        language: x['@language'],
+                    };
+                }),
+            ];
+        });
     }
 
     /**
@@ -148,7 +190,7 @@ export class IndexNode {
      * @returns {this}
      * @memberof IndexNode
      */
-    addAttributeValue(name: string, value: any): this {
+    addAttributeValue(name: string, value: any, language?: string): this {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is ${name}`);
         }
@@ -157,22 +199,48 @@ export class IndexNode {
             throw new ReferenceError(`Invalid value. value is ${value}`);
         }
 
-        const normalizedName = this._index.iri.expand(name);
+        if (language && typeof value !== 'string') {
+            throw new TypeError(
+                `Invalid argument type. Language attribute values must be strings, but instead found ${typeof value}`
+            );
+        }
 
-        if (this._attributes.has(normalizedName) && this._attributes.get(normalizedName) instanceof Array) {
-            this._attributes.get(normalizedName).push(value);
-        } else if (this._attributes.has(normalizedName)) {
-            const values = [this._attributes.get(normalizedName), value];
-            this._attributes.set(normalizedName, values);
+        const normalizedName = this._index.iri.expand(name);
+        if (this._attributes.has(normalizedName)) {
+            const values = this._attributes.get(normalizedName);
+            if (language) {
+                // If an existing value for the specified language is already set, then replace the value, else add a new one.
+                const existing = values.find(x => x['@language'] === language);
+                if (existing) {
+                    existing['@value'] = value;
+                } else {
+                    values.push({ '@language': language, '@value': value });
+                }
+            } else {
+                values.push({ '@value': value });
+            }
         } else {
-            this._attributes.set(normalizedName, value);
+            if (language) {
+                this._attributes.set(normalizedName, [
+                    {
+                        '@language': language,
+                        '@value': value,
+                    },
+                ]);
+            } else {
+                this._attributes.set(normalizedName, [
+                    {
+                        '@value': value,
+                    },
+                ]);
+            }
         }
 
         return this;
     }
 
     /**
-     * @description Deletes a specific attribute.
+     * @description Deletes a attribute and its value.
      * @param {string} name The name of the attribute to delete.
      * @returns {this}
      * @memberof IndexNode
@@ -193,12 +261,19 @@ export class IndexNode {
      * @returns {T}
      * @memberof IndexNode
      */
-    getAttribute<T = string>(name: string): T {
+    getAttributeValues<T = any>(name: string): AttributeValue<T>[] {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is ${name}`);
         }
 
-        return this._attributes.get(this._index.iri.expand(name));
+        const normalizedName = this._index.iri.expand(name);
+        const values = this._attributes.get(normalizedName);
+        return values.map(x => {
+            return {
+                value: x['@value'],
+                language: x['@language'],
+            };
+        });
     }
 
     /**
@@ -216,13 +291,48 @@ export class IndexNode {
     }
 
     /**
+     * @description Checks if an attribute has been defined and has the specified value.
+     * @param {string} name The name of the attribute to check.
+     * @param {*} value The value of the attribute to check.
+     * @param {string} [language] Optional language.
+     * @returns {boolean} True if the attribute has been defined and has the specified value.
+     * @memberof IndexNode
+     */
+    hasAttributeValue(name: string, value: any, language?: string): boolean {
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is '${name}'`);
+        }
+
+        if (!value) {
+            throw new ReferenceError(`Invalid value. value is '${value}'`);
+        }
+
+        if (language && typeof value !== 'string') {
+            throw new TypeError(
+                `Invalid argument type. Language attribute values must be strings, but instead found ${typeof value}`
+            );
+        }
+
+        const normalizedName = this._index.iri.expand(name);
+        const values = this._attributes.get(normalizedName);
+        if (values) {
+            return language
+                ? values.some(x => x['@language'] === language && x['@value'] === value)
+                : values.some(x => x['@value'] === value);
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * @description Removes an attribute value.
      * @param {string} name The name of the attribute whose value should be removed.
      * @param {string} value The value to remove.
+     * @param {string} [language] Optional language to remove the value from.
      * @returns {this}
      * @memberof IndexNode
      */
-    removeAttributeValue(name: string, value: string): this {
+    removeAttributeValue(name: string, value: any): this {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
         }
@@ -230,32 +340,39 @@ export class IndexNode {
             throw new ReferenceError(`Invalid value. value is '${value}'`);
         }
 
-        const currentValue = this._attributes.get(name);
-        if (!currentValue) {
+        const normalizedName = this._index.iri.expand(name);
+        if (!this._attributes.has(normalizedName)) {
+            return;
+        }
+
+        const currentValues = this._attributes.get(normalizedName);
+        if (!currentValues) {
             return this;
         }
 
-        if (currentValue instanceof Array) {
-            const valueIndex = currentValue.indexOf(value);
-            if (valueIndex > -1) {
-                currentValue.splice(valueIndex, 1);
-                this.replaceAttribute(name, currentValue.length > 1 ? currentValue : currentValue[0]);
-            }
-        } else if (currentValue === value) {
-            this.deleteAttribute(name);
+        let valueIndex = currentValues.findIndex(x => x['@value'] === value);
+        while (valueIndex >= 0) {
+            currentValues.splice(valueIndex, 1);
+            valueIndex = currentValues.findIndex(x => x['@value'] === value);
+        }
+
+        if (currentValues.length === 0) {
+            // Removal of all values of an attribute equals deletion of the attribute.
+            this._attributes.delete(normalizedName);
         }
 
         return this;
     }
 
     /**
-     * @description Replace an attribute value
-     * @param {string} name The name of the attribute to replace.
-     * @param {*} value The value to replace.
+     * @description Sets an attribute value, replacing any existing value.
+     * @param {string} name The name of the attribute to set.
+     * @param {*} value The value to set.
+     * @param {string} [language] Optional language to set the value for.
      * @returns {this}
      * @memberof IndexNode
      */
-    replaceAttribute(name: string, value: any): this {
+    setAttributeValue(name: string, value: any, language?: string): this {
         if (!name) {
             throw new ReferenceError(`Invalid label. label is ${name}`);
         }
@@ -264,7 +381,26 @@ export class IndexNode {
             throw new ReferenceError(`Invalid value. value is ${value}`);
         }
 
-        this._attributes.set(this._index.iri.expand(name), value);
+        if (language && typeof value !== 'string') {
+            throw new TypeError(
+                `Invalid argument type. Language attribute values must be strings, but instead found ${typeof value}`
+            );
+        }
+
+        const normalizedName = this._index.iri.expand(name);
+        if (language) {
+            // If an existing value for the specified language is already set, then replace the value, else add a new one.
+            const values = this._attributes.get(normalizedName);
+            const existing = values.find(x => x['@language'] === language);
+            if (existing) {
+                existing['@value'] = value;
+            } else {
+                values.push({ '@language': language, '@value': value });
+            }
+        } else {
+            this._attributes.set(normalizedName, [{ '@value': value }]);
+        }
+
         return this;
     }
 
@@ -276,7 +412,7 @@ export class IndexNode {
      */
     async toJson(options: JsonFormatOptions = {}): Promise<any> {
         options.frame = Object.assign(options.frame || {}, {
-            [JsonldKeywords.id]: this._id
+            [JsonldKeywords.id]: this._nodeId,
         });
 
         const json = await this._index.toJson(options);
@@ -290,30 +426,16 @@ export class IndexNode {
      */
     toTriple(): any {
         const triple: any = {
-            [JsonldKeywords.id]: this._id
+            [JsonldKeywords.id]: this._nodeId,
         };
 
-        for (const [id, value] of this._attributes) {
-            if (!triple[id]) {
-                triple[id] = [];
-            }
-
-            if (value instanceof Array) {
-                for (const item of value) {
-                    triple[id].push({
-                        [JsonldKeywords.value]: item
-                    });
-                }
-            } else {
-                triple[id].push({
-                    [JsonldKeywords.value]: value
-                });
-            }
+        for (const [attributeName, values] of this._attributes) {
+            triple[this._index.iri.expand(attributeName)] = values;
         }
 
-        for (const { edge, node } of this._index.getNodeOutgoing(this._id)) {
+        for (const { edge, node } of this._index.getNodeOutgoing(this._nodeId)) {
             const edgeLabelId = this._index.iri.expand(edge.label);
-            const edgeNodeId = node._id;
+            const edgeNodeId = node._nodeId;
 
             if (!triple[edgeLabelId]) {
                 triple[edgeLabelId] = [];
@@ -323,7 +445,7 @@ export class IndexNode {
                 triple[edgeLabelId].push(edgeNodeId);
             } else {
                 triple[edgeLabelId].push({
-                    [JsonldKeywords.id]: edgeNodeId
+                    [JsonldKeywords.id]: edgeNodeId,
                 });
             }
         }
@@ -351,12 +473,7 @@ export class IndexEdge {
      * @param {GraphIndex} index The index containing this edge.
      * @memberof IndexEdge
      */
-    constructor(
-        label: string,
-        fromNodeId: string,
-        toNodeId: string,
-        index: GraphIndex) {
-
+    constructor(label: string, fromNodeId: string, toNodeId: string, index: GraphIndex) {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is ${label}`);
         }
@@ -448,21 +565,21 @@ export class IndexEdge {
  * @export
  * @class GraphIndex
  */
-export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
-    public readonly iri = new IRI();
+export class GraphIndex extends (EventEmitter as { new (): IndexEventEmitter }) {
+    readonly iri = new IRI();
 
     private readonly _edges = new Map<string, IndexEdge>();
     private readonly _index = new Map<string, Set<string>>();
     private readonly _nodes = new Map<string, IndexNode>();
     private readonly _processor: JsonldProcessor;
 
-    private static Index_Edges = (label: string) => `[e]::${label}`;
-    private static Index_EdgeIncoming = (label: string) => `[e]::${label}_[in]`;
-    private static Index_EdgeOutgoing = (label: string) => `[e]::${label}_[out]`;
-    private static Index_NodeIncomingAll = (id: string) => `[v]::${id}_[in]`;
-    private static Index_NodeIncomingEdges = (id: string, label: string) => `[v]::${id}_[in]_[e]::${label}`;
-    private static Index_NodeOutgoingAll = (id: string) => `[v]::${id}_[out]`;
-    private static Index_NodeOutgoingEdges = (id: string, label: string) => `[v]::${id}_[out]_[e]::${label}`;
+    private static IX_EDGES_KEY = (label: string) => `[e]::${label}`;
+    private static IX_EDGE_INCOMING_KEY = (label: string) => `[e]::${label}_[in]`;
+    private static IX_EDGE_OUTGOING_KEY = (label: string) => `[e]::${label}_[out]`;
+    private static IX_NODE_INCOMING_ALL_KEY = (id: string) => `[v]::${id}_[in]`;
+    private static IX_NODE_INCOMING_EDGES = (id: string, label: string) => `[v]::${id}_[in]_[e]::${label}`;
+    private static IX_NODE_OUTGOING_ALL = (id: string) => `[v]::${id}_[out]`;
+    private static IX_NODE_OUTGOING_EDGES = (id: string, label: string) => `[v]::${id}_[out]_[e]::${label}`;
 
     constructor() {
         super();
@@ -621,10 +738,9 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new ReferenceError(`Invalid toNodeId. toNodeId is ${toNodeId}`);
         }
 
-        return this._edges.get(IndexEdge.toId(
-            this.iri.expand(label),
-            this.iri.expand(fromNodeId),
-            this.iri.expand(toNodeId)));
+        return this._edges.get(
+            IndexEdge.toId(this.iri.expand(label), this.iri.expand(fromNodeId), this.iri.expand(toNodeId))
+        );
     }
 
     /**
@@ -639,7 +755,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                 yield edge;
             }
         } else {
-            const indexKey = GraphIndex.Index_Edges(this.iri.expand(label));
+            const indexKey = GraphIndex.IX_EDGES_KEY(this.iri.expand(label));
             if (!this._index.has(indexKey)) {
                 return;
             }
@@ -661,7 +777,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new ReferenceError(`Invalid label. label is ${label}`);
         }
 
-        const indexKey = GraphIndex.Index_EdgeIncoming(this.iri.expand(label));
+        const indexKey = GraphIndex.IX_EDGE_INCOMING_KEY(this.iri.expand(label));
         if (!this._index.has(indexKey)) {
             return;
         }
@@ -687,7 +803,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new ReferenceError(`Invalid label. label is ${label}`);
         }
 
-        const indexKey = GraphIndex.Index_EdgeOutgoing(this.iri.expand(label));
+        const indexKey = GraphIndex.IX_EDGE_OUTGOING_KEY(this.iri.expand(label));
         if (!this._index.has(indexKey)) {
             return;
         }
@@ -734,17 +850,15 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @returns {IterableIterator<{ edge: IndexEdge, node: IndexNode }>}
      * @memberof GraphIndex
      */
-    *getNodeIncoming(id: string, label?: string): IterableIterator<{ edge: IndexEdge, node: IndexNode }> {
+    *getNodeIncoming(id: string, label?: string): IterableIterator<{ edge: IndexEdge; node: IndexNode }> {
         if (!id) {
             throw new ReferenceError(`id is invalid. id is ${id}`);
         }
         let indexKey: string;
         if (!label) {
-            indexKey = GraphIndex.Index_NodeIncomingAll(this.iri.expand(id));
+            indexKey = GraphIndex.IX_NODE_INCOMING_ALL_KEY(this.iri.expand(id));
         } else {
-            indexKey = GraphIndex.Index_NodeIncomingEdges(
-                this.iri.expand(id),
-                this.iri.expand(label));
+            indexKey = GraphIndex.IX_NODE_INCOMING_EDGES(this.iri.expand(id), this.iri.expand(label));
         }
 
         if (!this._index.has(indexKey)) {
@@ -765,14 +879,12 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @returns {IterableIterator<{ edge: IndexEdge, node: IndexNode }>}
      * @memberof GraphIndex
      */
-    *getNodeOutgoing(id: string, label?: string): IterableIterator<{ edge: IndexEdge, node: IndexNode }> {
+    *getNodeOutgoing(id: string, label?: string): IterableIterator<{ edge: IndexEdge; node: IndexNode }> {
         let indexKey: string;
         if (!label) {
-            indexKey = GraphIndex.Index_NodeOutgoingAll(this.iri.expand(id));
+            indexKey = GraphIndex.IX_NODE_OUTGOING_ALL(this.iri.expand(id));
         } else {
-            indexKey = GraphIndex.Index_NodeOutgoingEdges(
-                this.iri.expand(id),
-                this.iri.expand(label));
+            indexKey = GraphIndex.IX_NODE_OUTGOING_EDGES(this.iri.expand(id), this.iri.expand(label));
         }
 
         if (!this._index.has(indexKey)) {
@@ -807,10 +919,9 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             throw new ReferenceError(`Invalid toNodeId. toNodeId is ${toNodeId}`);
         }
 
-        return this._edges.has(IndexEdge.toId(
-            this.iri.expand(label),
-            this.iri.expand(fromNodeId),
-            this.iri.expand(toNodeId)));
+        return this._edges.has(
+            IndexEdge.toId(this.iri.expand(label), this.iri.expand(fromNodeId), this.iri.expand(toNodeId))
+        );
     }
 
     /**
@@ -835,13 +946,17 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @returns {Promise<Set<string>>}
      * @memberof GraphIndex
      */
-    async load(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<Set<string>> {
+    async load(
+        inputs: any | any[],
+        contexts?: string | string[] | object | object[],
+        base?: string
+    ): Promise<Set<string>> {
         if (!inputs) {
             throw new ReferenceError(`Invalid inputs. inputs is ${inputs}`);
         }
 
         const vertexTracker = new Set<string>();
-        const documents: any[] = (inputs instanceof Array) ? inputs : [inputs];
+        const documents: any[] = inputs instanceof Array ? inputs : [inputs];
         for (const document of documents) {
             try {
                 const triples = await this._processor.flatten(document, contexts, base);
@@ -862,13 +977,17 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
      * @returns {Promise<Set<string>>}
      * @memberof GraphIndex
      */
-    async merge(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<Set<string>> {
+    async merge(
+        inputs: any | any[],
+        contexts?: string | string[] | object | object[],
+        base?: string
+    ): Promise<Set<string>> {
         if (!inputs) {
             throw new ReferenceError(`Invalid inputs. inputs is ${inputs}`);
         }
 
         const vertexTracker = new Set<string>();
-        const documents: any[] = (inputs instanceof Array) ? inputs : [inputs];
+        const documents: any[] = inputs instanceof Array ? inputs : [inputs];
         for (const document of documents) {
             try {
                 const triples = await this._processor.flatten(document, contexts, base);
@@ -912,7 +1031,8 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         this._deleteEdgeIndex(
             this.iri.expand(indexEdge.label),
             this.iri.expand(indexEdge.fromNodeId),
-            this.iri.expand(indexEdge.toNodeId));
+            this.iri.expand(indexEdge.toNodeId)
+        );
 
         if (this._edges.delete(indexEdge.id)) {
             this.emit('edgeDeleted', indexEdge);
@@ -938,8 +1058,8 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             }
         }
 
-        const incomingEdgesKey = GraphIndex.Index_NodeIncomingAll(this.iri.expand(indexNode.id));
-        const outgoingEdgesKey = GraphIndex.Index_NodeOutgoingAll(this.iri.expand(indexNode.id));
+        const incomingEdgesKey = GraphIndex.IX_NODE_INCOMING_ALL_KEY(this.iri.expand(indexNode.id));
+        const outgoingEdgesKey = GraphIndex.IX_NODE_OUTGOING_ALL(this.iri.expand(indexNode.id));
 
         if (this._index.has(incomingEdgesKey)) {
             for (const edgeId of this._index.get(incomingEdgesKey)) {
@@ -1001,13 +1121,13 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
 
     private _createEdgeIndexKeys(label: string, fromNodeId: string, toNodeId: string) {
         return [
-            GraphIndex.Index_Edges(label),
-            GraphIndex.Index_EdgeIncoming(label),
-            GraphIndex.Index_EdgeOutgoing(label),
-            GraphIndex.Index_NodeIncomingAll(toNodeId),
-            GraphIndex.Index_NodeIncomingEdges(toNodeId, label),
-            GraphIndex.Index_NodeOutgoingAll(fromNodeId),
-            GraphIndex.Index_NodeOutgoingEdges(fromNodeId, label)
+            GraphIndex.IX_EDGES_KEY(label),
+            GraphIndex.IX_EDGE_INCOMING_KEY(label),
+            GraphIndex.IX_EDGE_OUTGOING_KEY(label),
+            GraphIndex.IX_NODE_INCOMING_ALL_KEY(toNodeId),
+            GraphIndex.IX_NODE_INCOMING_EDGES(toNodeId, label),
+            GraphIndex.IX_NODE_OUTGOING_ALL(fromNodeId),
+            GraphIndex.IX_NODE_OUTGOING_EDGES(fromNodeId, label),
         ];
     }
 
@@ -1068,10 +1188,7 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         }
     }
 
-    private _loadTriples(
-        triples: any[],
-        vertexTracker: Set<string>,
-        mergeAttributes: boolean = false): void {
+    private _loadTriples(triples: any[], vertexTracker: Set<string>, mergeAttributes: boolean = false): void {
         const identityMap = new IdentityMap();
 
         for (const triple of triples) {
@@ -1095,14 +1212,15 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             }
 
             // Process each predicate for the object.
-            for (const predicate in triple) {
+            for (const predicate of Object.keys(triple)) {
                 this._loadPredicate(
                     identityMap,
                     subjectNode,
                     predicate,
                     triple[predicate],
                     vertexTracker,
-                    mergeAttributes);
+                    mergeAttributes
+                );
             }
         }
     }
@@ -1113,7 +1231,8 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
         predicate: string,
         objects: any[],
         vertexTracker: Set<string>,
-        mergeAttributes: boolean): void {
+        mergeAttributes: boolean
+    ): void {
         for (const obj of objects) {
             if (obj[JsonldKeywords.list]) {
                 // Predicate object is a @list container, Load individual items in the @list array.
@@ -1123,7 +1242,8 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
                     predicate,
                     obj[JsonldKeywords.list],
                     vertexTracker,
-                    mergeAttributes);
+                    mergeAttributes
+                );
             }
 
             if (obj[JsonldKeywords.id]) {
@@ -1140,9 +1260,9 @@ export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
             if (obj[JsonldKeywords.value] !== null && obj[JsonldKeywords.value] !== undefined) {
                 // Predicate object is a value. Inline the value as a attribute of the subject vertex.
                 if (mergeAttributes) {
-                    subjectNode.replaceAttribute(predicate, obj[JsonldKeywords.value]);
+                    subjectNode.setAttributeValue(predicate, obj[JsonldKeywords.value], obj[JsonldKeywords.language]);
                 } else {
-                    subjectNode.addAttributeValue(predicate, obj[JsonldKeywords.value]);
+                    subjectNode.addAttributeValue(predicate, obj[JsonldKeywords.value], obj[JsonldKeywords.language]);
                 }
             }
         }

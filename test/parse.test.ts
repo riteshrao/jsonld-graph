@@ -1,3 +1,4 @@
+// tslint:disable-next-line:no-import-side-effect
 import 'mocha';
 import * as fs from 'fs';
 
@@ -10,9 +11,7 @@ describe('JsonldGraph parse', () => {
         const persons = JSON.parse(fs.readFileSync('./sample/persons.json', { encoding: 'utf8' }));
         const planets = JSON.parse(fs.readFileSync('./sample/planets.json', { encoding: 'utf8' }));
 
-        const graph = new JsonldGraph([
-            { uri: 'http://alt.universe.net/context.json', context }
-        ]);
+        const graph = new JsonldGraph([{ uri: 'http://alt.universe.net/context.json', context }]);
 
         graph.addPrefix('persons', 'http://alt.universe.net/graph/Person');
         graph.addPrefix('planets', 'http://alt.universe.net/graph/Planet');
@@ -30,7 +29,6 @@ describe('JsonldGraph parse', () => {
         expect(planetVertices.has('planets:Aleen')).to.eq(true);
         expect(planetVertices.has('planets:Alderaan')).to.eq(false); // Loaded as part of persons
 
-
         expect(graph.vertexCount).to.be.greaterThan(0);
         expect(graph.edgeCount).to.be.greaterThan(0);
 
@@ -39,25 +37,28 @@ describe('JsonldGraph parse', () => {
         expect(yoda).to.be.ok;
         expect(yoda.getAttributeValue('entity:name')).to.equal('yoda');
         expect(yoda.getAttributeValue('entity:displayName')).to.equal('Yoda');
+        expect(yoda.getAttributeValue('entity:displayName', 'fr')).to.equal('Yodå');
         expect(yoda.getAttributeValue('person:birthYear')).to.equal('896BBY');
 
         // Get a specific vertex and its outgoing relationship
-        const luke_residences = graph.getVertex('persons:luke_skywalker')
+        const lukeResidences = graph
+            .getVertex('persons:luke_skywalker')
             .getOutgoing('person:residence')
             .map(x => x.toVertex.id)
             .items();
 
-        expect(luke_residences.length).to.equal(1);
-        expect(luke_residences[0]).to.equal('planets:Tatooine');
+        expect(lukeResidences.length).to.equal(1);
+        expect(lukeResidences[0]).to.equal('planets:Tatooine');
 
         // Inverse of above, get the incoming relationships for a specific vertex
-        const tatooine_residents = graph.getVertex(luke_residences[0])
+        const tatooineResidents = graph
+            .getVertex(lukeResidences[0])
             .getIncoming('person:residence')
             .map(x => x.fromVertex.id)
             .items();
 
-        expect(tatooine_residents.length).to.be.greaterThan(0);
-        expect(tatooine_residents.some(x => x === 'persons:luke_skywalker')).to.be.true;
+        expect(tatooineResidents.length).to.be.greaterThan(0);
+        expect(tatooineResidents.some(x => x === 'persons:luke_skywalker')).to.be.true;
 
         // Empty string and number test
         const unknownPerson = graph.getVertex('persons:unknown');
