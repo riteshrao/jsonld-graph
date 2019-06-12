@@ -176,9 +176,9 @@ export class IndexNode {
                 val.map(x => {
                     return {
                         value: x['@value'],
-                        language: x['@language'],
+                        language: x['@language']
                     };
-                }),
+                })
             ];
         });
     }
@@ -224,14 +224,14 @@ export class IndexNode {
                 this._attributes.set(normalizedName, [
                     {
                         '@language': language,
-                        '@value': value,
-                    },
+                        '@value': value
+                    }
                 ]);
             } else {
                 this._attributes.set(normalizedName, [
                     {
-                        '@value': value,
-                    },
+                        '@value': value
+                    }
                 ]);
             }
         }
@@ -268,10 +268,14 @@ export class IndexNode {
 
         const normalizedName = this._index.iri.expand(name);
         const values = this._attributes.get(normalizedName);
+        if (!values) {
+            return [];
+        }
+
         return values.map(x => {
             return {
                 value: x['@value'],
-                language: x['@language'],
+                language: x['@language']
             };
         });
     }
@@ -412,7 +416,7 @@ export class IndexNode {
      */
     async toJson(options: JsonFormatOptions = {}): Promise<any> {
         options.frame = Object.assign(options.frame || {}, {
-            [JsonldKeywords.id]: this._nodeId,
+            [JsonldKeywords.id]: this._nodeId
         });
 
         const json = await this._index.toJson(options);
@@ -426,7 +430,7 @@ export class IndexNode {
      */
     toTriple(): any {
         const triple: any = {
-            [JsonldKeywords.id]: this._nodeId,
+            [JsonldKeywords.id]: this._nodeId
         };
 
         for (const [attributeName, values] of this._attributes) {
@@ -445,7 +449,7 @@ export class IndexNode {
                 triple[edgeLabelId].push(edgeNodeId);
             } else {
                 triple[edgeLabelId].push({
-                    [JsonldKeywords.id]: edgeNodeId,
+                    [JsonldKeywords.id]: edgeNodeId
                 });
             }
         }
@@ -1127,7 +1131,7 @@ export class GraphIndex extends (EventEmitter as { new (): IndexEventEmitter }) 
             GraphIndex.IX_NODE_INCOMING_ALL_KEY(toNodeId),
             GraphIndex.IX_NODE_INCOMING_EDGES(toNodeId, label),
             GraphIndex.IX_NODE_OUTGOING_ALL(fromNodeId),
-            GraphIndex.IX_NODE_OUTGOING_EDGES(fromNodeId, label),
+            GraphIndex.IX_NODE_OUTGOING_EDGES(fromNodeId, label)
         ];
     }
 

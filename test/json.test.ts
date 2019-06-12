@@ -390,6 +390,6 @@ describe('JSON formatting', () => {
         expect(json.relatedTo.some((x: any) => x === 'http://persons/jilld')).to.be.true;
         expect(json.title).to.be.ok;
         expect(json.title.en).to.equal('Manager');
-        expect(json.title.fr).to.equal('Manager');
+        expect(json.title.fr).to.equal('Månager');
     }
 });
