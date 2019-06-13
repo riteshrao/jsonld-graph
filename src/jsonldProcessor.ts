@@ -33,7 +33,7 @@ export class JsonldProcessor {
             return callback(null, {
                 url: null,
                 documentUrl: url,
-                document: this._contexts.get(url),
+                document: this._contexts.get(url)
             });
         }
 
@@ -42,7 +42,7 @@ export class JsonldProcessor {
             return callback(null, {
                 url: null,
                 documentUrl: url,
-                document: this._contexts.get(url.toLowerCase()),
+                document: this._contexts.get(url.toLowerCase())
             });
         }
 
@@ -120,7 +120,7 @@ export class JsonldProcessor {
         return jsonld.compact(document, compactionContext, {
             compactToRelative: true,
             graph: false,
-            documentLoader: this._contextLoader,
+            documentLoader: this._contextLoader
         });
     }
 
@@ -143,7 +143,7 @@ export class JsonldProcessor {
         return jsonld.expand(document, {
             base,
             expandContext: contexts,
-            documentLoader: this._contextLoader,
+            documentLoader: this._contextLoader
         });
     }
 
@@ -166,7 +166,7 @@ export class JsonldProcessor {
         return jsonld.flatten(document, null, {
             base,
             expandContext: contexts,
-            documentLoader: this._contextLoader,
+            documentLoader: this._contextLoader
         });
     }
 
@@ -189,7 +189,7 @@ export class JsonldProcessor {
         return jsonld.frame(document, frame, {
             base,
             expandContext: contexts,
-            documentLoader: this._contextLoader,
+            documentLoader: this._contextLoader
         });
     }
 

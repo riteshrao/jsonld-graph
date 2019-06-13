@@ -27,10 +27,7 @@ export type StrictEventEmitter<
     T extends NodeJS.EventEmitter,
     On extends Base<On>,
     Emit extends Base<Emit> | On = On
-    > =
-    & Evented<On, Emit>
-    & Methods<On, Emit>
-    & Pick<T, Exclude<keyof T, keyof Methods<never, never> | typeof meta>>;
+> = Evented<On, Emit> & Methods<On, Emit> & Pick<T, Exclude<keyof T, keyof Methods<never, never> | typeof meta>>;
 
 export default StrictEventEmitter;
 

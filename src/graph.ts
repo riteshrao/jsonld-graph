@@ -285,6 +285,7 @@ export class JsonldGraph extends (EventEmitter as { new (): GraphEventEmitter })
      * @returns {Promise<any>}
      * @memberof JsonLdGraph
      */
+    /* tslint:disable:promise-function-async*/
     toJson(options?: JsonFormatOptions): Promise<any> {
         return this._index.toJson(options);
     }

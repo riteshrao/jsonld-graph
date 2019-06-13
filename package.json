@@ -1,6 +1,6 @@
 {
     "name": "jsonld-graph",
-    "version": "3.0.0-beta-2",
+    "version": "3.0.0-beta.3",
     "description": "Library to parse, inspect and mutate JSON-LD documents as an in-memory graph.",
     "keywords": [
         "jsonld",
@@ -11,7 +11,9 @@
     "scripts": {
         "clean": "rimraf ./lib && rimraf ./coverage",
         "coverage": "rimraf ,/coverage && npm run test && opener ./coverage/index.html",
-        "build": "tsc && cp src/eventEmitter.d.ts lib",
+        "lint": "tslint --config tslint.json --project tsconfig.json --exclude '**/*.d.ts' src/**/*",
+        "pretty": "prettier --config .prettierrc.yml --log=silent --write \"src/**/*.ts\"",
+        "build": "npm run pretty && npm run lint  && tsc && cp src/eventEmitter.d.ts lib",
         "build-dist": "npm run clean && npm run build && npm run test",
         "prepublishOnly": "npm run build-dist",
         "test": "nyc mocha"
@@ -37,6 +39,7 @@
         "mocha": "^6.1.4",
         "nyc": "^14.0.0",
         "opener": "^1.5.1",
+        "prettier": "^1.18.2",
         "rimraf": "^2.6.3",
         "source-map-support": "^0.5.10",
         "ts-node": "^8.0.2",

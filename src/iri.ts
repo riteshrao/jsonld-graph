@@ -103,7 +103,12 @@ export class IRI {
         if (!iri) {
             throw new ReferenceError(`Invalid iri. iri is ${iri}`);
         }
-        if (iri.startsWith(BlankNodePrefix) || iri === JsonldKeywords.type || iri === JsonldKeywords.id || this._prefixes.size === 0) {
+        if (
+            iri.startsWith(BlankNodePrefix) ||
+            iri === JsonldKeywords.type ||
+            iri === JsonldKeywords.id ||
+            this._prefixes.size === 0
+        ) {
             return iri;
         }
 
@@ -185,14 +190,17 @@ export class IRI {
                 break;
             }
             case 'urn': {
-                const { nid } = (parsed as any);
+                const { nid } = parsed as any;
                 if (!nid) {
                     throw new Errors.InvalidIriError(iri, 'nid is required for urn or urn scheme.');
                 }
                 break;
             }
             default: {
-                throw new Errors.InvalidIriError(iri, `Unsupported scheme ${parsed.scheme}. Only 'http', 'https' and 'urn' schemes are supported`);
+                throw new Errors.InvalidIriError(
+                    iri,
+                    `Unsupported scheme ${parsed.scheme}. Only 'http', 'https' and 'urn' schemes are supported`
+                );
             }
         }
     }

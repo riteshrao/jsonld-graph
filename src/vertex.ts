@@ -211,7 +211,7 @@ export class Vertex {
         return new Iterable(this._index.getNodeIncoming(this._node.id, edgeLabel)).map(({ edge, node }) => {
             return {
                 label: edge.label,
-                fromVertex: new Vertex(node, this._index),
+                fromVertex: new Vertex(node, this._index)
             };
         });
     }
@@ -226,7 +226,7 @@ export class Vertex {
         return new Iterable(this._index.getNodeOutgoing(this._node.id, edgeLabel)).map(({ edge, node }) => {
             return {
                 label: edge.label,
-                toVertex: new Vertex(node, this._index),
+                toVertex: new Vertex(node, this._index)
             };
         });
     }
@@ -429,6 +429,7 @@ export class Vertex {
      * @returns {Promise<any>}
      * @memberof Vertex
      */
+    /* tslint:disable:promise-function-async*/
     toJson(options: JsonFormatOptions = {}): Promise<any> {
         return this._node.toJson(options);
     }
