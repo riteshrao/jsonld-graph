@@ -394,7 +394,7 @@ export class IndexNode {
         const normalizedName = this._index.iri.expand(name);
         if (language) {
             // If an existing value for the specified language is already set, then replace the value, else add a new one.
-            const values = this._attributes.get(normalizedName);
+            const values = this._attributes.get(normalizedName) || [];
             const existing = values.find(x => x['@language'] === language);
             if (existing) {
                 existing['@value'] = value;
@@ -569,7 +569,7 @@ export class IndexEdge {
  * @export
  * @class GraphIndex
  */
-export class GraphIndex extends (EventEmitter as { new (): IndexEventEmitter }) {
+export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
     readonly iri = new IRI();
 
     private readonly _edges = new Map<string, IndexEdge>();
