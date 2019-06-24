@@ -569,7 +569,7 @@ export class IndexEdge {
  * @export
  * @class GraphIndex
  */
-export class GraphIndex extends (EventEmitter as { new(): IndexEventEmitter }) {
+export class GraphIndex extends (EventEmitter as { new (): IndexEventEmitter }) {
     readonly iri = new IRI();
 
     private readonly _edges = new Map<string, IndexEdge>();
