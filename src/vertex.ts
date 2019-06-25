@@ -159,11 +159,12 @@ export class Vertex {
     /**
      * @description Deletes a specific attribute of the vertex.
      * @param {string} name The attribute name to delete.
+     * @param {string} [language] The optional language whose value should be deleted.
      * @returns {this}
      * @memberof Vertex
      */
-    deleteAttribute(name: string): this {
-        this._node.deleteAttribute(name);
+    deleteAttribute(name: string, language?: string): this {
+        this._node.deleteAttribute(name, language);
         return this;
     }
 

@@ -174,7 +174,6 @@ describe('vertex', () => {
         beforeEach(() => {
             vertex = graph.createVertex('urn:person:johnd');
             vertex
-                .addAttributeValue('urn:entity:firstName', 'John')
                 .addAttributeValue('urn:entity:firstName', 'Jake')
                 .addAttributeValue('urn:entity:firstName', 'Jåke', 'fr');
         });
@@ -182,6 +181,14 @@ describe('vertex', () => {
         it('should delete attribute and all its values', () => {
             vertex.deleteAttribute('urn:entity:firstName');
             expect(vertex.attributes.count()).to.equal(0);
+        });
+
+        it('should delete language specific value', () => {
+            vertex.deleteAttribute('urn:entity:firstName', 'fr');
+            expect(vertex.attributes.count()).to.equal(1);
+            expect(vertex.getAttributeValue('urn:entity:firstName')).to.equal('Jake');
+            expect(vertex.hasAttributeValue('urn:entity:firstName', 'Jåke')).to.equal(false);
+            expect(vertex.getAttributeValues('urn:entity:firstName').length).to.equal(1);
         });
     });
 

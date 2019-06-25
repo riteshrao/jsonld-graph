@@ -242,15 +242,28 @@ export class IndexNode {
     /**
      * @description Deletes a attribute and its value.
      * @param {string} name The name of the attribute to delete.
+     * @param {string} [language] The optional language whose value should be deleted.
      * @returns {this}
      * @memberof IndexNode
      */
-    deleteAttribute(name: string): this {
+    deleteAttribute(name: string, language?: string): this {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is ${name}`);
         }
 
-        this._attributes.delete(this._index.iri.expand(name));
+        const normalizedName = this._index.iri.expand(name);
+        if (language) {
+            const currentValues = this._attributes.get(normalizedName);
+            if (currentValues) {
+                const valueIndex = currentValues.findIndex(x => x['@language'] === language);
+                if (valueIndex >= 0) {
+                    currentValues.splice(valueIndex, 1);
+                }
+            }
+        } else {
+            this._attributes.delete(this._index.iri.expand(name));
+        }
+
         return this;
     }
 
