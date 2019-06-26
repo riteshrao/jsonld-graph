@@ -1,6 +1,6 @@
 {
     "name": "jsonld-graph",
-    "version": "3.0.3",
+    "version": "3.0.4",
     "description": "Library to parse, inspect and mutate JSON-LD documents as an in-memory graph.",
     "keywords": [
         "jsonld",
@@ -51,7 +51,7 @@
     },
     "dependencies": {
         "events": "^3.0.0",
-        "jsiterable": "^2.0.0",
+        "jsiterable": "^3.0.0",
         "jsonld": "^1.5.4",
         "lodash.clonedeep": "^4.5.0",
         "shortid": "^2.2.14",
