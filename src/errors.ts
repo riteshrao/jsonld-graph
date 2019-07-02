@@ -1,7 +1,9 @@
 class GraphError extends Error {
     constructor(message: string) {
         super(message);
-        Error.captureStackTrace(this, this.constructor);
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, this.constructor);
+        }
     }
 }
 
