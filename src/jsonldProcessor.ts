@@ -93,11 +93,12 @@ export class JsonldProcessor {
             );
         }
 
-        if (this._contexts.has(uri)) {
+        const normalizedUri = uri.toLowerCase();
+        if (this._contexts.has(normalizedUri)) {
             throw new Errors.DuplicateContextError(uri);
         }
 
-        this._contexts.set(uri, context);
+        this._contexts.set(normalizedUri, context);
     }
 
     /**
@@ -203,7 +204,7 @@ export class JsonldProcessor {
             throw new ReferenceError(`Invalid uri. uri is ${uri}`);
         }
 
-        this._contexts.delete(uri);
+        this._contexts.delete(uri.toLowerCase());
     }
 }
 
