@@ -8,30 +8,32 @@ import StrictEventEmitter from './eventEmitter';
 import JsonFormatOptions from './formatOptions';
 
 interface GraphEvents {
-    edgeAdded: (edge: Edge) => void;
-    edgeRemoved: (edge: Edge) => void;
-    vertexAdded: (vertex: Vertex) => void;
-    vertexIdChanged: (vertex: Vertex, previousId: string) => void;
-    vertexRemoved: (vertex: Vertex) => void;
+    edgeAdded(edge: Edge): void;
+    edgeRemoved(edge: Edge): void;
+    vertexAdded(vertex: Vertex): void;
+    vertexIdChanged(vertex: Vertex, previousId: string): void;
+    vertexRemoved(vertex: Vertex): void;
 }
 
 type GraphEventEmitter = StrictEventEmitter<EventEmitter, GraphEvents>;
 
-export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) {
+export class JsonldGraph extends (EventEmitter as { new (): GraphEventEmitter }) {
     private readonly _index: GraphIndex;
 
     /**
      * Creates an instance of JsonLdGraph.
      * @memberof JsonLdGraph
      */
-    constructor(contexts?: [{ uri: string, context: any }]) {
+    constructor(contexts?: [{ uri: string; context: any }]) {
         super();
         this._index = new GraphIndex();
-        this._index.on('edgeCreated', (indexEdge) => this.emit('edgeAdded', new Edge(indexEdge, this._index)));
-        this._index.on('edgeDeleted', (indexEdge) => this.emit('edgeRemoved', new Edge(indexEdge, this._index)));
-        this._index.on('nodeCreated', (indexNode) => this.emit('vertexAdded', new Vertex(indexNode, this._index)));
-        this._index.on('nodeDeleted', (indexNode) => this.emit('vertexRemoved', new Vertex(indexNode, this._index)));
-        this._index.on('nodeIdChanged', (indexNode, previousId) => this.emit('vertexIdChanged', new Vertex(indexNode, this._index), previousId));
+        this._index.on('edgeCreated', indexEdge => this.emit('edgeAdded', new Edge(indexEdge, this._index)));
+        this._index.on('edgeDeleted', indexEdge => this.emit('edgeRemoved', new Edge(indexEdge, this._index)));
+        this._index.on('nodeCreated', indexNode => this.emit('vertexAdded', new Vertex(indexNode, this._index)));
+        this._index.on('nodeDeleted', indexNode => this.emit('vertexRemoved', new Vertex(indexNode, this._index)));
+        this._index.on('nodeIdChanged', (indexNode, previousId) =>
+            this.emit('vertexIdChanged', new Vertex(indexNode, this._index), previousId)
+        );
 
         if (contexts && contexts.length > 0) {
             for (const { uri, context } of contexts) {
@@ -61,11 +63,11 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
     }
 
     /**
-    * @description Gets the count of vertices in the graph.
-    * @readonly
-    * @type {number}
-    * @memberof JsonLdGraph
-    */
+     * @description Gets the count of vertices in the graph.
+     * @readonly
+     * @type {number}
+     * @memberof JsonLdGraph
+     */
     get vertexCount(): number {
         return this._index.nodeCount;
     }
@@ -106,8 +108,7 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
             return new Vertex(existing, this._index);
         } else {
             const node = this._index.createNode(id);
-            const vertex = new Vertex(node, this._index);
-            return vertex;
+            return new Vertex(node, this._index);
         }
     }
 
@@ -219,7 +220,11 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      * @returns {Promise<Set<string>>} A set containing all vertices that were created / added as part of the load.
      * @memberof JsonLdGraph
      */
-    async load(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<Set<string>> {
+    async load(
+        inputs: any | any[],
+        contexts?: string | string[] | object | object[],
+        base?: string
+    ): Promise<Set<string>> {
         return this._index.load(inputs, contexts, base);
     }
 
@@ -231,7 +236,11 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      * @returns {Promise<Set<string>>} A set containing all vertices that were created / added as part of the load.
      * @memberof JsonLdGraph
      */
-    async merge(inputs: any | any[], contexts?: string | string[] | object | object[], base?: string): Promise<Set<string>> {
+    async merge(
+        inputs: any | any[],
+        contexts?: string | string[] | object | object[],
+        base?: string
+    ): Promise<Set<string>> {
         return this._index.merge(inputs, contexts, base);
     }
 
@@ -276,6 +285,7 @@ export class JsonldGraph extends (EventEmitter as { new(): GraphEventEmitter }) 
      * @returns {Promise<any>}
      * @memberof JsonLdGraph
      */
+    /* tslint:disable:promise-function-async*/
     toJson(options?: JsonFormatOptions): Promise<any> {
         return this._index.toJson(options);
     }

@@ -1,3 +1,4 @@
+// tslint:disable-next-line:no-import-side-effect
 import 'mocha';
 import { expect } from 'chai';
 
@@ -5,7 +6,6 @@ import { JsonldGraph } from '../src';
 
 describe('graph', () => {
     describe('.createVertex', () => {
-
         let graph: JsonldGraph;
 
         beforeEach(() => {
@@ -37,11 +37,11 @@ describe('graph', () => {
 
         beforeEach(() => {
             graph = new JsonldGraph();
-            graph.createVertex('urn:person:johnd')
+            graph
+                .createVertex('urn:person:johnd')
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:janed', true)
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:jilld', true)
                 .setOutgoing('urn:hr:worksFor', 'urn:person:jaked', true);
-
         });
 
         it('should return all edges in the graph', () => {
@@ -66,14 +66,13 @@ describe('graph', () => {
 
         beforeEach(() => {
             graph = new JsonldGraph();
-            graph.createVertex('urn:person:johnd')
+            graph
+                .createVertex('urn:person:johnd')
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:janed', true)
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:jilld', true)
                 .setOutgoing('urn:hr:worksFor', 'urn:person:jaked', true);
 
-            graph.getVertex('urn:person:janed')
-                .setOutgoing('urn:hr:worksFor', 'urn:person:jaked', true);
-
+            graph.getVertex('urn:person:janed').setOutgoing('urn:hr:worksFor', 'urn:person:jaked', true);
         });
 
         it('should return vertices with matching incoming edges', () => {
@@ -101,14 +100,13 @@ describe('graph', () => {
 
         beforeEach(() => {
             graph = new JsonldGraph();
-            graph.createVertex('urn:person:johnd')
+            graph
+                .createVertex('urn:person:johnd')
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:janed', true)
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:jilld', true)
                 .setOutgoing('urn:hr:worksFor', 'urn:person:jake', true);
 
-            graph.getVertex('urn:person:janed')
-                .setOutgoing('urn:hr:worksFor', 'urn:person:jake', true);
-
+            graph.getVertex('urn:person:janed').setOutgoing('urn:hr:worksFor', 'urn:person:jake', true);
         });
 
         it('should return vertices with matching outgoing edges', () => {
@@ -180,7 +178,8 @@ describe('graph', () => {
 
         beforeEach(() => {
             graph = new JsonldGraph();
-            graph.createVertex('urn:person:johnd')
+            graph
+                .createVertex('urn:person:johnd')
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:janed', true)
                 .setIncoming('urn:hr:worksFor', 'urn:person:jilld', true);
         });
@@ -251,8 +250,8 @@ describe('graph', () => {
             graph = new JsonldGraph();
         });
 
-        it('should raise vertex added event when vertex is created', (done) => {
-            graph.on('vertexAdded', (vertex) => {
+        it('should raise vertex added event when vertex is created', done => {
+            graph.on('vertexAdded', vertex => {
                 expect(vertex.id).to.equal('urn:person:johnd');
                 done();
             });
@@ -260,8 +259,8 @@ describe('graph', () => {
             graph.createVertex('urn:person:johnd');
         });
 
-        it('should raise vertex removed event when vertex is deleted', (done) => {
-            graph.on('vertexRemoved', (vertex) => {
+        it('should raise vertex removed event when vertex is deleted', done => {
+            graph.on('vertexRemoved', vertex => {
                 expect(vertex.id).to.equal('urn:person:johnd');
                 done();
             });
@@ -270,8 +269,8 @@ describe('graph', () => {
             graph.removeVertex('urn:person:johnd');
         });
 
-        it('should raise edge added event when edge is created', (done) => {
-            graph.on('edgeAdded', (edge) => {
+        it('should raise edge added event when edge is created', done => {
+            graph.on('edgeAdded', edge => {
                 expect(edge.label).to.equal('urn:hr:relatedTo');
                 expect(edge.fromVertex.id).to.equal('urn:person:johnd');
                 expect(edge.toVertex.id).to.equal('urn:person:jilld');
@@ -281,8 +280,8 @@ describe('graph', () => {
             graph.createVertex('urn:person:johnd').setOutgoing('urn:hr:relatedTo', 'urn:person:jilld', true);
         });
 
-        it('should raise edge removed event when edge is deleted', (done) => {
-            graph.on('edgeRemoved', (edge) => {
+        it('should raise edge removed event when edge is deleted', done => {
+            graph.on('edgeRemoved', edge => {
                 expect(edge.label).to.equal('urn:hr:relatedTo');
                 expect(edge.fromVertex.id).to.equal('urn:person:johnd');
                 expect(edge.toVertex.id).to.equal('urn:person:jilld');
@@ -295,10 +294,10 @@ describe('graph', () => {
                 .removeOutgoing('urn:hr:relatedTo');
         });
 
-        it('should raise edge removed events for all removed vertex edges', (done) => {
+        it('should raise edge removed events for all removed vertex edges', done => {
             let removeCount = 0;
-            graph.on('edgeRemoved', (edge) => {
-                removeCount++;
+            graph.on('edgeRemoved', edge => {
+                removeCount += 1;
                 expect(edge.label).to.equal('urn:hr:relatedTo');
                 expect(edge.fromVertex.id).to.equal('urn:person:johnd');
                 if (removeCount === 2) {
@@ -306,14 +305,15 @@ describe('graph', () => {
                 }
             });
 
-            graph.createVertex('urn:person:johnd')
+            graph
+                .createVertex('urn:person:johnd')
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:jilld', true)
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:janed', true)
                 .setOutgoing('urn:hr:worksFor', 'urn:person:jaked', true)
                 .removeOutgoing('urn:hr:relatedTo');
         });
 
-        it('should raise vertex id changed event', (done) => {
+        it('should raise vertex id changed event', done => {
             graph.on('vertexIdChanged', (vertex, previousId) => {
                 expect(vertex.id).to.equal('urn:person:changed');
                 expect(previousId).to.equal('urn:person:johnd');

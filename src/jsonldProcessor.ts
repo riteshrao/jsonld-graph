@@ -4,9 +4,11 @@ import * as jsonld from 'jsonld';
 import { JsonldKeywords } from './constants';
 import Errors from './errors';
 
-const remoteLoader = (typeof process !== 'undefined' && process.versions && process.versions.node)
-    ? jsonld.documentLoaders.node()
-    : jsonld.documentLoaders.xhr();
+// tslint:disable-next-line:no-typeof-undefined
+const remoteLoader =
+    typeof process !== undefined && process.versions && process.versions.node
+        ? jsonld.documentLoaders.node()
+        : jsonld.documentLoaders.xhr();
 
 /**
  * @description JsonldProcessor options.
@@ -49,7 +51,7 @@ export class JsonldProcessor {
         }
 
         throw new Errors.ContextNotFoundError(url);
-    }
+    };
 
     /**
      * @description Gets all contexts registered with the processor.
@@ -86,14 +88,17 @@ export class JsonldProcessor {
         }
 
         if (typeof context !== 'object') {
-            throw new ReferenceError(`Invalid context. Expected context to be a JSON object, but got ${typeof context}`);
+            throw new ReferenceError(
+                `Invalid context. Expected context to be a JSON object, but got ${typeof context}`
+            );
         }
 
-        if (this._contexts.has(uri)) {
+        const normalizedUri = uri.toLowerCase();
+        if (this._contexts.has(normalizedUri)) {
             throw new Errors.DuplicateContextError(uri);
         }
 
-        this._contexts.set(uri, context);
+        this._contexts.set(normalizedUri, context);
     }
 
     /**
@@ -199,7 +204,7 @@ export class JsonldProcessor {
             throw new ReferenceError(`Invalid uri. uri is ${uri}`);
         }
 
-        this._contexts.delete(uri);
+        this._contexts.delete(uri.toLowerCase());
     }
 }
 

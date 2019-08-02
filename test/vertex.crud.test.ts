@@ -1,3 +1,4 @@
+// tslint:disable-next-line:no-import-side-effect
 import 'mocha';
 import { expect } from 'chai';
 
@@ -62,7 +63,8 @@ describe('vertex', () => {
 
     describe('.instances', () => {
         beforeEach(() => {
-            graph.createVertex('urn:hr:class')
+            graph
+                .createVertex('urn:hr:class')
                 .setIncoming(JsonldKeywords.type, 'urn:instances:instanceA', true)
                 .setIncoming(JsonldKeywords.type, 'urn:instances:instanceB', true);
         });
@@ -82,7 +84,8 @@ describe('vertex', () => {
 
     describe('.types', () => {
         beforeEach(() => {
-            graph.createVertex('urn:instances:instanceA')
+            graph
+                .createVertex('urn:instances:instanceA')
                 .setOutgoing(JsonldKeywords.type, 'urn:classes:classA', true)
                 .setOutgoing(JsonldKeywords.type, 'urn:classes:classB', true);
         });
@@ -110,16 +113,22 @@ describe('vertex', () => {
 
     describe('.attributes', () => {
         beforeEach(() => {
-            graph.createVertex('urn:person:johnd')
+            graph
+                .createVertex('urn:person:johnd')
                 .addAttributeValue('urn:entity:firstName', 'John')
+                .addAttributeValue('urn:entity:firstName', 'ååron', 'fr')
                 .addAttributeValue('urn:entity:lastName', 'Doe');
         });
 
         it('should get all attributes of vertex', () => {
             const attributes = [...graph.getVertex('urn:person:johnd').attributes];
-            expect(attributes.length).to.equal(2);
-            expect(attributes.some(([name, value]) => name === 'urn:entity:firstName' && value === 'John')).to.be.true;
-            expect(attributes.some(([name, value]) => name === 'urn:entity:lastName' && value === 'Doe')).to.be.true;
+
+            const [, firstNameValues] = attributes.find(([key]) => key === 'urn:entity:firstName');
+            expect(firstNameValues.length).to.equal(2);
+            expect(firstNameValues[0].value).to.equal('John');
+            expect(firstNameValues[0].language).to.be.undefined;
+            expect(firstNameValues[1].value).to.equal('ååron');
+            expect(firstNameValues[1].language).to.equal('fr');
         });
     });
 
@@ -135,52 +144,112 @@ describe('vertex', () => {
             expect(vertex.getAttributeValue('urn:entity:firstName')).to.equal('John');
         });
 
-        it('should append to existing values', () => {
-            vertex
-                .addAttributeValue('urn:entity:firstName', 'John')
-                .addAttributeValue('urn:entity:firstName', 'test');
+        it('should be able to add localized attribute values', () => {
+            vertex.addAttributeValue('urn:entity:firstName', 'John', 'en');
+            vertex.addAttributeValue('urn:entity:firstName', 'Jåke', 'fr');
+            expect(vertex.getAttributeValues('urn:entity:firstName').length).to.equal(2);
+            expect(vertex.getAttributeValues('urn:entity:firstName').some(x => x.language === 'en')).to.equal(true);
+        });
 
-            expect(vertex.getAttributeValue<string[]>('urn:entity:firstName').length).to.equal(2);
-            expect(vertex.getAttributeValue<string[]>('urn:entity:firstName').some(x => x === 'John')).to.be.true;
-            expect(vertex.getAttributeValue<string[]>('urn:entity:firstName').some(x => x === 'test')).to.be.true;
+        it('should append to existing values', () => {
+            vertex.addAttributeValue('urn:entity:firstName', 'John').addAttributeValue('urn:entity:firstName', 'test');
+
+            expect(vertex.getAttributeValues<string>('urn:entity:firstName').length).to.equal(2);
+            expect(vertex.getAttributeValues<string>('urn:entity:firstName').some(x => x.value === 'John')).to.be.true;
+            expect(vertex.getAttributeValues<string>('urn:entity:firstName').some(x => x.value === 'test')).to.be.true;
+        });
+
+        it('should only retain one localized value', () => {
+            vertex.addAttributeValue('urn:entity:firstName', 'John', 'en');
+            vertex.addAttributeValue('urn:entity:firstName', 'Jake', 'en');
+            expect(vertex.getAttributeValues('urn:entity:firstName').length).to.equal(1);
+            expect(vertex.getAttributeValues('urn:entity:firstName')[0].language).to.equal('en');
+            expect(vertex.getAttributeValues('urn:entity:firstName')[0].value).to.equal('Jake');
         });
     });
 
-    describe('.deleteAttributeValue', () => {
-        it('should delete attribute', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
-            vertex
-                .addAttributeValue('urn:entity:firstName', 'John')
-                .addAttributeValue('urn:entity:firstName', 'doe');
+    describe('.deleteAttribute', () => {
+        let vertex: Vertex;
 
+        beforeEach(() => {
+            vertex = graph.createVertex('urn:person:johnd');
+            vertex
+                .addAttributeValue('urn:entity:firstName', 'Jake')
+                .addAttributeValue('urn:entity:firstName', 'Jåke', 'fr');
+        });
+
+        it('should delete attribute and all its values', () => {
             vertex.deleteAttribute('urn:entity:firstName');
-            expect(vertex.getAttributeValue('urn:entity:firstName')).to.be.undefined;
+            expect(vertex.attributes.count()).to.equal(0);
+        });
+
+        it('should delete language specific value', () => {
+            vertex.deleteAttribute('urn:entity:firstName', 'fr');
+            expect(vertex.attributes.count()).to.equal(1);
+            expect(vertex.getAttributeValue('urn:entity:firstName')).to.equal('Jake');
+            expect(vertex.hasAttributeValue('urn:entity:firstName', 'Jåke')).to.equal(false);
+            expect(vertex.getAttributeValues('urn:entity:firstName').length).to.equal(1);
+        });
+    });
+
+    describe('.getAttributeValue', () => {
+        let vertex: Vertex;
+
+        beforeEach(() => {
+            vertex = graph.createVertex('urn:person:johnd');
+            vertex
+                .addAttributeValue('urn:entity:name', 'John Doe')
+                .addAttributeValue('urn:entity:title', 'Manager')
+                .addAttributeValue('urn:entity:title', 'Månager', 'fr')
+                .addAttributeValue('urn:entity:title', 'Menedzser', 'hr')
+                .addAttributeValue('urn:entity:address', '123 Sunny Lane')
+                .addAttributeValue('urn:entity:address', '234 Foo bar');
+        });
+
+        it('should get value for single attribute value', () => {
+            expect(vertex.getAttributeValue('urn:entity:name')).to.equal('John Doe');
+        });
+
+        it('should get first value for multi language attribute value', () => {
+            expect(vertex.getAttributeValue('urn:entity:title')).to.equal('Manager');
+        });
+
+        it('should get specific language value for attribute', () => {
+            expect(vertex.getAttributeValue('urn:entity:title', 'fr')).to.equal('Månager');
+            expect(vertex.getAttributeValue('urn:entity:title', 'hr')).to.equal('Menedzser');
         });
     });
 
     describe('.hasAttribute', () => {
+        let vertex: Vertex;
+
+        beforeEach(() => {
+            vertex = graph.createVertex('urn:person:johnd');
+        });
+
         it('should return true for defined attributes', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
             vertex.addAttributeValue('urn:entity:firstName', 'John');
             expect(vertex.hasAttribute('urn:entity:firstName')).to.be.true;
         });
 
         it('should return for undefined attribute', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
             expect(vertex.hasAttribute('urn:entity:firstName')).to.be.false;
         });
     });
 
     describe('hasAttributeValue', () => {
+        let vertex: Vertex;
+
+        beforeEach(() => {
+            vertex = graph.createVertex('urn:person:johnd');
+        });
         it('should return true when attribute value matches', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
             vertex.addAttributeValue('urn:entity:firstName', 'John');
 
             expect(vertex.hasAttributeValue('urn:entity:firstName', 'John')).to.be.true;
         });
 
         it('should return true when attribute contains value', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
             vertex.addAttributeValue('urn:entity:firstName', 'John');
             vertex.addAttributeValue('urn:entity:firstName', 'john');
 
@@ -189,40 +258,61 @@ describe('vertex', () => {
         });
 
         it('should return false when attribute value does not match', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
             vertex.addAttributeValue('urn:entity:firstName', 'John');
 
             expect(vertex.hasAttributeValue('urn:entity:firstName', 'john')).to.be.false;
         });
 
         it('should return false when attribute does not contains value', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
             vertex.addAttributeValue('urn:entity:firstName', 'John');
             vertex.addAttributeValue('urn:entity:firstName', 'john');
 
             expect(vertex.hasAttributeValue('urn:entity:firstName', '_john_')).to.be.false;
         });
+
+        it('should return true when attribute contains localized value', () => {
+            vertex.addAttributeValue('urn:entity:title', 'Manager', 'en');
+            vertex.addAttributeValue('urn:entity:title', 'Månager', 'fr');
+
+            expect(vertex.hasAttributeValue('urn:entity:title', 'Manager')).to.be.true;
+            expect(vertex.hasAttributeValue('urn:entity:title', 'Månager')).to.be.true;
+        });
+
+        it('should return false when localized attribute value does not match', () => {
+            vertex.addAttributeValue('urn:entity:title', 'Manager', 'en');
+            vertex.addAttributeValue('urn:entity:title', 'Månager', 'fr');
+            expect(vertex.hasAttributeValue('urn:entity:title', 'Månager', 'en')).to.be.false;
+        });
+
+        it('should return false when localized attribute value does not exist', () => {
+            vertex.addAttributeValue('urn:entity:title', 'Manager', 'en');
+            expect(vertex.hasAttributeValue('urn:entity:title', 'Manager', 'fr')).to.be.false;
+        });
     });
 
     describe('.removeAttributeValue', () => {
+        let vertex: Vertex;
+
+        beforeEach(() => {
+            vertex = graph.createVertex('urn:person:johnd');
+        });
+
         it('should remove value from list', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
             vertex.addAttributeValue('urn:entity:firstName', 'John');
             vertex.addAttributeValue('urn:entity:firstName', 'jj');
-            expect(vertex.getAttributeValue('urn:entity:firstName')).to.be.instanceOf(Array);
-            expect(vertex.getAttributeValue<string[]>('urn:entity:firstName').length).to.equal(2);
+
+            expect(vertex.getAttributeValues('urn:entity:firstName').length).to.equal(2);
+            expect(vertex.getAttributeValues('urn:entity:firstName').length).to.equal(2);
 
             vertex.removeAttributeValue('urn:entity:firstName', 'jj');
-            expect(vertex.getAttributeValue('urn:entity:firstName')).to.not.be.instanceOf(Array);
+            expect(vertex.getAttributeValues('urn:entity:firstName').length).to.equal(1);
             expect(vertex.getAttributeValue('urn:entity:firstName')).to.equal('John');
         });
 
         it('should delete attribute value when all values are removed', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
             vertex.addAttributeValue('urn:entity:firstName', 'John');
             vertex.addAttributeValue('urn:entity:firstName', 'jj');
-            expect(vertex.getAttributeValue('urn:entity:firstName')).to.be.instanceOf(Array);
-            expect(vertex.getAttributeValue<string[]>('urn:entity:firstName').length).to.equal(2);
+            expect(vertex.getAttributeValues('urn:entity:firstName').length).to.equal(2);
 
             vertex.removeAttributeValue('urn:entity:firstName', 'John');
             vertex.removeAttributeValue('urn:entity:firstName', 'jj');
@@ -230,38 +320,48 @@ describe('vertex', () => {
             expect(vertex.hasAttribute('urn:entity:firstName')).to.be.false;
         });
 
-        it('should convert array to bare value when only one value remains', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
-            vertex.addAttributeValue('urn:entity:firstName', 'John');
-            vertex.addAttributeValue('urn:entity:firstName', 'jj');
-            expect(vertex.getAttributeValue('urn:entity:firstName')).to.be.instanceOf(Array);
+        it('should remove all occurrences of attribute value', () => {
+            vertex.addAttributeValue('urn:entity:title', 'Manager', 'en');
+            vertex.addAttributeValue('urn:entity:title', 'Manager', 'fr');
+            vertex.addAttributeValue('urn:entity:title', 'Manager');
+            vertex.addAttributeValue('urn:entity:title', 'Foo');
 
-            vertex.removeAttributeValue('urn:entity:firstName', 'jj');
-            expect(vertex.getAttributeValue('urn:entity.firstName')).not.to.be.instanceOf(Array);
-        });
-
-        it('should delete attribute when value is removed', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
-            vertex.addAttributeValue('urn:person:johnd', 'John');
-            expect(vertex.hasAttribute('urn:person:johnd')).to.be.true;
-
-            vertex.removeAttributeValue('urn:person:johnd', 'John');
-            expect(vertex.hasAttribute('urn:person:johnd')).to.be.false;
+            vertex.removeAttributeValue('urn:entity:title', 'Manager');
+            expect(vertex.getAttributeValues('urn:entity:title').length).to.equal(1);
+            expect(vertex.getAttributeValue('urn:entity:title')).to.equal('Foo');
         });
     });
 
     describe('.replaceAttributeValue', () => {
+        let vertex: Vertex;
+
+        beforeEach(() => {
+            vertex = graph.createVertex('urn:person:johnd');
+        });
+
         it('should replace existing value', () => {
-            const vertex = graph.createVertex('urn:person:johnd');
             vertex.addAttributeValue('urn:entity:firstName', 'John');
             vertex.replaceAttributeValue('urn:entity:firstName', 'test');
             expect(vertex.getAttributeValue('urn:entity:firstName')).to.equal('test');
+        });
+
+        it('should replace localized value', () => {
+            vertex.addAttributeValue('urn:entity:title', 'Manager');
+            vertex.addAttributeValue('urn:entity:title', 'Manager', 'en');
+            vertex.addAttributeValue('urn:entity:title', 'Manager', 'fr');
+
+            vertex.replaceAttributeValue('urn:entity:title', 'Månager', 'fr');
+            const values = vertex.getAttributeValues('urn:entity:title');
+            expect(values.length).to.equal(3);
+            expect(values.some(x => x.language === 'fr' && x.value === 'Månager')).to.be.true;
+            expect(values.some(x => x.language === 'en' && x.value === 'Manager')).to.be.true;
         });
     });
 
     describe('.getOutgoing', () => {
         beforeEach(() => {
-            graph.createVertex('urn:person:johnd')
+            graph
+                .createVertex('urn:person:johnd')
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:jilld', true)
                 .setOutgoing('urn:hr:relatedTo', 'urn:person:janed', true)
                 .setOutgoing('urn:hr:worksFor', 'urn:person:jaked', true);
@@ -288,7 +388,8 @@ describe('vertex', () => {
 
     describe('.getIncoming', () => {
         beforeEach(() => {
-            graph.createVertex('urn:person:johnd')
+            graph
+                .createVertex('urn:person:johnd')
                 .setIncoming('urn:hr:relatedTo', 'urn:person:jilld', true)
                 .setIncoming('urn:hr:relatedTo', 'urn:person:janed', true)
                 .setIncoming('urn:hr:worksFor', 'urn:person:jaked', true);

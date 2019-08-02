@@ -1,7 +1,9 @@
 class GraphError extends Error {
     constructor(message: string) {
         super(message);
-        Error.captureStackTrace(this, this.constructor);
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, this.constructor);
+        }
     }
 }
 
@@ -15,11 +17,11 @@ export namespace Errors {
     export class DocumentParseError extends GraphError {
         /**
          *Creates an instance of DocumentParseError.
-         * @param {*} err The parse error.
+         * @param {*} innerError The parse error.
          * @memberof DocumentParseError
          */
-        constructor(err: any) {
-            super(`Failed to parse input. Error: ${err}`);
+        constructor(public innerError: any) {
+            super(`Failed to parse input. Error: ${innerError}`);
             this.name = 'DocumentParseError';
         }
     }
@@ -36,7 +38,7 @@ export namespace Errors {
          * @param {string} prefix The duplicate prefix name.
          * @memberof DuplicatePrefixError
          */
-        constructor(readonly prefix: string) {
+        constructor(public readonly prefix: string) {
             super(`The prefix ${prefix} has already been defined.`);
         }
     }
@@ -54,7 +56,7 @@ export namespace Errors {
          * @param {string} uri The URI for which a prefix has already been registered.
          * @memberof DuplicatePrefixUriError
          */
-        constructor(readonly prefix: string, readonly uri: string) {
+        constructor(public readonly prefix: string, public readonly uri: string) {
             super(`A prefix for uri ${uri} has already been registered with prefix ${prefix}`);
         }
     }
@@ -72,7 +74,9 @@ export namespace Errors {
          * @memberof ContextNotFoundError
          */
         constructor(public readonly uri: string) {
-            super(`Referenced context ${uri} was not found and remote contexts are disabled. Did you forget to add a context?`);
+            super(
+                `Referenced context ${uri} was not found and remote contexts are disabled. Did you forget to add a context?`
+            );
             this.name = 'ContextNotFoundError';
         }
     }
@@ -89,7 +93,7 @@ export namespace Errors {
          * @param {string} operationContext The operation context the error occurred.
          * @memberof ContextNotSpecifiedError
          */
-        constructor(operationContext: string) {
+        constructor(public operationContext: string) {
             super(`A context was not specified implicitly or explicitly for operation ${operationContext}`);
             this.name = 'ContextNotSpecifiedError';
         }
@@ -120,17 +124,13 @@ export namespace Errors {
      * @extends {GraphError}
      */
     export class IndexEdgeCyclicalError extends GraphError {
-
         /**
          *Creates an instance of IndexEdgeCyclicalError.
          * @param {string} label The label of the edge.
          * @param {string} nodeId The id of the node that is referred to as both the outgoing and incoming.
          * @memberof IndexEdgeCyclicalError
          */
-        constructor(
-            public label: string,
-            public nodeId: string) {
-
+        constructor(public readonly label: string, public readonly nodeId: string) {
             super(`Cyclical index edge ${label} with outgoing and incoming node ${nodeId}`);
             this.name = 'IndexEdgeCyclicalError';
         }
@@ -153,8 +153,8 @@ export namespace Errors {
         constructor(
             public readonly label: string,
             public readonly fromNodeId: string,
-            public readonly toNodeId: string) {
-
+            public readonly toNodeId: string
+        ) {
             super(`Duplicate edge ${label} from node ${fromNodeId} to node ${toNodeId}`);
             this.name = 'IndexEdgeDuplicateError';
         }
@@ -175,10 +175,10 @@ export namespace Errors {
          * @memberof IndexEdgeNodeNotFoundError
          */
         constructor(
-            public label: string,
-            public fromNodeId: string,
-            public direction: string) {
-
+            public readonly label: string,
+            public readonly fromNodeId: string,
+            public readonly direction: string
+        ) {
             super(`Expected ${direction} node with id ${fromNodeId} was not found for edge ${label}`);
             this.name = 'IndexEdgeNotFoundError';
         }

@@ -1,9 +1,9 @@
+// tslint:disable-next-line:no-import-side-effect
 import 'mocha';
 import { expect } from 'chai';
 import { JsonldGraph } from '../src';
 
 describe('JSON formatting', () => {
-
     describe('expanded graph', () => {
         let graph: JsonldGraph;
         let context: any;
@@ -15,32 +15,39 @@ describe('JSON formatting', () => {
                     firstName: 'Entity/firstName',
                     lastName: 'Entity/lastName',
                     relatedTo: { '@id': 'Entity/relatedTo', '@type': '@id' },
-                    worksFor: { '@id': 'Entity/worksFor', '@type': '@id' }
+                    worksFor: { '@id': 'Entity/worksFor', '@type': '@id' },
+                    title: { '@id': 'Entity/title', '@container': '@language' }
                 }
             };
 
             graph = new JsonldGraph();
             graph.addContext('http://persons/context.json', context);
-            graph.createVertex('http://persons/johnd')
+            graph
+                .createVertex('http://persons/johnd')
                 .setType('http://test/classes/Person', 'http://test/classes/Manager')
                 .addAttributeValue('http://test/classes/Entity/firstName', 'John')
                 .addAttributeValue('http://test/classes/Entity/lastName', 'Doe')
+                .addAttributeValue('http://test/classes/Entity/title', 'Manager', 'en')
+                .addAttributeValue('http://test/classes/Entity/title', 'Månager', 'fr')
                 .setOutgoing('http://test/classes/Entity/relatedTo', 'http://persons/janed', true)
                 .setIncoming('http://test/classes/Entity/worksFor', 'http://persons/jaked', true);
 
-            graph.createVertex('http://persons/janed')
+            graph
+                .createVertex('http://persons/janed')
                 .setType('http://test/classes/Person', 'http://test/classes/Employee')
                 .addAttributeValue('http://test/classes/Entity/firstName', 'Jane')
                 .addAttributeValue('http://test/classes/Entity/lastName', 'Doe')
                 .setOutgoing('http://test/classes/Entity/worksFor', 'http://persons/jilld', true);
 
-            graph.createVertex('http://persons/jilld')
+            graph
+                .createVertex('http://persons/jilld')
                 .setType('http://test/classes/Person', 'http://test/classes/Manager')
                 .addAttributeValue('http://test/classes/Entity/firstName', 'Jill')
                 .addAttributeValue('http://test/classes/Entity/lastName', 'Doe')
                 .setIncoming('http://test/classes/Entity/relatedTo', 'http://persons/johnd');
 
-            graph.createVertex('http://persons/jaked')
+            graph
+                .createVertex('http://persons/jaked')
                 .setType('http://test/classes/Person')
                 .addAttributeValue('http://test/classes/Entity/firstName', 'Jake')
                 .addAttributeValue('http://test/classes/Entity/lastName', 'Doe');
@@ -76,7 +83,10 @@ describe('JSON formatting', () => {
         });
 
         it('should format vertex', async () => {
-            const json = await graph.getVertex('http://persons/johnd').toJson({ context: 'http://persons/context.json' });
+            const json = await graph
+                .getVertex('http://persons/johnd')
+                .toJson({ context: 'http://persons/context.json' });
+
             validateVertex(json);
         });
 
@@ -108,7 +118,8 @@ describe('JSON formatting', () => {
                     firstName: 'Entity/firstName',
                     lastName: 'Entity/lastName',
                     relatedTo: { '@id': 'Entity/relatedTo', '@type': '@id' },
-                    worksFor: { '@id': 'Entity/worksFor', '@type': '@id' }
+                    worksFor: { '@id': 'Entity/worksFor', '@type': '@id' },
+                    title: { '@id': 'Entity/title', '@container': '@language' }
                 }
             };
 
@@ -117,26 +128,32 @@ describe('JSON formatting', () => {
             graph.addPrefix('persons', 'http://persons');
             graph.addContext('http://persons/context.json', context);
 
-            graph.createVertex('persons:johnd')
+            graph
+                .createVertex('persons:johnd')
                 .setType('vocab:Person', 'vocab:Manager')
                 .addAttributeValue('vocab:Entity/firstName', 'John')
                 .addAttributeValue('vocab:Entity/lastName', 'Doe')
+                .addAttributeValue('vocab:Entity/title', 'Manager', 'en')
+                .addAttributeValue('vocab:Entity/title', 'Månager', 'fr')
                 .setOutgoing('vocab:Entity/relatedTo', 'persons:janed', true)
                 .setIncoming('vocab:Entity/worksFor', 'persons:jaked', true);
 
-            graph.createVertex('persons:janed')
+            graph
+                .createVertex('persons:janed')
                 .setType('vocab:Person', 'vocab:Employee')
                 .addAttributeValue('vocab:Entity/firstName', 'Jane')
                 .addAttributeValue('vocab:Entity/lastName', 'Doe')
                 .setOutgoing('vocab:Entity/worksFor', 'persons:jilld', true);
 
-            graph.createVertex('persons:jilld')
+            graph
+                .createVertex('persons:jilld')
                 .setType('vocab:Person', 'vocab:Manager')
                 .addAttributeValue('vocab:Entity/firstName', 'Jill')
                 .addAttributeValue('vocab:Entity/lastName', 'Doe')
                 .setIncoming('vocab:Entity/relatedTo', 'http://persons/johnd', true);
 
-            graph.createVertex('persons:jaked')
+            graph
+                .createVertex('persons:jaked')
                 .setType('vocab:Person')
                 .addAttributeValue('vocab:Entity/firstName', 'Jake')
                 .addAttributeValue('vocab:Entity/lastName', 'Doe');
@@ -175,10 +192,7 @@ describe('JSON formatting', () => {
             const json = await graph.toJson({
                 context: 'http://persons/context.json',
                 frame: {
-                    '@id': [
-                        'persons:johnd',
-                        'http://persons/janed'
-                    ],
+                    '@id': ['persons:johnd', 'http://persons/janed'],
                     relatedTo: {
                         '@embed': '@never'
                     },
@@ -210,7 +224,9 @@ describe('JSON formatting', () => {
         });
 
         it('should format vertex', async () => {
-            const json = await graph.getVertex('http://persons/johnd').toJson({ context: 'http://persons/context.json' });
+            const json = await graph
+                .getVertex('http://persons/johnd')
+                .toJson({ context: 'http://persons/context.json' });
             validateVertex(json);
         });
 
@@ -237,6 +253,7 @@ describe('JSON formatting', () => {
 
         let vertex: any;
         vertex = json['@graph'].find((x: any) => x['@id'] === 'http://persons/johnd');
+
         expect(vertex).to.be.ok;
         expect(vertex['@type'].length).to.equal(2);
         expect(vertex['@type'].some((x: any) => x === 'Person')).to.be.true;
@@ -246,6 +263,9 @@ describe('JSON formatting', () => {
         expect(vertex.relatedTo.length).to.equal(2);
         expect(vertex.relatedTo.some((x: any) => x === 'http://persons/janed')).to.be.true;
         expect(vertex.relatedTo.some((x: any) => x === 'http://persons/jilld')).to.be.true;
+        expect(vertex.title).to.be.ok;
+        expect(vertex.title.en).to.equal('Manager');
+        expect(vertex.title.fr).to.equal('Månager');
 
         vertex = json['@graph'].find((x: any) => x['@id'] === 'http://persons/janed');
         expect(vertex).to.be.ok;
@@ -290,6 +310,9 @@ describe('JSON formatting', () => {
         expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/janed')['@type'].includes('Person')).to.be.true;
         expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/janed')['@type'].includes('Employee')).to.be.true;
         expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/janed').worksFor).to.equal('http://persons/jilld');
+        expect(vertex.title).to.be.ok;
+        expect(vertex.title.en).to.equal('Manager');
+        expect(vertex.title.fr).to.equal('Månager');
 
         expect(vertex.relatedTo.some((x: any) => x['@id'] === 'http://persons/jilld')).to.be.true;
         expect(vertex.relatedTo.find((x: any) => x['@id'] === 'http://persons/jilld').firstName).to.equal('Jill');
@@ -330,6 +353,9 @@ describe('JSON formatting', () => {
         expect(json.firstName).to.equal('John');
         expect(json.lastName).to.equal('Doe');
         expect(json.relatedTo.length).to.equal(2);
+        expect(json.title).to.be.ok;
+        expect(json.title.en).to.equal('Manager');
+        expect(json.title.fr).to.equal('Månager');
 
         let vertex: any;
 
@@ -362,5 +388,8 @@ describe('JSON formatting', () => {
         expect(json.relatedTo.length).to.equal(2);
         expect(json.relatedTo.some((x: any) => x === 'http://persons/janed')).to.be.true;
         expect(json.relatedTo.some((x: any) => x === 'http://persons/jilld')).to.be.true;
+        expect(json.title).to.be.ok;
+        expect(json.title.en).to.equal('Manager');
+        expect(json.title.fr).to.equal('Månager');
     }
 });

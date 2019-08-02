@@ -1,96 +1,158 @@
 {
+    "extends": ["tslint-config-airbnb", "tslint-config-prettier", "tslint-no-unused-expression-chai"],
+    "rulesDirectory": ["tslint-consistent-codestyle", "tslint-microsoft-contrib"],
     "rules": {
-        "align": [
+        // Turn off/tweak airbnb rules
+        "import-name": false,
+        "function-name": false,
+        "variable-name": false,
+        "object-shorthand-properties-first": false,
+        "no-else-after-return": false,
+        "naming-convention": [
             true,
-            "parameters"
+            // Start from simple camelCase and add exceptions as we go
+            {
+                "type": "default",
+                "format": "camelCase",
+                "leadingUnderscore": "forbid",
+                "trailingUnderscore": "forbid"
+            },
+            // Allow either camel case or capital case for module variables
+            {
+                "type": "variable",
+                "modifiers": ["global", "const"],
+                "format": ["camelCase", "UPPER_CASE"]
+            },
+            // And allow an underscore for unused renames so destructures can be used
+            // to pull properties off an object without upsetting the unused var rule
+            {
+                "type": "variable",
+                "modifiers": ["rename", "unused"],
+                "leadingUnderscore": "allow"
+            },
+            // Allow exported variables to be camel, pascal, or capital case for
+            // maximum flexibility of exported API
+            {
+                "type": "variable",
+                "modifiers": ["export", "const"],
+                "format": ["camelCase", "PascalCase", "UPPER_CASE"]
+            },
+            // If the exported variable is a function, use camel case or pascal case
+            {
+                "type": "functionVariable",
+                "modifiers": ["export", "const"],
+                "format": ["camelCase", "PascalCase"]
+            },
+            // Same goes for normal functions
+            {
+                "type": "function",
+                "modifiers": ["export", "const"],
+                "format": ["camelCase", "PascalCase"]
+            },
+            // Unused parameters can have a leading underscore to play nice with
+            // Typescript"s noUnusedParameters when present.
+            {
+                "type": "parameter",
+                "modifiers": "unused",
+                "leadingUnderscore": "allow"
+            },
+            // Private methods/fields have to start with an underscore
+            {
+                "type": "member",
+                "modifiers": "private",
+                "leadingUnderscore": "require"
+            },
+            // Static property members may use capital case
+            {
+                "type": "property",
+                "modifiers": "static",
+                "format": ["camelCase", "UPPER_CASE"]
+            },
+            // Private static property members may have an underscore (if they are
+            // camel case)
+            {
+                "type": "property",
+                "modifiers": "static",
+                "leadingUnderscore": "allow"
+            },
+            // Classes, interfaces, type aliases, etc. have to be capitalized
+            {
+                "type": "type",
+                "format": "PascalCase"
+            },
+            // Enum members have to be capitalized
+            {
+                "type": "enumMember",
+                "format": "PascalCase"
+            }
         ],
-        "array-type": [
-            true,
-            "array"
-        ],
-        "class-name": true,
-        "curly": true,
-        "comment-format": [
-            true,
-            "check-space"
-        ],
-        "import-spacing": true,
-        "indent": [
-            true,
-            "spaces"
-        ],
-        "new-parens": true,
-        "no-construct": true,
-        "no-duplicate-variable": true,
-        "no-eval": true,
+
+        // Additional rules
+        "adjacent-overload-signatures": true,
+        "ban-types": {
+            "options": [
+                ["Object", "Avoid using the `Object` type. Did you mean `object`?"],
+                ["Function", "Avoid using the `Function` type. Prefer a specific function type, like `() => void`."],
+                ["Boolean", "Avoid using the `Boolean` type. Did you mean `boolean`?"],
+                ["Number", "Avoid using the `Number` type. Did you mean `number`?"],
+                ["String", "Avoid using the `String` type. Did you mean `string`?"],
+                ["Symbol", "Avoid using the `Symbol` type. Did you mean `symbol`?"]
+            ]
+        },
+        "member-access": [false],
+        "member-ordering": [true, "statics-first"],
+        "no-import-side-effect": true,
         "no-internal-module": true,
+        "no-unnecessary-type-assertion": true,
+        "only-arrow-functions": [true, "allow-declarations"],
+        "promise-function-async": true,
+        "unified-signatures": true,
+        "ban-comma-operator": true,
+        "label-position": true,
+        "no-arg": true,
+        "no-conditional-assignment": true,
+        "no-debugger": true,
+        "no-duplicate-super": true,
+        "no-duplicate-switch-case": true,
+        "no-empty": [true, "allow-empty-catch", "allow-empty-functions"],
+        "no-eval": true,
+        "no-floating-promises": true,
+        "no-for-in-array": true,
+        "no-inferred-empty-object-type": true,
+        "no-invalid-template-strings": true,
         "no-invalid-this": true,
         "no-misused-new": true,
-        "no-trailing-whitespace": true,
-        "tslint-no-unused-expression-chai": true,
-        "no-var-keyword": true,
-        "object-literal-key-quotes": [
-            true,
-            "as-needed"
-        ],
-        "one-line": [
-            true,
-            "check-catch",
-            "check-else",
-            "check-finally",
-            "check-open-brace",
-            "check-whitespace"
-        ],
-        "only-arrow-functions": [
-            true,
-            "allow-declarations"
-        ],
-        "prefer-const": true,
-        "prefer-for-of": true,
-        "quotemark": [
-            true,
-            "single"
-        ],
-        "semicolon": [
-            true,
-            "always"
-        ],
-        "space-before-function-paren": [
-            true,
-            {
-                "anonymous": "always",
-                "named": "never",
-                "asyncArrow": "always"
-            }
-        ],
-        "triple-equals": [
-            true,
-            "allow-null-check"
-        ],
-        "typedef-whitespace": [
-            true,
-            {
-                "call-signature": "nospace",
-                "index-signature": "nospace",
-                "parameter": "nospace",
-                "property-declaration": "nospace",
-                "variable-declaration": "nospace"
-            }
-        ],
-        "variable-name": [
-            true,
-            "ban-keywords"
-        ],
-        "whitespace": [
-            true,
-            "check-branch",
-            "check-decl",
-            "check-module",
-            "check-operator",
-            "check-separator",
-            "check-type",
-            "check-typecast",
-            "check-preblock"
-        ]
+        "no-restricted-globals": true,
+        "no-sparse-arrays": true,
+        "no-string-literal": true,
+        "no-string-throw": true,
+        "no-switch-case-fall-through": true,
+        "no-this-assignment": true,
+        "no-unnecessary-class": true,
+        "unnecessary-constructor": true,
+        "use-isnan": true,
+        "no-mergeable-namespace": true,
+        "arrow-return-shorthand": true,
+        "file-name-casing": [true, "camel-case"],
+        "interface-name": [true, "never-prefix"],
+        "interface-over-type-literal": true,
+        "no-angle-bracket-type-assertion": true,
+        "no-boolean-literal-compare": true,
+        "no-parameter-properties": false,
+        "no-unnecessary-initializer": true,
+        "prefer-method-signature": true,
+        "prefer-template": [true, "allow-single-concat"],
+
+        // tslint-consistent-codestyle
+        "no-unused": [true, "ignore-parameters"],
+        "no-var-before-return": [true, "allow-destructuring"],
+
+        // tslint-microsoft-contrib
+        "no-for-in": true,
+        "no-typeof-undefined": true,
+        "no-unnecessary-override": true,
+        "no-with-statement": true,
+        "promise-must-complete": true,
+        "no-unused-expression-chai": true
     }
 }

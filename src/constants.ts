@@ -11,6 +11,7 @@ export const JsonldKeywords = {
     container: '@container',
     id: '@id',
     graph: '@graph',
+    language: '@language',
     list: '@list',
     set: '@set',
     type: '@type',
@@ -18,4 +19,3 @@ export const JsonldKeywords = {
     version: '@version',
     vocabulary: '@vocabulary'
 };
-

@@ -1,7 +1,9 @@
 {
     "@context": [
-        { "@base": "http://alt.universe.net/graph/"},
-        "http://alt.universe.net/context.json"
+        {
+            "@base": "http://alt.universe.net/graph/"
+        },
+        "http://alt.universe.net/Context.json"
     ],
     "@graph": [
         {
@@ -17,10 +19,15 @@
             "@id": "Person/luke_skywalker",
             "@type": "Person",
             "name": "luke_skywalker",
-            "displayName": "Luke Skywalker",
+            "displayName": {
+                "en": "Luke Skywalker",
+                "fr": "Lucas Skywalker"
+            },
             "birthYear": "19BBY",
             "gender": "MALE",
-            "residence": ["Planet/Tatooine"],
+            "residence": [
+                "Planet/Tatooine"
+            ],
             "appearsIn": {
                 "Episode IV: A New Hope": "1977",
                 "Episode V: The Empire Strikes Back": "1980",
@@ -35,7 +42,9 @@
             "displayName": "C-3PO",
             "birthYear": "112BBY",
             "gender": "UNKNOWN",
-            "residence": ["Planet/Tatooine"]
+            "residence": [
+                "Planet/Tatooine"
+            ]
         },
         {
             "@id": "Person/r2_d2",
@@ -44,7 +53,9 @@
             "displayName": "R2-D2",
             "birthYear": "33BBY",
             "gender": "UNKNOWN",
-            "residence": ["Planet/Naboo"]
+            "residence": [
+                "Planet/Naboo"
+            ]
         },
         {
             "@id": "Person/darth_vader",
@@ -53,7 +64,9 @@
             "displayName": "Darth Vader",
             "birthYear": "41.9BBY",
             "gender": "MALE",
-            "residence": ["Planet/Tatooine"]
+            "residence": [
+                "Planet/Tatooine"
+            ]
         },
         {
             "@id": "Person/leia_organa",
@@ -62,7 +75,9 @@
             "displayName": "Leia Organa",
             "birthYear": "19BBY",
             "gender": "FEMALE",
-            "residence": ["Planet/Alderaan"]
+            "residence": [
+                "Planet/Alderaan"
+            ]
         },
         {
             "@id": "Person/owen_lars",
@@ -71,7 +86,9 @@
             "displayName": "Owen Lars",
             "birthYear": "52BBY",
             "gender": "MALE",
-            "residence": ["Planet/Tatooine"]
+            "residence": [
+                "Planet/Tatooine"
+            ]
         },
         {
             "@id": "Person/beru_whitesun_lars",
@@ -80,7 +97,9 @@
             "displayName": "Beru Whitesun lars",
             "birthYear": "47BBY",
             "gender": "FEMALE",
-            "residence": ["Planet/Tatooine"]
+            "residence": [
+                "Planet/Tatooine"
+            ]
         },
         {
             "@id": "Person/r5_d4",
@@ -88,7 +107,9 @@
             "name": "r5_d4",
             "displayName": "R5-D4",
             "gender": "UNKNOWN",
-            "residence": ["Planet/Tatooine"]
+            "residence": [
+                "Planet/Tatooine"
+            ]
         },
         {
             "@id": "Person/biggs_darklighter",
@@ -97,7 +118,9 @@
             "displayName": "Biggs Darklighter",
             "birthYear": "24BBY",
             "gender": "MALE",
-            "residence": ["Planet/Tatooine"]
+            "residence": [
+                "Planet/Tatooine"
+            ]
         },
         {
             "@id": "Person/obi_wan_kenobi",
@@ -106,7 +129,9 @@
             "displayName": "Obi-Wan Kenobi",
             "birthYear": "57BBY",
             "gender": "MALE",
-            "residence": ["Planet/Tatooine"]
+            "residence": [
+                "Planet/Tatooine"
+            ]
         },
         {
             "@id": "Person/anakkin_skywalker",
@@ -115,7 +140,9 @@
             "displayName": "Anakin Skywalker",
             "birthYear": "41.9BBY",
             "gender": "MALE",
-            "residence": ["Planet/Tatooine"]
+            "residence": [
+                "Planet/Tatooine"
+            ]
         },
         {
             "@id": "Person/wilhuff_tarkin",
@@ -124,7 +151,9 @@
             "displayName": "Wilhuff Tarkin",
             "birthYear": "64BBY",
             "gender": "MALE",
-            "residence": ["Planet/Eriadu"]
+            "residence": [
+                "Planet/Eriadu"
+            ]
         },
         {
             "@id": "Person/chewbacca",
@@ -133,7 +162,9 @@
             "displayName": "Chewbacca",
             "birthYear": "200BBY",
             "gender": "MALE",
-            "residence": ["Planet/Kashyyyk"]
+            "residence": [
+                "Planet/Kashyyyk"
+            ]
         },
         {
             "@id": "Person/han_solo",
@@ -142,7 +173,9 @@
             "displayName": "Han Solo",
             "birthYear": "29BBY",
             "gender": "MALE",
-            "residence": ["Planet/Corellia"]
+            "residence": [
+                "Planet/Corellia"
+            ]
         },
         {
             "@id": "Person/greedo",
@@ -151,7 +184,9 @@
             "displayName": "Greedo",
             "birthYear": "44BBY",
             "gender": "MALE",
-            "residence": ["Planet/Rodia"]
+            "residence": [
+                "Planet/Rodia"
+            ]
         },
         {
             "@id": "Person/habba_desilijic_ture",
@@ -160,7 +195,9 @@
             "displayName": "Jabba Desilijic Tiure",
             "birthYear": "600BBY",
             "gender": "HERMAPHRODITE",
-            "residence": ["Planet/Nalhutta"]
+            "residence": [
+                "Planet/Nalhutta"
+            ]
         },
         {
             "@id": "Person/wedge_antilles",
@@ -169,8 +206,9 @@
             "displayName": "Wedge Antilles",
             "birthYear": "21BBY",
             "gender": "MALE",
-            "residence": ["Planet/Corellia"]
-            
+            "residence": [
+                "Planet/Corellia"
+            ]
         },
         {
             "@id": "Person/jek_tono_porkins",
@@ -183,7 +221,10 @@
             "@id": "Person/yoda",
             "@type": "Person",
             "name": "yoda",
-            "displayName": "Yoda",
+            "displayName": {
+                "en": "Yoda",
+                "fr": "Yodå"
+            },
             "birthYear": "896BBY"
         },
         {
@@ -193,7 +234,9 @@
             "displayName": "Palpatine",
             "birthYear": "82BBY",
             "gender": "MALE",
-            "residence": ["Planet/Naboo"]
+            "residence": [
+                "Planet/Naboo"
+            ]
         },
         {
             "@id": "Person/boba_fett",
@@ -202,7 +245,9 @@
             "displayName": "Boba Fett",
             "birthYear": "31.5BBY",
             "gender": "MALE",
-            "residence": ["Planet/Kamino"]
+            "residence": [
+                "Planet/Kamino"
+            ]
         },
         {
             "@id": "Person/ig_88",
@@ -218,7 +263,9 @@
             "displayName": "Bossk",
             "birthYear": "53BBY",
             "gender": "MALE",
-            "residence": ["Planet/Trandosha"]
+            "residence": [
+                "Planet/Trandosha"
+            ]
         },
         {
             "@id": "Person/lando_calrissian",
@@ -227,7 +274,9 @@
             "displayName": "Lando Calrissian",
             "birthYear": "31BBY",
             "gender": "MALE",
-            "residence": ["Planet/Scorro"]
+            "residence": [
+                "Planet/Scorro"
+            ]
         },
         {
             "@id": "Person/lobot",
@@ -236,7 +285,9 @@
             "displayName": "Lobot",
             "birthYear": "37BBY",
             "gender": "MALE",
-            "residence": ["Planet/Bespin"]
+            "residence": [
+                "Planet/Bespin"
+            ]
         },
         {
             "@id": "Person/ackbar",
@@ -245,7 +296,9 @@
             "displayName": "Ackbar",
             "birthYear": "41BBY",
             "gender": "MALE",
-            "residence": ["Planet/Moncala"]
+            "residence": [
+                "Planet/Moncala"
+            ]
         },
         {
             "@id": "Person/mon_mothma",
@@ -254,7 +307,9 @@
             "displayName": "Mon Mothma",
             "birthYear": "48BBY",
             "gender": "FEMALE",
-            "residence": ["Planet/Chandrilla"]
+            "residence": [
+                "Planet/Chandrilla"
+            ]
         },
         {
             "@id": "Person/arvel_crynyd",
@@ -270,7 +325,9 @@
             "displayName": "Wicket Systri Warrick",
             "birthYear": "8BBY",
             "gender": "MALE",
-            "residence": ["Planet/Alderaan"]
+            "residence": [
+                "Planet/Alderaan"
+            ]
         },
         {
             "@id": "Person/nien_nunb",
@@ -278,7 +335,9 @@
             "name": "nien_nunb",
             "displayName": "Nien Nunb",
             "gender": "MALE",
-            "residence": ["Planet/Sullust"]
+            "residence": [
+                "Planet/Sullust"
+            ]
         },
         {
             "@id": "Person/qui_gon_jinn",
@@ -287,7 +346,9 @@
             "displayName": "Qui_Gon Jinn",
             "birthYear": "92BBY",
             "gender": "MALE",
-            "residence": ["Planet/Tatooine"]
+            "residence": [
+                "Planet/Tatooine"
+            ]
         },
         {
             "@id": "Person/nute_gunray",
@@ -295,7 +356,9 @@
             "name": "nute_gunray",
             "displayName": "Nute Gunray",
             "gender": "MALE",
-            "residence": ["Planet/Catoneimoidia"]
+            "residence": [
+                "Planet/Catoneimoidia"
+            ]
         },
         {
             "@id": "Person/finis_valorum",

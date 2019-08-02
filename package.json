@@ -1,77 +1,82 @@
 {
-  "name": "jsonld-graph",
-  "version": "2.0.7",
-  "description": "Library to parse, inspect and mutate JSON-LD documents as an in-memory graph.",
-  "keywords": [
-    "jsonld",
-    "graph",
-    "jsonld graph"
-  ],
-  "main": "./lib/index.js",
-  "scripts": {
-    "clean": "rimraf ./lib && rimraf ./coverage",
-    "coverage": "rimraf ,/coverage && npm run test && opener ./coverage/index.html",
-    "build": "tsc && cp src/eventEmitter.d.ts lib",
-    "build-dist": "npm run clean && npm run build && npm run test",
-    "prepublishOnly": "npm run build-dist",
-    "test": "nyc mocha"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/riteshrao/jsonld-graph.git"
-  },
-  "author": "Ritesh Rao",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/riteshrao/jsonld-graph/issues"
-  },
-  "homepage": "https://github.com/riteshrao/jsonld-graph#readme",
-  "devDependencies": {
-    "@types/chai": "^4.1.7",
-    "@types/debug": "^4.1.2",
-    "@types/lodash.clonedeep": "^4.5.6",
-    "@types/mocha": "^5.2.6",
-    "chai": "^4.2.0",
-    "mocha": "^6.1.4",
-    "nyc": "^14.0.0",
-    "opener": "^1.5.1",
-    "rimraf": "^2.6.3",
-    "source-map-support": "^0.5.10",
-    "ts-node": "^8.0.2",
-    "tslint": "^5.13.1",
-    "tslint-no-unused-expression-chai": "^0.1.4",
-    "typescript": "^3.4.1"
-  },
-  "dependencies": {
-    "@types/node": "^11.10.0",
-    "@types/shortid": "0.0.29",
-    "events": "^3.0.0",
-    "jsiterable": "^1.0.2",
-    "jsonld": "^1.5.4",
-    "lodash.clonedeep": "^4.5.0",
-    "shortid": "^2.2.14",
-    "uri-js": "^4.2.2"
-  },
-  "nyc": {
-    "all": true,
-    "cache": false,
-    "include": [
-      "src/**/*.ts"
+    "name": "jsonld-graph",
+    "version": "3.0.7",
+    "description": "Library to parse, inspect and mutate JSON-LD documents as an in-memory graph.",
+    "keywords": [
+        "jsonld",
+        "graph",
+        "jsonld graph"
     ],
-    "exclude": [
-      "**/*.d.ts",
-      "test/**",
-      "sample/**"
-    ],
-    "reporter": [
-      "html",
-      "json",
-      "text-summary"
-    ],
-    "extension": [
-      ".ts"
-    ],
-    "source-map": true,
-    "instrument": true
-  }
+    "main": "./lib/index.js",
+    "scripts": {
+        "clean": "rimraf ./lib && rimraf ./coverage",
+        "coverage": "rimraf ,/coverage && npm run test && opener ./coverage/index.html",
+        "lint": "tslint --config tslint.json --project tsconfig.json --exclude '**/*.d.ts' src/**/*",
+        "pretty": "prettier --config .prettierrc.yml --log=silent --write \"src/**/*.ts\"",
+        "build": "npm run pretty && npm run lint  && tsc && cp src/eventEmitter.d.ts lib",
+        "build-dist": "npm run clean && npm run build && npm run test",
+        "prepublishOnly": "npm run build-dist",
+        "test": "nyc mocha"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/riteshrao/jsonld-graph.git"
+    },
+    "author": "Ritesh Rao",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/riteshrao/jsonld-graph/issues"
+    },
+    "homepage": "https://github.com/riteshrao/jsonld-graph#readme",
+    "devDependencies": {
+        "@types/chai": "^4.1.7",
+        "@types/debug": "^4.1.2",
+        "@types/lodash.clonedeep": "^4.5.6",
+        "@types/mocha": "^5.2.6",
+        "@types/node": "^11.10.0",
+        "@types/shortid": "0.0.29",
+        "chai": "^4.2.0",
+        "mocha": "^6.1.4",
+        "nyc": "^14.0.0",
+        "opener": "^1.5.1",
+        "prettier": "^1.18.2",
+        "rimraf": "^2.6.3",
+        "source-map-support": "^0.5.10",
+        "ts-node": "^8.0.2",
+        "tslint": "^5.13.1",
+        "tslint-config-airbnb": "^5.11.1",
+        "tslint-config-prettier": "^1.18.0",
+        "tslint-no-unused-expression-chai": "^0.1.4",
+        "typescript": "^3.4.1"
+    },
+    "dependencies": {
+        "events": "^3.0.0",
+        "jsiterable": "^3.0.0",
+        "jsonld": "^1.5.4",
+        "lodash.clonedeep": "^4.5.0",
+        "shortid": "^2.2.14",
+        "uri-js": "^4.2.2"
+    },
+    "nyc": {
+        "all": true,
+        "cache": false,
+        "include": [
+            "src/**/*.ts"
+        ],
+        "exclude": [
+            "**/*.d.ts",
+            "test/**",
+            "sample/**"
+        ],
+        "reporter": [
+            "html",
+            "json",
+            "text-summary"
+        ],
+        "extension": [
+            ".ts"
+        ],
+        "source-map": true,
+        "instrument": true
+    }
 }

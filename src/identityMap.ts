@@ -7,7 +7,7 @@ import { JsonldKeywords, BlankNodePrefix } from './constants';
  * @class IdentityMap
  */
 export class IdentityMap {
-    private readonly map = new Map<string, string>();
+    private readonly _map = new Map<string, string>();
 
     /**
      * @description Gets the mapped id for a node.
@@ -25,12 +25,12 @@ export class IdentityMap {
             return nodeId;
         }
 
-        if (this.map.has(nodeId)) {
-            return this.map.get(nodeId);
+        if (this._map.has(nodeId)) {
+            return this._map.get(nodeId);
         }
 
         const newNodeId = `${BlankNodePrefix}-${shortid()}`;
-        this.map.set(nodeId, newNodeId);
+        this._map.set(nodeId, newNodeId);
         return newNodeId;
     }
 }
