@@ -1,5 +1,3 @@
-import * as urijs from 'uri-js';
-
 import { BlankNodePrefix, JsonldKeywords } from './constants';
 import Errors from './errors';
 
@@ -28,12 +26,11 @@ export class IRI {
         }
 
         for (const [, mappedUri] of this._prefixes) {
-            if (urijs.equal(mappedUri, iri)) {
+            if (mappedUri.toLowerCase() === iri.toLowerCase()) {
                 throw new Errors.DuplicatePrefixUriError(prefix, iri);
             }
         }
 
-        this.validate(iri);
         this._prefixes.set(prefix, iri);
     }
 
@@ -52,34 +49,18 @@ export class IRI {
             return iri;
         }
 
-        const parsed = urijs.parse(iri, { iri: true });
-        if (!parsed.scheme) {
-            throw new Errors.InvalidIriError(iri, 'IRI scheme not specified');
-        }
-
-        switch (parsed.scheme) {
-            case 'http':
-            case 'https':
-            case 'urn': {
-                for (const [prefix, mappedIRI] of this._prefixes) {
-                    if (iri.startsWith(mappedIRI) && !urijs.equal(mappedIRI, iri)) {
-                        let compacted = iri.replace(mappedIRI, '');
-                        if (compacted.startsWith('/')) {
-                            compacted = compacted.slice(1, compacted.length);
-                        }
-                        if (!compacted || compacted.length === 0) {
-                            return iri; // Exact mapped IRI match. No path to compact.
-                        }
-
-                        return `${prefix}:${compacted}`;
-                    }
+        for (const [prefix, mappedIRI] of this._prefixes) {
+            if (iri.startsWith(mappedIRI) && iri.toLowerCase() !== mappedIRI.toLowerCase()) {
+                let compacted = iri.replace(mappedIRI, '');
+                if (compacted.startsWith('/') || compacted.startsWith(':')) {
+                    compacted = compacted.slice(1, compacted.length);
                 }
-                return iri; // No match. Return the full expanded form.
-            }
-            default: {
-                return iri; // Assumed to be already compacted.
+
+                return `${prefix}:${compacted}`;
             }
         }
+
+        return iri;
     }
 
     /**
@@ -90,7 +71,7 @@ export class IRI {
      * @memberof IRI
      */
     equal(iriA: string, iriB: string): boolean {
-        return urijs.equal(this.expand(iriA), this.expand(iriB), { iri: true });
+        return this.expand(iriA).toLowerCase() === this.expand(iriB).toLowerCase();
     }
 
     /**
@@ -99,7 +80,7 @@ export class IRI {
      * @returns {string}
      * @memberof IRI
      */
-    expand(iri: string, validate: boolean = false): string {
+    expand(iri: string): string {
         if (!iri) {
             throw new ReferenceError(`Invalid iri. iri is ${iri}`);
         }
@@ -112,37 +93,18 @@ export class IRI {
             return iri;
         }
 
-        const parsed = urijs.parse(iri, { iri: true });
-        if (!parsed.scheme) {
-            throw new Errors.InvalidIriError(iri, 'IRI scheme not specified');
+        const prefixIndex = iri.indexOf(':');
+        if (prefixIndex <= 0) {
+            return iri;
         }
 
+        const prefix = iri.substring(0, prefixIndex);
+        const component = iri.substring(prefixIndex + 1);
         let expandedIRI: string;
-        switch (parsed.scheme) {
-            case 'http':
-            case 'https':
-            case 'urn': {
-                expandedIRI = iri; // Assume already expanded.
-                break;
-            }
-            default: {
-                if (!this._prefixes.has(parsed.scheme)) {
-                    expandedIRI = iri;
-                    break;
-                }
-
-                let mappedIRI = this._prefixes.get(parsed.scheme);
-                if (!mappedIRI.endsWith('/') && !mappedIRI.endsWith('#')) {
-                    mappedIRI = mappedIRI + '/';
-                }
-
-                expandedIRI = `${mappedIRI}${parsed.path}`;
-                break;
-            }
-        }
-
-        if (validate) {
-            this.validate(expandedIRI);
+        if (this._prefixes.has(prefix)) {
+            expandedIRI = `${this._prefixes.get(prefix)}${component}`;
+        } else {
+            expandedIRI = iri;
         }
 
         return expandedIRI;
@@ -159,50 +121,6 @@ export class IRI {
         }
 
         this._prefixes.delete(prefix);
-    }
-
-    /**
-     * @description Validates an IRI string.
-     * @param {string} iri The IRI string to validate.
-     * @memberof IRI
-     */
-    validate(iri: string): void {
-        if (!iri) {
-            throw new ReferenceError(`Invalid uri. uri is ${iri}`);
-        }
-
-        if (iri === JsonldKeywords.type) {
-            return;
-        }
-
-        const parsed = urijs.parse(iri, { iri: true });
-
-        if (!parsed.scheme) {
-            throw new Errors.InvalidIriError(iri, 'IRI scheme not specified');
-        }
-
-        switch (parsed.scheme) {
-            case 'http':
-            case 'https': {
-                if (!parsed.host) {
-                    throw new Errors.InvalidIriError(iri, 'Host name required for http and https schemes.');
-                }
-                break;
-            }
-            case 'urn': {
-                const { nid } = parsed as any;
-                if (!nid) {
-                    throw new Errors.InvalidIriError(iri, 'nid is required for urn or urn scheme.');
-                }
-                break;
-            }
-            default: {
-                throw new Errors.InvalidIriError(
-                    iri,
-                    `Unsupported scheme ${parsed.scheme}. Only 'http', 'https' and 'urn' schemes are supported`
-                );
-            }
-        }
     }
 }
 

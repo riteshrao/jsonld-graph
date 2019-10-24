@@ -13,11 +13,11 @@ describe('JsonldGraph parse', () => {
 
         const graph = new JsonldGraph([{ uri: 'http://alt.universe.net/context.json', context }]);
 
-        graph.addPrefix('persons', 'http://alt.universe.net/graph/Person');
-        graph.addPrefix('planets', 'http://alt.universe.net/graph/Planet');
-        graph.addPrefix('entity', 'http://alt.universe.net/classes/Entity');
-        graph.addPrefix('person', 'http://alt.universe.net/classes/Person');
-        graph.addPrefix('planet', 'http://alt.universe.net/classes/Planet');
+        graph.addPrefix('persons', 'http://alt.universe.net/graph/Person/');
+        graph.addPrefix('planets', 'http://alt.universe.net/graph/Planet/');
+        graph.addPrefix('entity', 'http://alt.universe.net/classes/Entity/');
+        graph.addPrefix('person', 'http://alt.universe.net/classes/Person/');
+        graph.addPrefix('planet', 'http://alt.universe.net/classes/Planet/');
         graph.addPrefix('class', 'http://alt.universe.net/classes/');
 
         const personVertices = await graph.load(persons);

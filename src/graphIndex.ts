@@ -116,7 +116,7 @@ export class IndexNode {
             throw new ReferenceError(`Invalid newId. newId is ${id}`);
         }
 
-        const expandedId = this._index.iri.expand(id, /* validate */ true);
+        const expandedId = this._index.iri.expand(id);
         if (this._index.iri.equal(this._nodeId, expandedId)) {
             return;
         }
@@ -688,9 +688,9 @@ export class GraphIndex extends (EventEmitter as { new (): IndexEventEmitter }) 
             throw new ReferenceError(`Invalid toNodeId. toNodeId is ${toNodeId}`);
         }
 
-        const expandedLabel = this.iri.expand(label, true);
-        const expandedFromId = this.iri.expand(fromNodeId, true);
-        const expandedToId = this.iri.expand(toNodeId, true);
+        const expandedLabel = this.iri.expand(label);
+        const expandedFromId = this.iri.expand(fromNodeId);
+        const expandedToId = this.iri.expand(toNodeId);
 
         if (!this._nodes.has(expandedFromId)) {
             throw new Errors.IndexEdgeNodeNotFoundError(label, fromNodeId, 'outgoing');
@@ -725,7 +725,7 @@ export class GraphIndex extends (EventEmitter as { new (): IndexEventEmitter }) 
             throw new ReferenceError(`Invalid id. id is ${id}`);
         }
 
-        const expandedId = this.iri.expand(id, true);
+        const expandedId = this.iri.expand(id);
         if (this._nodes.has(expandedId)) {
             throw new Errors.IndexNodeDuplicateError(id);
         }
