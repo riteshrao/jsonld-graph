@@ -1,8 +1,8 @@
 import Iterable from 'jsiterable';
 import * as jsonld from 'jsonld';
 
-import { JsonldKeywords } from './constants';
-import Errors from './errors';
+import { JsonldKeywords } from '../constants';
+import Errors from '../errors';
 
 // tslint:disable-next-line:no-typeof-undefined
 const remoteLoader =

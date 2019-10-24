@@ -15,13 +15,16 @@
         "outDir": "./lib",
         "baseUrl": ".",
         "paths": {
-            "jsonld": ["types/jsonld.d.ts"]
+            "jsonld": [
+                "types/jsonld.d.ts"
+            ]
         }
     },
     "exclude": [
         "node_modules",
         "lib",
-        "test"
+        "test",
+        "src/old"
     ],
     "compileOnSave": false,
     "buildOnSave": false

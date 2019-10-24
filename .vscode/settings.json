@@ -2,5 +2,8 @@
     "files.exclude": {
         "lib/**/*.d.ts": true,
         "test/**/*.js": true
-    }
+    },
+    "cSpell.words": [
+        "Jsonld"
+    ]
 }

@@ -16,7 +16,7 @@ export namespace Errors {
      */
     export class DocumentParseError extends GraphError {
         /**
-         *Creates an instance of DocumentParseError.
+         * Creates an instance of DocumentParseError.
          * @param {*} innerError The parse error.
          * @memberof DocumentParseError
          */
@@ -49,15 +49,15 @@ export namespace Errors {
      * @class DuplicatePrefixUriError
      * @extends {GraphError}
      */
-    export class DuplicatePrefixUriError extends GraphError {
+    export class DuplicatePrefixIRIError extends GraphError {
         /**
          * Creates an instance of DuplicatePrefixUriError.
          * @param {string} prefix The prefix that has already been registered for the URI.
-         * @param {string} uri The URI for which a prefix has already been registered.
+         * @param {string} id The URI for which a prefix has already been registered.
          * @memberof DuplicatePrefixUriError
          */
-        constructor(public readonly prefix: string, public readonly uri: string) {
-            super(`A prefix for uri ${uri} has already been registered with prefix ${prefix}`);
+        constructor(public readonly prefix: string, public readonly id: string) {
+            super(`A prefix for id ${id} has already been registered with prefix ${prefix}`);
         }
     }
 
@@ -69,7 +69,7 @@ export namespace Errors {
      */
     export class ContextNotFoundError extends GraphError {
         /**
-         *Creates an instance of ContextNotFoundError.
+         * Creates an instance of ContextNotFoundError.
          * @param {string} uri The uri of the context that was not found.
          * @memberof ContextNotFoundError
          */
@@ -89,7 +89,7 @@ export namespace Errors {
      */
     export class ContextNotSpecifiedError extends GraphError {
         /**
-         *Creates an instance of ContextNotSpecifiedError.
+         * Creates an instance of ContextNotSpecifiedError.
          * @param {string} operationContext The operation context the error occurred.
          * @memberof ContextNotSpecifiedError
          */
@@ -107,7 +107,7 @@ export namespace Errors {
      */
     export class DuplicateContextError extends GraphError {
         /**
-         *Creates an instance of DuplicateContextError.
+         * Creates an instance of DuplicateContextError.
          * @param {string} uri The uri of the duplicate context.
          * @memberof DuplicateContextError
          */
@@ -120,59 +120,59 @@ export namespace Errors {
     /**
      * @description Error thrown when a edge is cyclical.
      * @export
-     * @class IndexEdgeCyclicalError
+     * @class CyclicEdgeError
      * @extends {GraphError}
      */
-    export class IndexEdgeCyclicalError extends GraphError {
+    export class CyclicEdgeError extends GraphError {
         /**
-         *Creates an instance of IndexEdgeCyclicalError.
+         * Creates an instance of CyclicEdgeError.
          * @param {string} label The label of the edge.
-         * @param {string} nodeId The id of the node that is referred to as both the outgoing and incoming.
-         * @memberof IndexEdgeCyclicalError
+         * @param {string} vertexId The id of the vertex that is referred to as both the outgoing and incoming.
+         * @memberof CyclicEdgeError
          */
-        constructor(public readonly label: string, public readonly nodeId: string) {
-            super(`Cyclical index edge ${label} with outgoing and incoming node ${nodeId}`);
-            this.name = 'IndexEdgeCyclicalError';
+        constructor(public readonly label: string, public readonly vertexId: string) {
+            super(`Cyclic edge ${label} with outgoing and incoming node ${vertexId}`);
+            this.name = 'CyclicEdgeError';
         }
     }
 
     /**
      * @description Error thrown when a duplicate edge was found.
      * @export
-     * @class IndexEdgeDuplicateError
+     * @class DuplicateEdgeError   
      * @extends {GraphError}
      */
-    export class IndexEdgeDuplicateError extends GraphError {
+    export class DuplicateEdgeError extends GraphError {
         /**
-         *Creates an instance of IndexEdgeDuplicateError.
+         * Creates an instance of DuplicateEdgeError.
          * @param {string} label The edge label.
-         * @param {string} fromNodeId Id of the outgoing node.
-         * @param {string} toNodeId Id of the incoming node.
-         * @memberof IndexEdgeDuplicateError
+         * @param {string} fromVertexId Id of the outgoing node.
+         * @param {string} toVertexId Id of the incoming node.
+         * @memberof DuplicateEdgeError
          */
         constructor(
             public readonly label: string,
-            public readonly fromNodeId: string,
-            public readonly toNodeId: string
+            public readonly fromVertexId: string,
+            public readonly toVertexId: string
         ) {
-            super(`Duplicate edge ${label} from node ${fromNodeId} to node ${toNodeId}`);
-            this.name = 'IndexEdgeDuplicateError';
+            super(`Duplicate edge ${label} from vertex ${fromVertexId} to vertex ${toVertexId}`);
+            this.name = 'DuplicateEdgeError';
         }
     }
 
     /**
      * @description Error thrown when a node referred to by an index edge doesn't exist.
      * @export
-     * @class IndexEdgeNodeNotFoundError
+     * @class EdgeNotFoundError
      * @extends {GraphError}
      */
-    export class IndexEdgeNodeNotFoundError extends GraphError {
+    export class EdgeNotFoundError extends GraphError {
         /**
-         *Creates an instance of IndexEdgeNodeNotFoundError.
+         * Creates an instance of EdgeNotFoundError.
          * @param {string} label The edge label.
          * @param {string} fromNodeId The id of the outgoing node.
          * @param {string} direction The edge direction.
-         * @memberof IndexEdgeNodeNotFoundError
+         * @memberof EdgeNotFoundError 
          */
         constructor(
             public readonly label: string,
@@ -185,38 +185,38 @@ export namespace Errors {
     }
 
     /**
-     * @description Error thrown when a duplicate node in the index is found.
+     * @description Error thrown when a duplicate vertex is found in an index.
      * @export
      * @class IndexNodeDuplicateError
      * @extends {GraphError}
      */
-    export class IndexNodeDuplicateError extends GraphError {
+    export class DuplicateVertexError extends GraphError {
         /**
-         * Creates an instance of IndexNodeDuplicateError.
-         * @param {string} nodeId The id of the duplicate node.
+         * Creates an instance of DuplicateVertexError.
+         * @param {string} id The id of the duplicate vertex.
          * @memberof IndexNodeDuplicateError
          */
-        constructor(public readonly nodeId: string) {
-            super(`Duplicate index node ${nodeId}`);
-            this.name = 'IndexNodeDuplicateError';
+        constructor(public readonly id: string) {
+            super(`Duplicate vertex ${id}`);
+            this.name = 'DuplicateVertexError';
         }
     }
 
     /**
-     * @description Error thrown when a index node is not found.
+     * @description Error thrown when a vertex is not found.
      * @export
-     * @class IndexNodeNotFoundError
+     * @class VertexNotFoundError
      * @extends {GraphError}
      */
-    export class IndexNodeNotFoundError extends GraphError {
+    export class VertexNotFoundError extends GraphError {
         /**
-         * Creates an instance of IndexNodeNotFoundError.
-         * @param {string} nodeId Id of the node that was not found.
-         * @memberof IndexNodeNotFoundError
+         * Creates an instance of VertexNotFoundError.
+         * @param {string} vertexId Id of the vertex that was not found.
+         * @memberof VertexNotFoundError
          */
-        constructor(public readonly nodeId: string) {
-            super(`A node with the id ${nodeId} was not found`);
-            this.name = 'IndexNodeNotFoundError';
+        constructor(public readonly vertexId: string) {
+            super(`A vertex with the id ${vertexId} was not found`);
+            this.name = 'VertexNotFoundError';
         }
     }
 
@@ -226,7 +226,7 @@ export namespace Errors {
      * @class InvalidIriError
      * @extends {GraphError}
      */
-    export class InvalidIriError extends GraphError {
+    export class InvalidIRIError extends GraphError {
         /**
          * Creates an instance of InvalidIriError.
          * @param {string} iri The invalid iri string.

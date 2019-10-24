@@ -1,7 +1,7 @@
 import * as urijs from 'uri-js';
 
-import { BlankNodePrefix, JsonldKeywords } from './constants';
-import Errors from './errors';
+import { BlankNodePrefix, JsonldKeywords } from '../constants';
+import Errors from '../errors';
 
 export class IRI {
     private readonly _prefixes = new Map<string, string>();
@@ -54,7 +54,7 @@ export class IRI {
 
         const parsed = urijs.parse(iri, { iri: true });
         if (!parsed.scheme) {
-            throw new Errors.InvalidIriError(iri, 'IRI scheme not specified');
+            throw new Errors.InvalidIdError(iri, 'IRI scheme not specified');
         }
 
         switch (parsed.scheme) {
@@ -114,7 +114,7 @@ export class IRI {
 
         const parsed = urijs.parse(iri, { iri: true });
         if (!parsed.scheme) {
-            throw new Errors.InvalidIriError(iri, 'IRI scheme not specified');
+            throw new Errors.InvalidIdError(iri, 'IRI scheme not specified');
         }
 
         let expandedIRI: string;
@@ -178,26 +178,26 @@ export class IRI {
         const parsed = urijs.parse(iri, { iri: true });
 
         if (!parsed.scheme) {
-            throw new Errors.InvalidIriError(iri, 'IRI scheme not specified');
+            throw new Errors.InvalidIdError(iri, 'IRI scheme not specified');
         }
 
         switch (parsed.scheme) {
             case 'http':
             case 'https': {
                 if (!parsed.host) {
-                    throw new Errors.InvalidIriError(iri, 'Host name required for http and https schemes.');
+                    throw new Errors.InvalidIdError(iri, 'Host name required for http and https schemes.');
                 }
                 break;
             }
             case 'urn': {
                 const { nid } = parsed as any;
                 if (!nid) {
-                    throw new Errors.InvalidIriError(iri, 'nid is required for urn or urn scheme.');
+                    throw new Errors.InvalidIdError(iri, 'nid is required for urn or urn scheme.');
                 }
                 break;
             }
             default: {
-                throw new Errors.InvalidIriError(
+                throw new Errors.InvalidIdError(
                     iri,
                     `Unsupported scheme ${parsed.scheme}. Only 'http', 'https' and 'urn' schemes are supported`
                 );
