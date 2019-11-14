@@ -1,11 +1,11 @@
-import 'mocha';
-import GraphIndex from './graphIndex';
 import { expect } from 'chai';
-import Errors from './errors';
+import { FakeEdge, FakeVertex } from './fakes';
+import { Errors } from '../'
+import GraphIndex from '../../src/graphIndex';
 
 describe('GraphIndex', () => {
     describe('.addIRIPrefix', () => {
-        let index: GraphIndex;
+        let index: GraphIndex<FakeVertex, FakeEdge>;
 
         beforeEach(() => {
             index = new GraphIndex();
@@ -34,12 +34,8 @@ describe('GraphIndex', () => {
 
         it('should throw when id is an unsupported IRI', () => {
             expect(() => index.addIRIPrefix('test', 'http://')).to.throw(Errors.InvalidIRIError);
-            expect(() => index.addIRIPrefix('test', 'foo://bar.com')).to.throw(
-                Errors.InvalidIRIError
-            );
-            expect(() => index.addIRIPrefix('test', 'mailto://foo.bar.com')).to.throw(
-                Errors.InvalidIRIError
-            );
+            expect(() => index.addIRIPrefix('test', '//')).to.throw(Errors.InvalidIRIError);
+            expect(() => index.addIRIPrefix('test', 'not_a_iri')).to.throw(Errors.InvalidIRIError);
         });
 
         it('should add prefix', () => {
@@ -64,7 +60,7 @@ describe('GraphIndex', () => {
     });
 
     describe('.addEdge', () => {
-        let index: GraphIndex;
+        let index: GraphIndex<types.Vertex, types.Edge<types.Vertex>>;
 
         beforeEach(() => {
             index = new GraphIndex();
@@ -108,8 +104,8 @@ describe('GraphIndex', () => {
         it('should throw when from vertex is not found', () => {
             const edge = {
                 label: 'test',
-                fromVertexIRI: 'http://example/notfound1',
-                toVertexIRI: 'http://example/instanceB'
+                from: { id: 'http://example/notfound1' },
+                to: { id: 'http://example/instanceB' }
             };
 
             expect(() => index.addEdge(edge)).to.throw(Errors.VertexNotFoundError);
@@ -118,8 +114,8 @@ describe('GraphIndex', () => {
         it('should throw when to vertex is not found', () => {
             const edge = {
                 label: 'test',
-                fromVertexIRI: 'http://example/instanceA',
-                toVertexIRI: 'http://example/notfound'
+                from: { id: 'http://example/instanceA'},
+                to: { id: 'http://example/notfound'}
             };
 
             expect(() => index.addEdge(edge)).to.throw(Errors.VertexNotFoundError);
@@ -128,8 +124,8 @@ describe('GraphIndex', () => {
         it('should throw when edge is cyclical', () => {
             const edge = {
                 label: 'test',
-                fromVertexIRI: 'http://example/instanceA',
-                toVertexIRI: 'http://example/instanceA'
+                from: { id: 'http://example/instanceA'},
+                to: { id: 'http://example/instanceA'}
             };
 
             expect(() => index.addEdge(edge)).to.throw(Errors.CyclicEdgeError);
@@ -138,8 +134,8 @@ describe('GraphIndex', () => {
         it('should add edge', () => {
             const edge = {
                 label: 'test',
-                fromVertexIRI: 'http://example/instanceA',
-                toVertexIRI: 'http://example/instanceB'
+                from: { id: 'http://example/instanceA'},
+                to: { id: 'http://example/instanceB'}
             };
 
             index.addEdge(edge);
@@ -149,8 +145,8 @@ describe('GraphIndex', () => {
         it('should throw when edge is duplicate', () => {
             const edge = {
                 label: 'test',
-                fromVertexIRI: 'http://example/instanceA',
-                toVertexIRI: 'http://example/instanceB'
+                from: { id: 'http://example/instanceA'},
+                to: { id: 'http://example/instanceB'}
             };
 
             index.addEdge(edge);
@@ -159,7 +155,7 @@ describe('GraphIndex', () => {
     });
 
     describe('.addVertex', () => {
-        let index: GraphIndex;
+        let index: GraphIndex<types.Vertex, types.Edge<types.Vertex>>;
 
         beforeEach(() => {
             index = new GraphIndex();
@@ -281,8 +277,8 @@ describe('GraphIndex', () => {
 
         it('should return edge', () => {
             expect(index.getEdge(
-                'test', 
-                'http://example/instanceA', 
+                'test',
+                'http://example/instanceA',
                 'http://example/instanceB')).to.be.ok;
         });
     });
@@ -327,13 +323,13 @@ describe('GraphIndex', () => {
             index.addVertex({ id: 'http://example/outgoing' });
             index.addVertex({ id: 'http://example/incomingA' });
             index.addVertex({ id: 'http://example/incomingB' });
-            
+
             index.addEdge({
-                label: 'test', 
+                label: 'test',
                 fromId: 'http://example/outgoing',
                 toId: 'http://example/incomingA'
             });
-            
+
             index.addEdge({
                 label: 'test',
                 fromId: 'http://example/outgoing',
@@ -368,13 +364,13 @@ describe('GraphIndex', () => {
             index.addVertex({ id: 'http://example/outgoing' });
             index.addVertex({ id: 'http://example/incomingA' });
             index.addVertex({ id: 'http://example/incomingB' });
-            
+
             index.addEdge({
-                label: 'test', 
+                label: 'test',
                 fromId: 'http://example/outgoing',
                 toId: 'http://example/incomingA'
             });
-            
+
             index.addEdge({
                 label: 'test',
                 fromId: 'http://example/outgoing',
@@ -424,6 +420,142 @@ describe('GraphIndex', () => {
 
         it('should return prefix for substring match', () => {
             expect(index.getPrefix('http://example/prefix/test/1')).to.equal('test');
+        });
+    });
+
+    describe('.getVertex', () => {
+        let index: GraphIndex;
+
+        beforeEach(() => {
+            index = new GraphIndex();
+            index.addVertex({
+                id: 'urn:example:instance'
+            });
+        });
+
+        it('should throw for null, empty or undefined id', () => {
+            expect(() => index.getVertex(null)).to.throw(ReferenceError);
+            expect(() => index.getVertex(undefined)).to.throw(ReferenceError);
+            expect(() => index.getVertex('')).to.throw(ReferenceError);
+        });
+
+        it('should throw for invalid vertex id', () => {
+            expect(() => index.getVertex('http://')).to.throw(Errors.InvalidIRIError);
+            expect(() => index.getVertex('urn')).to.throw(Errors.InvalidIRIError);
+        });
+
+        it('should return undefined when the vertex does not exist', () => {
+            expect(index.getVertex('urn:example:doesNotExist')).to.be.undefined;
+        });
+
+        it('should return vertex', () => {
+            const vertex = index.getVertex('urn:example:instance');
+            expect(vertex).to.be.ok;
+            expect(vertex.id).to.equal('urn:example:instance');
+        });
+    });
+
+    describe('.getVertexIncoming', () => {
+        let index: GraphIndex;
+
+        beforeEach(() => {
+            index = new GraphIndex();
+            index.addVertex({ id: 'urn:example:instanceA' });
+            index.addVertex({ id: 'urn:example:instanceB' });
+            index.addVertex({ id: 'urn:example:instanceC' });
+
+            index.addEdge({
+                label: 'relatedTo',
+                fromId: 'urn:example:instanceA',
+                toId: 'urn:example:instanceC'
+            });
+
+            index.addEdge({
+                label: 'childOf',
+                fromId: 'urn:example:instanceB',
+                toId: 'urn:example:instanceC'
+            });
+        });
+
+        it('should throw when vertex id is null, undefined or empty', () => {
+            expect(() => [...index.getVertexIncoming(null)]).to.throw(ReferenceError);
+            expect(() => [...index.getVertexIncoming(undefined)]).to.throw(ReferenceError);
+            expect(() => [...index.getVertexIncoming('')]).to.throw(ReferenceError);
+        });
+
+        it('should throw when vertex does not exist', () => {
+            expect(() => [...index.getVertexIncoming('urn:example:notFound')]).to.throw(Errors.VertexNotFoundError);
+        });
+
+        it('should return empty when vertex has no incoming', () => {
+            const incoming = [...index.getVertexIncoming('urn:example:instanceA')];
+            expect(incoming.length).to.equal(0);
+        });
+
+        it('should return all incoming for vertex', () => {
+            const incoming = [...index.getVertexIncoming('urn:example:instanceC')];
+            expect(incoming.length).to.equal(2);
+            expect(incoming.some(x => x.edge.label === 'relatedTo' && x.vertex.id === 'urn:example:instanceA')).to.be.true;
+            expect(incoming.some(x => x.edge.label === 'childOf' && x.vertex.id === 'urn:example:instanceB')).to.be.true;
+        });
+
+        it('should return filtered incoming vertices', () => {
+            const incoming = [...index.getVertexIncoming('urn:example:instanceC', 'relatedTo')];
+            expect(incoming.length).to.equal(1);
+            expect(incoming[0].edge.label).to.equal('relatedTo');
+            expect(incoming[0].vertex.id).to.equal('urn:example:instanceA');
+        });
+    });
+
+    describe('.getVertexOutgoing', () => {
+        let index: GraphIndex;
+
+        beforeEach(() => {
+            index = new GraphIndex();
+            index.addVertex({ id: 'urn:example:instanceA' });
+            index.addVertex({ id: 'urn:example:instanceB' });
+            index.addVertex({ id: 'urn:example:instanceC' });
+
+            index.addEdge({
+                label: 'relatedTo',
+                fromId: 'urn:example:instanceA',
+                toId: 'urn:example:instanceB'
+            });
+
+            index.addEdge({
+                label: 'childOf',
+                fromId: 'urn:example:instanceA',
+                toId: 'urn:example:instanceC'
+            });
+        });
+
+        it('should throw when vertex id is null, undefined or empty', () => {
+            expect(() => [...index.getVertexOutgoing(null)]).to.throw(ReferenceError);
+            expect(() => [...index.getVertexOutgoing(undefined)]).to.throw(ReferenceError);
+            expect(() => [...index.getVertexOutgoing('')]).to.throw(ReferenceError);
+        });
+
+        it('should throw when vertex does not exist', () => {
+            expect(() => [...index.getVertexOutgoing('urn:example:notFound')]).to.throw(Errors.VertexNotFoundError);
+        });
+
+        it('should return empty when vertex has no outgoing', () => {
+            const incoming = [...index.getVertexOutgoing('urn:example:instanceB')];
+            expect(incoming.length).to.equal(0);
+        });
+
+        it('should return all outgoing for vertex', () => {
+            const incoming = [...index.getVertexOutgoing('urn:example:instanceA')];
+            expect(incoming.length).to.equal(2);
+            expect(incoming.some(x => x.edge.label === 'relatedTo' && x.vertex.id === 'urn:example:instanceB')).to.be.true;
+            expect(incoming.some(x => x.edge.label === 'childOf' && x.vertex.id === 'urn:example:instanceC')).to.be.true;
+        });
+
+        it('should return filtered outgoing vertices', () => {
+            const incoming = [...index.getVertexOutgoing('urn:example:instanceA', 'relatedTo')];
+            expect(incoming.length).to.equal(1);
+            expect(incoming[0].edge.label).to.equal('relatedTo');
+            expect(incoming[0].vertex.id).to.equal('urn:example:instanceB');
         });
     });
 });

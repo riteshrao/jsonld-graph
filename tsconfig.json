@@ -8,6 +8,7 @@
         "moduleResolution": "node",
         "noImplicitAny": true,
         "noUnusedLocals": true,
+        "strictNullChecks": true,
         "sourceMap": true,
         "suppressImplicitAnyIndexErrors": true,
         "removeComments": false,

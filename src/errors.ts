@@ -108,11 +108,11 @@ export namespace Errors {
     export class DuplicateContextError extends GraphError {
         /**
          * Creates an instance of DuplicateContextError.
-         * @param {string} uri The uri of the duplicate context.
+         * @param {string} url The url of the duplicate context.
          * @memberof DuplicateContextError
          */
-        constructor(public readonly uri: string) {
-            super(`Another context with uri ${uri} already exists.`);
+        constructor(public readonly url: string) {
+            super(`Another context with url ${url} already exists.`);
             this.name = 'DuplicateContextError';
         }
     }
