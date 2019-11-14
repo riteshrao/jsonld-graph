@@ -51,7 +51,7 @@
     },
     "dependencies": {
         "events": "^3.0.0",
-        "jsiterable": "^3.0.1",
+        "jsiterable": "^3.0.3",
         "jsonld": "^1.5.4",
         "lodash.clonedeep": "^4.5.0",
         "shortid": "^2.2.14",
