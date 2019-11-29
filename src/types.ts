@@ -66,24 +66,6 @@ export interface Vertex {
 }
 
 /**
- * @description Filter function for selecting edges.
- * @export
- * @interface EdgeFilter
- */
-export interface EdgeFilter<V extends Vertex, E extends Edge<V>> {
-    (edge: E): boolean;
-}
-
-/**
- * @description Filter function for selecting vertices.
- * @export
- * @interface VertexFilter
- */
-export interface VertexFilter<V extends Vertex> {
-    (node: V): boolean;
-}
-
-/**
  * @description Factory for creating types in the graph.
  * @export
  * @interface GraphFactory
@@ -94,6 +76,7 @@ export interface GraphTypesFactory<V extends Vertex, E extends Edge<V>> {
      * @param {string} label The edge label.
      * @param {Vertex} from The outgoing vertex.
      * @param {Vertex} to The incoming vertex.
+     * @param {JsonldGraph} graph The graph for which the vertex should be created.
      * @returns {Edge}
      * @memberof GraphFactory
      */
@@ -102,6 +85,7 @@ export interface GraphTypesFactory<V extends Vertex, E extends Edge<V>> {
     /**
      * @description Creates a new vertex.
      * @param {string} id The id of the vertex.
+     * @param {JsonldGraph} graph The graph for which the vertex should be created.
      * @returns {Vertex}
      * @memberof GraphFactory
      */
@@ -113,7 +97,7 @@ export interface GraphTypesFactory<V extends Vertex, E extends Edge<V>> {
  * @export
  * @interface JsonldGraphOptions
  */
-export interface GraphOptions {
+export interface GraphOptions<V extends Vertex, E extends Edge<V>> {
     /**
      * @description True to enable loading contexts from remote sources, else false.
      * @type {boolean}
@@ -125,9 +109,7 @@ export interface GraphOptions {
      * @type {types.GraphTypesFactory}
      * @memberof JsonldGraphOptions
      */
-    typeFactory?<V extends Vertex, E extends Edge<V>>(
-        graph: JsonldGraph<V, E>
-    ): GraphTypesFactory<V, E>;
+    typeFactory?: GraphTypesFactory<V, E>;
 }
 
 /**
@@ -163,6 +145,13 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      */
     setPrefix(prefix: string, iri: string): void;
     /**
+     * @description Compacts an IRI with a prefix.
+     * @param {string} id The id 
+     * @returns {string}
+     * @memberof JsonldGraph
+     */
+    compactIRI(id: string): string;
+    /**
      * @description Creates a new edge.
      * @param {string} label The label of the edge.
      * @param {(string | V)} from The outgoing vertex id or instance.
@@ -179,11 +168,19 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      */
     createVertex(id: string): V;
     /**
-     * @description Gets all contexts associated with the graph.
-     * @returns {Iterable<{ uri: string, definition: any}>}
+     * @description
+     * @param {string} id
+     * @returns {string}
      * @memberof JsonldGraph
      */
-    getContexts(): Iterable<{ uri: string, definition: any}>;
+    expandIRI(id: string): string;
+    /**
+     * @description Gets all contexts added to the graph.
+     * @returns {Iterable<[string, any]>} A tuple where the first element in the tuple is the context IRI and the second element is the context definition.
+     * @memberof JsonldGraph
+     * 
+     */
+    getContexts(): Iterable<[string, any]>;
     /**
      * @description Gets edges in the graph.
      * @param {string} [label] Optional label filter to only return edges with the specified label.
@@ -198,7 +195,7 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      * @returns {Iterable<V>}
      * @memberof JsonldGraph
      */
-    getIncoming(label: string, filter?: VertexFilter<V>): Iterable<V>;
+    getIncoming(label: string): Iterable<V>;
     /**
      * @description Gets all vertices that have an outgoing edge with the specified label.
      * @param {string} label The label of the outgoing edge.
@@ -206,21 +203,20 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      * @returns {Iterable<V>}
      * @memberof JsonldGraph
      */
-    getOutgoing(label: string, filter?: VertexFilter<V>): Iterable<V>;
+    getOutgoing(label: string): Iterable<V>;
     /**
      * @description Gets vertices in the graph.
-     * @param {VertexFilter<V>} [filter] Optional vertex filter used to return only vertices that match the filter condition.
      * @returns {Iterable<V>}
      * @memberof JsonldGraph
      */
-    getVertices(filter?: VertexFilter<V>): Iterable<V>;
+    getVertices(): Iterable<V>;
     /**
      * @description Gets a vertex in the graph.
      * @param {string} id The id of the vertex to get.
      * @returns {V}
      * @memberof JsonldGraph
      */
-    getVertex(id: string): V;
+    getVertex(id: string): V | undefined;
     /**
      * @description Checks if an edge exists in the graph.
      * @param {string} label The label of the edge.

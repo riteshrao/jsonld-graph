@@ -94,7 +94,9 @@ export namespace Errors {
          * @memberof ContextNotSpecifiedError
          */
         constructor(public operationContext: string) {
-            super(`A context was not specified implicitly or explicitly for operation ${operationContext}`);
+            super(
+                `A context was not specified implicitly or explicitly for operation ${operationContext}`
+            );
             this.name = 'ContextNotSpecifiedError';
         }
     }
@@ -139,7 +141,7 @@ export namespace Errors {
     /**
      * @description Error thrown when a duplicate edge was found.
      * @export
-     * @class DuplicateEdgeError   
+     * @class DuplicateEdgeError
      * @extends {GraphError}
      */
     export class DuplicateEdgeError extends GraphError {
@@ -172,14 +174,16 @@ export namespace Errors {
          * @param {string} label The edge label.
          * @param {string} fromNodeId The id of the outgoing node.
          * @param {string} direction The edge direction.
-         * @memberof EdgeNotFoundError 
+         * @memberof EdgeNotFoundError
          */
         constructor(
             public readonly label: string,
             public readonly fromNodeId: string,
             public readonly direction: string
         ) {
-            super(`Expected ${direction} node with id ${fromNodeId} was not found for edge ${label}`);
+            super(
+                `Expected ${direction} node with id ${fromNodeId} was not found for edge ${label}`
+            );
             this.name = 'IndexEdgeNotFoundError';
         }
     }

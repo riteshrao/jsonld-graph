@@ -9,9 +9,18 @@ type GraphType = types.JsonldGraph<Vertex, types.Edge<Vertex>>;
  * @class Vertex
  */
 export default class Vertex implements types.Vertex {
+    private _id: string;
     private readonly _graph: GraphType;
 
-    constructor(graph: GraphType) {
+    constructor(id: string, graph: GraphType) {
+        if (!id) {
+            throw new ReferenceError(`Invalid id. id is '${id}'`);
+        }
+        if (!graph) {
+            throw new ReferenceError(`Invalid graph. graph is '${graph}'`);
+        }
+
+        this._id = id;
         this._graph = graph;
     }
 
@@ -49,8 +58,8 @@ export default class Vertex implements types.Vertex {
         throw new Error('Not implemented');
     }
 
-    getAttributeValue<T = string>(name: string): T
-    getAttributeValue(name: string, language: string): string
+    getAttributeValue<T = string>(name: string): T;
+    getAttributeValue(name: string, language: string): string;
     getAttributeValue<T = string>(name: string, language?: string): T {
         throw new Error('Not implemented');
     }
@@ -59,11 +68,11 @@ export default class Vertex implements types.Vertex {
         throw new Error('Not implemented');
     }
 
-    getIncoming(label?: string): Iterable<{ label: string, fromVertex: Vertex }> {
+    getIncoming(label?: string): Iterable<{ label: string; fromVertex: Vertex }> {
         throw new Error('Not implemented');
     }
 
-    getOutgoing(label?: string): Iterable<{ label: string, toVertex: Vertex }> {
+    getOutgoing(label?: string): Iterable<{ label: string; toVertex: Vertex }> {
         throw new Error('Not implemented');
     }
 
@@ -103,14 +112,14 @@ export default class Vertex implements types.Vertex {
         throw new Error('Not implemented');
     }
 
-    setIncoming(label: string, fromVertex: Vertex): this
-    setIncoming(label: string, fromVertex: string, createIfNotExists?: boolean): this
+    setIncoming(label: string, fromVertex: Vertex): this;
+    setIncoming(label: string, fromVertex: string, createIfNotExists?: boolean): this;
     setIncoming(label: string, fromVertex: string | Vertex, createIfNotExists?: boolean): this {
         throw new Error('Not implemented');
     }
 
-    setOutgoing(label: string, toVertex: Vertex): this
-    setOutgoing(label: string, toVertex: string, createIfNotExists?: boolean): this
+    setOutgoing(label: string, toVertex: Vertex): this;
+    setOutgoing(label: string, toVertex: string, createIfNotExists?: boolean): this;
     setOutgoing(label: string, toVertex: string | Vertex, createIfNotExists?: boolean): this {
         throw new Error('Not implemented');
     }

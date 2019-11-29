@@ -13,7 +13,7 @@
         "coverage": "rimraf ,/coverage && npm run test && opener ./coverage/index.html",
         "lint": "tslint --config tslint.json --project tsconfig.json --exclude '**/*.d.ts' src/**/*",
         "pretty": "prettier --config .prettierrc.yml --log=silent --write \"src/**/*.ts\"",
-        "build": "npm run pretty && npm run lint  && tsc",
+        "build": "tsc",
         "build-dist": "npm run clean && npm run build && npm run test",
         "prepublishOnly": "npm run build-dist",
         "test": "nyc mocha --opts mocha.spec.opts"
@@ -48,7 +48,7 @@
         "tslint-config-airbnb": "^5.11.2",
         "tslint-config-prettier": "^1.18.0",
         "tslint-no-unused-expression-chai": "^0.1.4",
-        "typescript": "^3.6.4"
+        "typescript": "^3.7.2"
     },
     "dependencies": {
         "jsiterable": "^3.0.2",
