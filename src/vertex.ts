@@ -2,6 +2,7 @@ import * as types from './types';
 import Iterable from 'jsiterable';
 
 type GraphType = types.JsonldGraph<Vertex, types.Edge<Vertex>>;
+type VertexSeletor = (vertex: Vertex) => boolean;
 
 /**
  * @description Vertex in a graph.
@@ -92,11 +93,11 @@ export default class Vertex implements types.Vertex {
         throw new Error('Not implemented');
     }
 
-    removeIncoming(label?: string, filter?: string | types.VertexFilter<Vertex>): this {
+    removeIncoming(label?: string, filter?: string | VertexSeletor): this {
         throw new Error('Not implemented');
     }
 
-    removeOutgoing(label?: string, filter?: string | types.VertexFilter<Vertex>): this {
+    removeOutgoing(label?: string, filter?: string | VertexSeletor): this {
         throw new Error('Not implemented');
     }
 

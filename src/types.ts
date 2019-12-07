@@ -260,10 +260,10 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
     removeContext(uri: string): void;
     /**
      * @description Removes a vertex from the graph.
-     * @param {(Vertex)} vertex The vertex instance to remove.
+     * @param {(string | Vertex)} vertex The id of the vertex or vertex instance to remove.
      * @memberof JsonldGraph
      */
-    removeVertex(vertex: Vertex): void;
+    removeVertex(vertex: string | Vertex): void;
     /**
      * @description Removes a mapped prefix from the graph.
      * @param {string} prefix

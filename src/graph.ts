@@ -1,5 +1,3 @@
-// TODO: Reduce the amount of string manipulations done for compact / expand in a single run through
-
 import Iterable from 'jsiterable';
 import * as jsonld from 'jsonld';
 import { RemoteDocument } from 'jsonld/jsonld-spec';
@@ -403,7 +401,23 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
      * @memberof JsonldGraph
      */
     hasEdge(label: string, from: string | V, to: string | V): boolean {
-        throw new Error('Not implemented');
+        if (!label) {
+            throw new ReferenceError(`Invalid label. label is '${label}'`);
+        }
+
+        if (!from) {
+            throw new ReferenceError(`Invalid from. from is '${from}'`);
+        }
+
+        if (!to) {
+            throw new ReferenceError(`Invalid to. to is '${to}'`);
+        }
+
+        const labelIRI = this.expandIRI(label);
+        const outgoingV = typeof from === 'string' ? this.expandIRI(from) : this.expandIRI(from.id);
+        const incomingV = typeof to === 'string' ? this.expandIRI(to) : this.expandIRI(to.id);
+        const edgeId = this._formatEdgeId(labelIRI, outgoingV, incomingV);
+        return this._edges.has(edgeId);
     }
 
     /**
@@ -434,13 +448,18 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
     ) {
         throw new Error('Not implemented');
     }
+
     /**
      * @description Removes a context from the graph.
      * @param {string} uri The URI of the context to remove.
      * @memberof JsonldGraph
      */
     removeContext(uri: string): void {
-        throw new Error('Not implemented');
+        if (!uri) {
+            throw new ReferenceError(`Invalid context uri. context uri is '${uri}'`);
+        }
+
+        this._contexts.delete(uri);
     }
 
     /**
@@ -449,7 +468,18 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
      * @memberof JsonldGraph
      */
     removeEdge(edge: E): void {
-        throw new Error('Not implemented');
+        if (!edge) {
+            throw new ReferenceError(`Invalid edge. edge is '${edge}'`);
+        }
+
+        const edgeId = this._formatEdgeId(
+            this.expandIRI(edge.label),
+            this.expandIRI(edge.from.id),
+            this.expandIRI(edge.to.id)
+        );
+
+        this._edges.delete(edgeId);
+        this._removeEdgeIndices(edge);
     }
 
     /**
@@ -457,8 +487,35 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
      * @param {(string | Vertex)} vertex The IRI or vertex instance to remove.
      * @memberof JsonldGraph
      */
-    removeVertex(vertex: V): void {
-        throw new Error('Not implemented');
+    removeVertex(vertex: string | V): void {
+        if (!vertex) {
+            throw new ReferenceError(`Invalid vertex. vertex is '${vertex}'`);
+        }
+
+        let vertexIRI =
+            typeof vertex === 'string' ? this.expandIRI(vertex) : this.expandIRI(vertex.id);
+
+        this._vertices.delete(vertexIRI);
+        const incomingEdges = this._indexMap.get(JsonldGraph.IX_NODE_INCOMING_ALL_KEY(vertexIRI));
+        const outgoingEdges = this._indexMap.get(JsonldGraph.IX_NODE_OUTGOING_ALL(vertexIRI));
+
+        if (incomingEdges) {
+            for (const edgeId of incomingEdges) {
+                const edge = this._edges.get(edgeId);
+                if (edge) {
+                    this.removeEdge(edge);
+                }
+            }
+        }
+
+        if (outgoingEdges) {
+            for (const edgeId of outgoingEdges) {
+                const edge = this._edges.get(edgeId);
+                if (edge) {
+                    this.removeEdge(edge);
+                }
+            }
+        }
     }
 
     /**
