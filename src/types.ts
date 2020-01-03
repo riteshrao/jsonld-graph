@@ -149,7 +149,7 @@ export interface GraphTypesFactory<V extends Vertex, E extends Edge<V>> {
      * @returns {Vertex}
      * @memberof GraphFactory
      */
-    createVertex(id: string, graph: JsonldGraph<V, E>): V;
+    createVertex(id: string, typeIds: string[], graph: JsonldGraph<V, E>): V;
 }
 
 /**
@@ -274,10 +274,11 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
     /**
      * @description Creates a new vertex using the vertex factory.
      * @param {string} id The id of the vertex to create.
+     * @param {string[]} typeId Optional type ids of the vertex.
      * @returns {V}
      * @memberof JsonldGraph
      */
-    createVertex(id: string): V;
+    createVertex(id: string, ...typeId: string[]): V;
     /**
      * @description
      * @param {string} id

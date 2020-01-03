@@ -270,10 +270,11 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
     /**
      * @description Creates a new vertex using the vertex factory.
      * @param {string} id The id of the vertex to create.
+     * @param {string} types Optional type ids of the vertex to create.
      * @returns {V}
      * @memberof JsonldGraph
      */
-    createVertex(id: string): V {
+    createVertex(id: string, ...types: string[]): V {
         if (!id) {
             throw new ReferenceError(`Invalid id. id is '${id}'`);
         }
@@ -283,7 +284,8 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
         }
 
         const expandedId = this.expandIRI(id, true);
-        const vertex = this._typeFactory.createVertex(expandedId, this);
+        const expandedTypeIds = types && types.map(typeId => this.expandIRI(typeId, true))
+        const vertex = this._typeFactory.createVertex(expandedId, expandedTypeIds, this);
         this._vertices.set(expandedId, vertex);
         return vertex;
     }
@@ -848,7 +850,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
             const types = triple[JsonldKeywords.type] || [];
             const vertex = this.hasVertex(vertexId)
                 ? this.getVertex(vertexId)!
-                : this.createVertex(vertexId);
+                : this.createVertex(vertexId, types);
 
             for (const type of types) {
                 this.createEdge(JsonldKeywords.type, vertexId, type, true);
