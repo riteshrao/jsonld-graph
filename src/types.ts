@@ -56,13 +56,73 @@ export interface Edge<V extends Vertex> {
     to: V;
 }
 
+export interface VertexSelector<V extends Vertex> {
+    (vertex: V): boolean;
+}
+
 /**
  * @description Graph vertex.
  * @export
  * @interface Vertex
  */
 export interface Vertex {
+    /**
+     * @description Gets or sets the id of the vertex.
+     * @type {string}
+     * @memberof Vertex
+     */
     id: string;
+    /**
+     * @description Adds an attribute value.
+     * @param {string} name The name of the attribute to which the value is appended.
+     * @param {*} value The value to append.
+     * @param {string} [language] Optional language identifier for string values.
+     * @returns {this}
+     * @memberof Vertex
+     */
+    appendAttributeValue(name: string, value: any, language?: string): this;
+    /**
+     * @description Gets all attributes of the vertex.
+     * @returns {Iterable<[string, AttributeValue[]]>}
+     * @memberof Vertex
+     */
+    getAttributes(): Iterable<[string, AttributeValue[]]>;
+    /**
+     * @description Gets the value of an attribute.
+     * @template T The data type of the value.
+     * @param {string} name The name of the attribute whose value is retrieved.
+     * @returns {T} The first value of the attribute.
+     * @memberof Vertex
+     */
+    getAttributeValue<T = string>(name: string): T;
+    /**
+     * @description Gets the value of an attribute.
+     * @param {string} name The name of the attribute whose value is retrieved.
+     * @param {string} language The language identifier of the value to get.
+     * @returns {string} The first value of the attribute.
+     * @memberof Vertex
+     */
+    getAttributeValue(name: string, language: string): string;
+
+    getAttributeValues<T = string>(name: string): Iterable<AttributeValue<T>>;
+
+    getIncoming(label?: string): Iterable<{ label: string, fromVertex: Vertex}>;
+    getOutgoing(label?: string): Iterable<{ label: string, toVertex: Vertex}>;
+    getTypes(): Iterable<Vertex>;
+    hasAttribute(name: string): boolean;
+    hasAttributeValue(name: string, value: any, language?: string): boolean;
+    isType(typeId: string): boolean;
+    removeIncoming(label?: string, filter?: string | VertexSelector<this>): void;
+    removeOutgoing(label?: string, filter?: string | VertexSelector<this>): void;
+    removeType(...typeIds: string[]): this;
+    setAttributeValue(name: string, value: any): this;
+    setAttributeValue(name: string, value: string, language: string): this;
+    setIncoming(label: string, fromVertex: Vertex): this;
+    setIncoming(label: string, fromVertex: string, createIfNotExists?: boolean): this;
+    setOutgoing(label: string, toVertex: Vertex): this;
+    setOutgoing(label: string, toVertex: string, createIfNotExists?: boolean): this;
+    setType(...types: string[]): this;
+    toJson<T = any>(options: JsonFormatOptions): Promise<T>;
 }
 
 /**
@@ -93,6 +153,16 @@ export interface GraphTypesFactory<V extends Vertex, E extends Edge<V>> {
 }
 
 /**
+ * @description Resolver function that normalizes vertices in the graph.
+ * @export
+ * @interface VertexResolver
+ * @template V
+ */
+export interface VertexResolver<V extends Vertex> {
+    (vertex: V): void;
+}
+
+/**
  * @description Graph options.
  * @export
  * @interface JsonldGraphOptions
@@ -110,6 +180,47 @@ export interface GraphOptions<V extends Vertex, E extends Edge<V>> {
      * @memberof JsonldGraphOptions
      */
     typeFactory?: GraphTypesFactory<V, E>;
+
+    /**
+     * @description Resolver function that can resolve the type of blank type ertex nodes.
+     * @type {VertexResolver<V>}
+     * @memberof GraphOptions
+     */
+    blankTypeResolver?: VertexResolver<V>;
+
+    /**
+     * @description Resolver function that can resolve the id of blank id vertex nodes.
+     * @type {VertexResolver<V>}
+     * @memberof GraphOptions
+     */
+    blankIdResolber?: VertexResolver<V>;
+}
+
+export interface GraphLoadOptions {
+    /**
+     * @description The base IRI of inputs.
+     * @type {string}
+     * @memberof GraphLoadOptions
+     */
+    base?: string;
+    /**
+     * @description Contexts to apply to inputs that don't explicitly specify an @context
+     * @type {(string | string [] | object | object[])}
+     * @memberof GraphLoadOptions
+     */
+    contexts?: string | [string] | object | [object];
+    /**
+     * @description True to merge attributes of existing vertices, else append attribute values.
+     * @type {boolean}
+     * @memberof GraphLoadOptions
+     */
+    merge?: boolean;
+    /**
+     * @description Normalize all blank id and blank type vetices after load.
+     * @type {boolean}
+     * @memberof GraphLoadOptions
+     */
+    normalize?: boolean;
 }
 
 /**
@@ -146,7 +257,7 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
     setPrefix(prefix: string, iri: string): void;
     /**
      * @description Compacts an IRI with a prefix.
-     * @param {string} id The id 
+     * @param {string} id The id
      * @returns {string}
      * @memberof JsonldGraph
      */
@@ -178,7 +289,7 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      * @description Gets all contexts added to the graph.
      * @returns {Iterable<[string, any]>} A tuple where the first element in the tuple is the context IRI and the second element is the context definition.
      * @memberof JsonldGraph
-     * 
+     *
      */
     getContexts(): Iterable<[string, any]>;
     /**
@@ -277,5 +388,5 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      * @returns {Promise<T>}
      * @memberof JsonldGraph
      */
-    toJson<T = any>(options?: JsonFormatOptions): Promise<T>;
+    toJson<T extends object = object>(options?: JsonFormatOptions): Promise<T>;
 }
