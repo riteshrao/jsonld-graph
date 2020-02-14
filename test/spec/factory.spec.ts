@@ -1,6 +1,6 @@
 import sinon from 'sinon';
 import { expect } from 'chai';
-import { GraphTypeFactory, JsonldGraph, Vertex, Edge } from '../../src';
+import { GraphTypeFactory, Vertex, Edge } from '../../src';
 
 describe('GraphTypeFactory', () => {
     let graph: any;
@@ -43,19 +43,19 @@ describe('GraphTypeFactory', () => {
 
     describe('.createVertex', () => {
         it('should throw when vertex id is null, empty or undefined', () => {
-            expect(() => factory.createVertex(null, null, graph)).to.throw(ReferenceError);
-            expect(() => factory.createVertex('', null, graph)).to.throw(ReferenceError);
-            expect(() => factory.createVertex(undefined, null, graph)).to.throw(ReferenceError);
+            expect(() => factory.createVertex(null as any, null as any, graph)).to.throw(ReferenceError);
+            expect(() => factory.createVertex('', null as any, graph)).to.throw(ReferenceError);
+            expect(() => factory.createVertex(undefined as any, null as any, graph)).to.throw(ReferenceError);
         });
 
         it('should throw when graph is null or undefined', () => {
-            expect(() => factory.createVertex('foo', null, null)).to.throw(ReferenceError);
-            expect(() => factory.createVertex('foo', null, undefined)).to.throw(ReferenceError);
+            expect(() => factory.createVertex('foo', null as any, null as any)).to.throw(ReferenceError);
+            expect(() => factory.createVertex('foo', null as any, undefined as any)).to.throw(ReferenceError);
         });
 
         it('should have created vertex without types', () => {
             const stub = sinon.stub(Vertex.prototype, 'setType');
-            const vertex = factory.createVertex('foo', null, graph);
+            const vertex = factory.createVertex('foo', null as any, graph);
             expect(vertex).to.be.ok;
             expect(stub.callCount).to.equal(0);
         });

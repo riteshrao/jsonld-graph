@@ -23,7 +23,7 @@ const PREFIX_REGEX = /^[a-zA-z][a-zA-Z0-9]*$/;
 export default class JsonldGraph<V extends types.Vertex = Vertex, E extends types.Edge<V> = Edge<V>>
     implements types.JsonldGraph<V, E> {
     private static IX_EDGES_KEY = (label: string) => `[e]::${label}`;
-    private static IX_NODE_INCOMING_ALL_KEY = (id: string) => `[v]::${id}_[in]`;
+    private static IX_NODE_INCOMING_ALL = (id: string) => `[v]::${id}_[in]`;
     private static IX_NODE_INCOMING_EDGES = (id: string, label: string) =>
         `[v]::${id}_[in]_[e]::${label}`;
     private static IX_NODE_OUTGOING_ALL = (id: string) => `[v]::${id}_[out]`;
@@ -284,7 +284,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
         }
 
         const expandedId = this.expandIRI(id, true);
-        const expandedTypeIds = types && types.map(typeId => this.expandIRI(typeId, true))
+        const expandedTypeIds = types && types.map(typeId => this.expandIRI(typeId, true));
         const vertex = this._typeFactory.createVertex(expandedId, expandedTypeIds, this);
         this._vertices.set(expandedId, vertex);
         return vertex;
@@ -354,12 +354,37 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
     }
 
     /**
+     * @description Gets all incoming edges to a vertex.
+     * @param {string} vertex The vertex id whose incoming edges is returned.
+     * @param {string} [label] Optional label used to filter only edges with the specified label.
+     * @returns {Iterable<E>} Iterable containing all matching incoming edges
+     * @memberof JsonldGraph
+     */
+    getIncomingEdges(vertex: string, label?: string): Iterable<E> {
+        if (!vertex) {
+            throw new ReferenceError(`Invalid vertex id. vertex id is '${vertex}`);
+        }
+
+        const vertexIRI = this.expandIRI(vertex);
+        const labelIRI = label && this.expandIRI(label);
+        const edgeIds = labelIRI
+            ? this._indexMap.get(JsonldGraph.IX_NODE_INCOMING_EDGES(vertexIRI, labelIRI))
+            : this._indexMap.get(JsonldGraph.IX_NODE_INCOMING_ALL(vertexIRI));
+
+        if (edgeIds && edgeIds.size > 0) {
+            return new Iterable(edgeIds).map(x => this._edges.get(x)!);
+        } else {
+            return Iterable.empty();
+        }
+    }
+
+    /**
      * @description Gets all vertices that have an incoming edge with the specified label.
      * @param {string} label The label of the incoming edge.
      * @returns {Iterable<V>}
      * @memberof JsonldGraph
      */
-    getIncoming(label: string): Iterable<V> {
+    getIncomingVertices(label: string): Iterable<V> {
         if (!label) {
             throw new ReferenceError();
         }
@@ -385,12 +410,37 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
     }
 
     /**
+     * @description Gets all outgoing edges from a vertex.
+     * @param {string} vertex The vertex id whose outgoing edges is returned.
+     * @param {string} [label] Optional label used to filter only edges with the specified label.
+     * @returns {Iterable<E>} Iterable containing all matching outgoing edges.
+     * @memberof JsonldGraph
+     */
+    getOutgoingEdges(vertex: string, label?: string): Iterable<E> {
+        if (!vertex) {
+            throw new ReferenceError(`Invalid vertex id. vertex id is '${vertex}`);
+        }
+
+        const vertexIRI = this.expandIRI(vertex);
+        const labelIRI = label && this.expandIRI(label);
+        const edgeIds = labelIRI
+            ? this._indexMap.get(JsonldGraph.IX_NODE_OUTGOING_EDGES(vertexIRI, labelIRI))
+            : this._indexMap.get(JsonldGraph.IX_NODE_OUTGOING_ALL(vertexIRI));
+
+        if (edgeIds && edgeIds.size > 0) {
+            return new Iterable(edgeIds).map(x => this._edges.get(x)!);
+        } else {
+            return Iterable.empty();
+        }
+    }
+
+    /**
      * @description Gets all vertices that have an outgoing edge with the specified label.
      * @param {string} label The label of the outgoing edge.
      * @returns {Iterable<V>}
      * @memberof JsonldGraph
      */
-    getOutgoing(label: string): Iterable<V> {
+    getOutgoingVertices(label: string): Iterable<V> {
         if (!label) {
             throw new ReferenceError();
         }
@@ -517,12 +567,12 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
             }
         }
 
-        if (this._options?.blankIdResolber) {
+        if (this._options?.blankIdResolver) {
             const blankNodes = this._indexMap.get(JsonldGraph.IX_BLANK_NODES)!;
             for (const id of blankNodes) {
                 const vertex = this.getVertex(id);
                 if (vertex) {
-                    this._options.blankIdResolber!(vertex);
+                    this._options.blankIdResolver!(vertex);
                     if (!vertex.id.startsWith(BlankNodePrefix)) {
                         blankNodes.delete(id);
                     }
@@ -578,7 +628,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
             typeof vertex === 'string' ? this.expandIRI(vertex) : this.expandIRI(vertex.id);
 
         this._vertices.delete(vertexIRI);
-        const incomingEdges = this._indexMap.get(JsonldGraph.IX_NODE_INCOMING_ALL_KEY(vertexIRI));
+        const incomingEdges = this._indexMap.get(JsonldGraph.IX_NODE_INCOMING_ALL(vertexIRI));
         const outgoingEdges = this._indexMap.get(JsonldGraph.IX_NODE_OUTGOING_ALL(vertexIRI));
 
         if (incomingEdges) {
@@ -672,7 +722,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
                 expandContext: options?.context,
                 documentLoader: this._documentLoader,
                 skipExpansion: true
-            }) as Promise<T>
+            }) as Promise<T>;
         }
     }
 
@@ -780,7 +830,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
 
         return [
             JsonldGraph.IX_EDGES_KEY(labelIRI),
-            JsonldGraph.IX_NODE_INCOMING_ALL_KEY(fromVertexIRI),
+            JsonldGraph.IX_NODE_INCOMING_ALL(toVertexIRI),
             JsonldGraph.IX_NODE_INCOMING_EDGES(toVertexIRI, labelIRI),
             JsonldGraph.IX_NODE_OUTGOING_ALL(fromVertexIRI),
             JsonldGraph.IX_NODE_OUTGOING_EDGES(fromVertexIRI, labelIRI)
@@ -891,8 +941,8 @@ export default class JsonldGraph<V extends types.Vertex = Vertex, E extends type
             [JsonldKeywords.id]: this.expandIRI(vertex.id)
         };
 
-        for (const [predicate, values] of vertex.getAttributes()) {
-            triple[this.expandIRI(predicate)] = values.map(x => {
+        for (const {name, values} of vertex.getAttributes()) {
+            triple[this.expandIRI(name)] = values.map(x => {
                 const value = { [JsonldKeywords.value]: x.value };
                 if (x.language) {
                     value[JsonldKeywords.language] = x.language;

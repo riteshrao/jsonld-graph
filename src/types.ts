@@ -1,3 +1,5 @@
+import Iterable from 'jsiterable';
+
 /**
  * @description Attribute value type.
  * @export
@@ -86,7 +88,7 @@ export interface Vertex {
      * @returns {Iterable<[string, AttributeValue[]]>}
      * @memberof Vertex
      */
-    getAttributes(): Iterable<[string, AttributeValue[]]>;
+    getAttributes(): Iterable<{ name: string; values: AttributeValue[] }>;
     /**
      * @description Gets the value of an attribute.
      * @template T The data type of the value.
@@ -94,7 +96,7 @@ export interface Vertex {
      * @returns {T} The first value of the attribute.
      * @memberof Vertex
      */
-    getAttributeValue<T = string>(name: string): T;
+    getAttributeValue<T = any>(name: string): T | undefined;
     /**
      * @description Gets the value of an attribute.
      * @param {string} name The name of the attribute whose value is retrieved.
@@ -103,11 +105,9 @@ export interface Vertex {
      * @memberof Vertex
      */
     getAttributeValue(name: string, language: string): string;
-
-    getAttributeValues<T = string>(name: string): Iterable<AttributeValue<T>>;
-
-    getIncoming(label?: string): Iterable<{ label: string, fromVertex: Vertex}>;
-    getOutgoing(label?: string): Iterable<{ label: string, toVertex: Vertex}>;
+    getAttributeValues<T = any>(name: string): Iterable<AttributeValue<T>>;
+    getIncoming(label?: string): Iterable<{ label: string; fromVertex: Vertex }>;
+    getOutgoing(label?: string): Iterable<{ label: string; toVertex: Vertex }>;
     getTypes(): Iterable<Vertex>;
     hasAttribute(name: string): boolean;
     hasAttributeValue(name: string, value: any, language?: string): boolean;
@@ -193,7 +193,7 @@ export interface GraphOptions<V extends Vertex, E extends Edge<V>> {
      * @type {VertexResolver<V>}
      * @memberof GraphOptions
      */
-    blankIdResolber?: VertexResolver<V>;
+    blankIdResolver?: VertexResolver<V>;
 }
 
 export interface GraphLoadOptions {
@@ -301,13 +301,29 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      */
     getEdges(label?: string): Iterable<E>;
     /**
+     * @description Gets all incoming edges to a vertex.
+     * @param {string} vertex The vertex id whose incoming edges is returned.
+     * @param {string} [label] Optional label used to filter only edges with the specified label.
+     * @returns {Iterable<E>} Iterable containing all matching incoming edges
+     * @memberof JsonldGraph
+     */
+    getIncomingEdges(vertex: string, label?: string): Iterable<E>;
+    /**
      * @description Gets all vertices that have an incoming edge with the specified label.
      * @param {string} label The label of the incoming edge.
      * @param {VertexFilter<V>} [filter] Optional vertex filter used to return only vertices that match the filter.
      * @returns {Iterable<V>}
      * @memberof JsonldGraph
      */
-    getIncoming(label: string): Iterable<V>;
+    getIncomingVertices(label: string): Iterable<V>;
+    /**
+     * @description Gets all outgoing edges from a vertex.
+     * @param {string} vertex The vertex id whose outgoing edges is returned.
+     * @param {string} [label] Optional label used to filter only edges with the specified label.
+     * @returns {Iterable<E>} Iterable containing all matching outgoing edges.
+     * @memberof JsonldGraph
+     */
+    getOutgoingEdges(vertex: string, label?: string): Iterable<E>
     /**
      * @description Gets all vertices that have an outgoing edge with the specified label.
      * @param {string} label The label of the outgoing edge.
@@ -315,7 +331,7 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      * @returns {Iterable<V>}
      * @memberof JsonldGraph
      */
-    getOutgoing(label: string): Iterable<V>;
+    getOutgoingVertices(label: string): Iterable<V>;
     /**
      * @description Gets vertices in the graph.
      * @returns {Iterable<V>}

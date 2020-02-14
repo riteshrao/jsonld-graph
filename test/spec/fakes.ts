@@ -1,4 +1,5 @@
-import { Edge, Vertex, GraphTypesFactory, JsonldGraph } from '../../src/types';
+import Iterable from 'jsiterable';
+import { Edge, Vertex, GraphTypesFactory, JsonldGraph, AttributeValue } from '../../src/types';
 
 export class FakeVertex implements Vertex {
     constructor(
@@ -14,7 +15,7 @@ export class FakeVertex implements Vertex {
         throw new Error('Method not implemented.');
     }
 
-    getAttributes(): Iterable<[string, import('../../src/types').AttributeValue<any>[]]> {
+    getAttributes(): Iterable<{ name: string, values: AttributeValue<any>[]}> {
         throw new Error('Method not implemented.');
     }
 
@@ -26,7 +27,7 @@ export class FakeVertex implements Vertex {
 
     getAttributeValues<T = string>(
         name: string
-    ): Iterable<import('../../src/types').AttributeValue<T>> {
+    ): Iterable<AttributeValue<T>> {
         throw new Error('Method not implemented.');
     }
 
