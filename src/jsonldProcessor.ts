@@ -1,14 +1,16 @@
 import Iterable from 'jsiterable';
 import * as jsonld from 'jsonld';
-
+import { RemoteDocument } from 'jsonld/jsonld-spec';
 import { JsonldKeywords } from './constants';
 import Errors from './errors';
+
+type Loader = (url: string) => Promise<RemoteDocument>;
 
 // tslint:disable-next-line:no-typeof-undefined
 const remoteLoader =
     typeof process !== undefined && process.versions && process.versions.node
-        ? jsonld.documentLoaders.node()
-        : jsonld.documentLoaders.xhr();
+        ? (jsonld as any).documentLoaders.node()
+        : (jsonld as any).documentLoaders.xhr();
 
 /**
  * @description JsonldProcessor options.
@@ -28,10 +30,10 @@ export interface JsonldProcessorOptions {
 export class JsonldProcessor {
     private readonly _options: JsonldProcessorOptions;
     private readonly _contexts = new Map<string, any>();
-    private readonly _contextLoader: jsonld.DocumentLoader = (url, callback) => {
+    private readonly _contextLoader: Loader = async url => {
         if (this._contexts.has(url)) {
-            return callback(null, {
-                url: null,
+            return Promise.resolve({
+                contextUrl: null,
                 documentUrl: url,
                 document: this._contexts.get(url)
             });
@@ -39,15 +41,15 @@ export class JsonldProcessor {
 
         // Check for lower-case contexts
         if (this._contexts.has(url.toLowerCase())) {
-            return callback(null, {
-                url: null,
+            return Promise.resolve({
+                contextUrl: null,
                 documentUrl: url,
                 document: this._contexts.get(url.toLowerCase())
             });
         }
 
         if (this._options.remoteContexts) {
-            return remoteLoader(url, callback);
+            return remoteLoader(url);
         }
 
         throw new Errors.ContextNotFoundError(url);
@@ -155,7 +157,7 @@ export class JsonldProcessor {
      * @returns {Promise<any[]>}
      * @memberof JsonldProcessor
      */
-    async flatten(document: any, contexts: any | any[] = [], base?: string): Promise<any[]> {
+    async flatten(document: any, contexts: any | any[] = [], base?: string): Promise<any | any[]> {
         if (!document) {
             throw new ReferenceError(`Invalid document. document is ${document}`);
         }
@@ -191,7 +193,7 @@ export class JsonldProcessor {
             base,
             expandContext: contexts,
             documentLoader: this._contextLoader
-        });
+        } as any);
     }
 
     /**

@@ -24,7 +24,7 @@ export class JsonldGraph extends (EventEmitter as { new (): GraphEventEmitter })
      * Creates an instance of JsonLdGraph.
      * @memberof JsonLdGraph
      */
-    constructor(contexts?: [{ uri: string; context: any }]) {
+    constructor(contexts?: { uri: string; context: any }[]) {
         super();
         this._index = new GraphIndex();
         this._index.on('edgeCreated', indexEdge => this.emit('edgeAdded', new Edge(indexEdge, this._index)));

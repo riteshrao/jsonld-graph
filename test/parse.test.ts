@@ -11,7 +11,10 @@ describe('JsonldGraph parse', () => {
         const persons = JSON.parse(fs.readFileSync('./sample/persons.json', { encoding: 'utf8' }));
         const planets = JSON.parse(fs.readFileSync('./sample/planets.json', { encoding: 'utf8' }));
 
-        const graph = new JsonldGraph([{ uri: 'http://alt.universe.net/context.json', context }]);
+        const graph = new JsonldGraph([
+            {uri: 'http://alt.universe.net/context.json', context},
+            // {uri: 'http://alt.universe.net/context2.json', context: context2}
+        ]);
 
         graph.addPrefix('persons', 'http://alt.universe.net/graph/Person/');
         graph.addPrefix('planets', 'http://alt.universe.net/graph/Planet/');
