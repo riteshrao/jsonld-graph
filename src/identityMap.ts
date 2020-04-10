@@ -12,7 +12,7 @@ export class IdentityMap {
      */
     get(triple: object): string {
         const nodeId: string = triple[JsonldKeywords.id];
-        if (nodeId && nodeId.startsWith(BlankNodePrefix)) {
+        if (nodeId && !nodeId.startsWith(BlankNodePrefix)) {
             return nodeId;
         }
 

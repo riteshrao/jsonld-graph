@@ -8,11 +8,17 @@ import Iterable from 'jsiterable';
  */
 export interface AttributeValue<T = any> {
     /**
-     * @description Optional language of string values.
+     * @description Optional @language discriptor of the attribute.
      * @type {string}
      * @memberof AttributeValue
      */
     language?: string;
+    /**
+     * @description Optional @type discriptor of the attribute.
+     * @type {string}
+     * @memberof AttributeValue
+     */
+    type?: string;
     /**
      * @description The attribute value.
      * @type {T}
@@ -130,18 +136,7 @@ export interface Vertex {
  * @export
  * @interface GraphFactory
  */
-export interface GraphTypesFactory<V extends Vertex, E extends Edge<V>> {
-    /**
-     * @description Creates a new edge instance.
-     * @param {string} label The edge label.
-     * @param {Vertex} from The outgoing vertex.
-     * @param {Vertex} to The incoming vertex.
-     * @param {JsonldGraph} graph The graph for which the vertex should be created.
-     * @returns {Edge}
-     * @memberof GraphFactory
-     */
-    createEdge(label: string, from: V, to: V, graph: JsonldGraph<V, E>): E;
-
+export interface GraphTypesFactory<V extends Vertex> {
     /**
      * @description Creates a new vertex.
      * @param {string} id The id of the vertex.
@@ -149,7 +144,7 @@ export interface GraphTypesFactory<V extends Vertex, E extends Edge<V>> {
      * @returns {Vertex}
      * @memberof GraphFactory
      */
-    createVertex(id: string, typeIds: string[], graph: JsonldGraph<V, E>): V;
+    createVertex(id: string, graph: JsonldGraph<V>, ...types: string[]): V;
 }
 
 /**
@@ -167,7 +162,7 @@ export interface VertexResolver<V extends Vertex> {
  * @export
  * @interface JsonldGraphOptions
  */
-export interface GraphOptions<V extends Vertex, E extends Edge<V>> {
+export interface GraphOptions<V extends Vertex> {
     /**
      * @description True to enable loading contexts from remote sources, else false.
      * @type {boolean}
@@ -179,7 +174,7 @@ export interface GraphOptions<V extends Vertex, E extends Edge<V>> {
      * @type {types.GraphTypesFactory}
      * @memberof JsonldGraphOptions
      */
-    typeFactory?: GraphTypesFactory<V, E>;
+    typeFactory?: GraphTypesFactory<V>;
 
     /**
      * @description Resolver function that can resolve the type of blank type ertex nodes.
@@ -228,7 +223,7 @@ export interface GraphLoadOptions {
  * @export
  * @interface JsonldGraph
  */
-export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
+export interface JsonldGraph<V extends Vertex> {
     /**
      * @description Gets the no. of edges in the graph.
      * @type {number}
@@ -270,7 +265,7 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      * @returns {E}
      * @memberof JsonldGraph
      */
-    createEdge(label: string, from: string | V, to: string | V): E;
+    createEdge(label: string, from: string | V, to: string | V): Edge<V>;
     /**
      * @description Creates a new vertex using the vertex factory.
      * @param {string} id The id of the vertex to create.
@@ -299,7 +294,7 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      * @returns {Iterable<E>}
      * @memberof JsonldGraph
      */
-    getEdges(label?: string): Iterable<E>;
+    getEdges(label?: string): Iterable<Edge<V>>;
     /**
      * @description Gets all incoming edges to a vertex.
      * @param {string} vertex The vertex id whose incoming edges is returned.
@@ -307,7 +302,7 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      * @returns {Iterable<E>} Iterable containing all matching incoming edges
      * @memberof JsonldGraph
      */
-    getIncomingEdges(vertex: string, label?: string): Iterable<E>;
+    getIncomingEdges(vertex: string, label?: string): Iterable<Edge<V>>;
     /**
      * @description Gets all vertices that have an incoming edge with the specified label.
      * @param {string} label The label of the incoming edge.
@@ -323,7 +318,7 @@ export interface JsonldGraph<V extends Vertex, E extends Edge<V>> {
      * @returns {Iterable<E>} Iterable containing all matching outgoing edges.
      * @memberof JsonldGraph
      */
-    getOutgoingEdges(vertex: string, label?: string): Iterable<E>
+    getOutgoingEdges(vertex: string, label?: string): Iterable<Edge<V>>;
     /**
      * @description Gets all vertices that have an outgoing edge with the specified label.
      * @param {string} label The label of the outgoing edge.

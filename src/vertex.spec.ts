@@ -1,14 +1,15 @@
-import * as sinon from 'sinon';
-import { expect } from 'chai';
-import { Vertex, JsonldGraph, Edge, Errors } from '../../src';
+import Vertex from './vertex';
+import JsonldGraph from './graph';
+import * as errors from './errors';
 import Iterable from 'jsiterable';
 
-describe('Vertex', () => {
-    let graph: JsonldGraph<Vertex, Edge<Vertex>>;
+jest.mock('./graph');
+
+describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
 
     beforeEach(() => {
         graph = new JsonldGraph();
-        sinon.stub(graph, 'expandIRI').callsFake((id: string) => {
+        jest.spyOn(graph, 'expandIRI').mockImplementation((id: string) => {
             if (id.startsWith('test:')) {
                 return id.replace('test:', 'http://example.org/test/');
             } else {
@@ -16,7 +17,7 @@ describe('Vertex', () => {
             }
         });
 
-        sinon.stub(graph, 'compactIRI').callsFake((id) => {
+        jest.spyOn(graph, 'compactIRI').mockImplementation((id: string) => {
             if (id.startsWith('http://example.org/test/')) {
                 return id.replace('http://example.org/test/', 'test:')
             } else {
@@ -24,10 +25,6 @@ describe('Vertex', () => {
             }
         });
     });
-
-    afterEach(() => {
-        sinon.reset();
-    })
 
     describe('.ctor', () => {
         it('should throw when constructor arguments is invalid', () => {
@@ -38,7 +35,7 @@ describe('Vertex', () => {
             ]
 
             for (const [id, graph] of args) {
-                expect(() => new Vertex(id, graph)).to.throw(ReferenceError);
+                expect(() => new Vertex(id, graph)).toThrow(ReferenceError);
             }
         });
     })
@@ -46,12 +43,12 @@ describe('Vertex', () => {
     describe('.isBlankNode', () => {
         it('should return true when id starts with a blank node prefix', () => {
             const vertex = new Vertex('_:b1', {} as any);
-            return expect(vertex.isBlankNode).to.be.true;
+            expect(vertex.isBlankNode).toEqual(true);
         });
 
         it('should return false when id does not start with blank node prefix', () => {
             const vertex = new Vertex('test:1', {} as any);
-            return expect(vertex.isBlankNode).to.be.false; 
+            expect(vertex.isBlankNode).toEqual(false);
         });
     });
 
@@ -72,68 +69,68 @@ describe('Vertex', () => {
             ];
 
             for (const [name, value] of args) {
-                expect(() => vertex.appendAttributeValue(name, value)).to.throw(ReferenceError);
+                expect(() => vertex.appendAttributeValue(name, value)).toThrow(ReferenceError);
             }
         });
 
         it('should throw type error when language is specified and value is not string', () => {
-            expect(() => vertex.appendAttributeValue('test:1', 1, "en")).to.throw(TypeError);
+            expect(() => vertex.appendAttributeValue('test:1', 1, "en")).toThrow(TypeError);
         });
 
         it('should add new attribute', () => {
             vertex.appendAttributeValue('test:1', '100');
             const attributes = [...vertex.getAttributes()];
-            expect(attributes.length).to.equal(1);
-            expect(attributes[0].name).to.equal('test:1');
-            expect(attributes[0].values.length).to.equal(1);
-            expect(attributes[0].values[0].value).to.equal('100');
+            expect(attributes.length).toEqual(1);
+            expect(attributes[0].name).toEqual('test:1');
+            expect(attributes[0].values.length).toEqual(1);
+            expect(attributes[0].values[0].value).toEqual('100');
         });
 
         it('should append value to existing attribute', () => {
             vertex.appendAttributeValue('test:1', '100');
             vertex.appendAttributeValue('test:1', '200');
             const attributes = [...vertex.getAttributes()];
-            expect(attributes.length).to.equal(1);
-            expect(attributes[0].name).to.equal('test:1');
-            expect(attributes[0].values.length).to.equal(2);
-            expect(attributes[0].values[0].value).to.equal('100');
-            expect(attributes[0].values[1].value).to.equal('200');
+            expect(attributes.length).toEqual(1);
+            expect(attributes[0].name).toEqual('test:1');
+            expect(attributes[0].values.length).toEqual(2);
+            expect(attributes[0].values[0].value).toEqual('100');
+            expect(attributes[0].values[1].value).toEqual('200');
         });
 
         it('should add new localized attribute value', () => {
             vertex.appendAttributeValue('test:1', 'a', 'en');
             const attributes = [...vertex.getAttributes()];
-            expect(attributes.length).to.equal(1)
-            expect(attributes[0].name).to.equal('test:1');
-            expect(attributes[0].values.length).to.equal(1);
-            expect(attributes[0].values[0].value).to.equal('a');
-            expect(attributes[0].values[0].language).to.equal('en');
+            expect(attributes.length).toEqual(1)
+            expect(attributes[0].name).toEqual('test:1');
+            expect(attributes[0].values.length).toEqual(1);
+            expect(attributes[0].values[0].value).toEqual('a');
+            expect(attributes[0].values[0].language).toEqual('en');
         });
 
         it('should append new localized attribute value', () => {
             vertex.appendAttributeValue('test:1', 'a', 'en');
             vertex.appendAttributeValue('test:1', 'a', 'fr');
             const attributes = [...vertex.getAttributes()];
-            expect(attributes.length).to.equal(1)
-            expect(attributes[0].name).to.equal('test:1');
-            expect(attributes[0].values.length).to.equal(2);
-            expect(attributes[0].values[0].value).to.equal('a');
-            expect(attributes[0].values[0].language).to.equal('en');
-            expect(attributes[0].values[1].value).to.equal('a');
-            expect(attributes[0].values[1].language).to.equal('fr');
+            expect(attributes.length).toEqual(1)
+            expect(attributes[0].name).toEqual('test:1');
+            expect(attributes[0].values.length).toEqual(2);
+            expect(attributes[0].values[0].value).toEqual('a');
+            expect(attributes[0].values[0].language).toEqual('en');
+            expect(attributes[0].values[1].value).toEqual('a');
+            expect(attributes[0].values[1].language).toEqual('fr');
         });
 
         it('should replace existing localized attribute value', () => {
             vertex.appendAttributeValue('test:1', 'a', 'en');
             vertex.appendAttributeValue('test:1', 'b', 'en');
             const attributes = [...vertex.getAttributes()];
-            expect(attributes.length).to.equal(1)
-            expect(attributes[0].name).to.equal('test:1');
-            expect(attributes[0].values.length).to.equal(1);
-            expect(attributes[0].values[0].value).to.equal('b');
-            expect(attributes[0].values[0].language).to.equal('en');
+            expect(attributes.length).toEqual(1)
+            expect(attributes[0].name).toEqual('test:1');
+            expect(attributes[0].values.length).toEqual(1);
+            expect(attributes[0].values[0].value).toEqual('b');
+            expect(attributes[0].values[0].language).toEqual('en');
         });
-    }); 
+    });
 
     describe('.getAttributeValue', () => {
         let vertex: Vertex;
@@ -147,22 +144,22 @@ describe('Vertex', () => {
         });
 
         it('should throw when name is null, undefined or empty', () => {
-            expect(() => vertex.getAttributeValue(null as any)).to.throw(ReferenceError);
-            expect(() => vertex.getAttributeValue(undefined as any)).to.throw(ReferenceError);
-            expect(() => vertex.getAttributeValue('')).to.throw(ReferenceError);
+            expect(() => vertex.getAttributeValue(null as any)).toThrow(ReferenceError);
+            expect(() => vertex.getAttributeValue(undefined as any)).toThrow(ReferenceError);
+            expect(() => vertex.getAttributeValue('')).toThrow(ReferenceError);
         });
 
         it('should return undefined or non existent attribute', () => {
-            expect(vertex.getAttributeValue('test:x')).to.be.undefined;
+            expect(vertex.getAttributeValue('test:x')).toBeUndefined();
         });
 
         it('should return the first attribute value', () => {
-            expect(vertex.getAttributeValue('test:a')).to.equal(1);
-            expect(vertex.getAttributeValue('test:lang')).to.equal('a');
+            expect(vertex.getAttributeValue('test:a')).toEqual(1);
+            expect(vertex.getAttributeValue('test:lang')).toEqual('a');
         });
 
         it('should return the first language specific value', () => {
-            expect(vertex.getAttributeValue('test:lang', 'fr')).to.equal('b')
+            expect(vertex.getAttributeValue('test:lang', 'fr')).toEqual('b')
         });
     });
 
@@ -178,29 +175,29 @@ describe('Vertex', () => {
         });
 
         it('should throw reference error when attribute name is null, undefined or empty', () => {
-            expect(() => vertex.getAttributeValues(null as any)).to.throw(ReferenceError);
-            expect(() => vertex.getAttributeValues(undefined as any)).to.throw(ReferenceError);
-            expect(() => vertex.getAttributeValues('')).to.throw(ReferenceError);
+            expect(() => vertex.getAttributeValues(null as any)).toThrow(ReferenceError);
+            expect(() => vertex.getAttributeValues(undefined as any)).toThrow(ReferenceError);
+            expect(() => vertex.getAttributeValues('')).toThrow(ReferenceError);
         });
 
         it('should return empty when attribute does not exist', () => {
-            expect([...vertex.getAttributeValues('test:x')].length).to.equal(0);
+            expect([...vertex.getAttributeValues('test:x')].length).toEqual(0);
         });
 
         it('should return all attribute values', () => {
             const values = [...vertex.getAttributeValues('test:a')];
-            expect(values.length).to.equal(2);
-            expect(values[0].value).to.equal(1);
-            expect(values[1].value).to.equal(2);
+            expect(values.length).toEqual(2);
+            expect(values[0].value).toEqual(1);
+            expect(values[1].value).toEqual(2);
         });
 
         it('should return all localized attribute values', () => {
             const values = [...vertex.getAttributeValues('test:lang')];
-            expect(values.length).to.equal(2);
-            expect(values[0].language).to.equal('en');
-            expect(values[0].value).to.equal('a')
-            expect(values[1].language).to.equal('fr');
-            expect(values[1].value).to.equal('b');
+            expect(values.length).toEqual(2);
+            expect(values[0].language).toEqual('en');
+            expect(values[0].value).toEqual('a')
+            expect(values[1].language).toEqual('fr');
+            expect(values[1].value).toEqual('b');
         });
     });
 
@@ -213,43 +210,43 @@ describe('Vertex', () => {
             vertex = new Vertex('http://example.org/instance/a', graph);
             typeV = new Vertex('http://example.org/instance/type', graph);
             outgoingV = new Vertex('http://example.org/instance/outgoing', graph);
-            sinon.stub(graph, 'getIncomingEdges').callsFake((id, label) => {
-                if (id !== 'http://example.org/instance/a') {   
+            jest.spyOn(graph, 'getIncomingEdges').mockImplementation((id, label) => {
+                if (id !== 'http://example.org/instance/a') {
                     return Iterable.empty();
                 }
 
                 if (label === 'http://example.org/test/types' || label === 'test:types') {
                     return new Iterable([
                         { label, from: typeV, to: vertex }
-                    ]);
+                    ]) as any;
                 } else {
                     return new Iterable([
                         { label: 'http://example.org/test/types', from: typeV, to: vertex },
                         { label: 'http://example.org/test/outgoing', from: outgoingV, to: vertex }
-                    ]);
+                    ]) as any;
                 }
             });
         });
 
         it('should return empty when vertex has no incoming', () => {
             const incoming = [...outgoingV.getIncoming()];
-            expect(incoming.length).to.equal(0);
+            expect(incoming.length).toEqual(0);
         });
 
         it('should return all incoming', () => {
             const incoming = [...vertex.getIncoming()];
-            expect(incoming.length).to.equal(2);
-            expect(incoming.find(x => x.label === 'test:types')).to.not.be.undefined;
-            expect(incoming.find(x => x.label === 'test:outgoing')).to.not.be.undefined;
-            expect(incoming.find(x => x.label === 'test:types')?.fromVertex).to.equal(typeV);
-            expect(incoming.find(x => x.label === 'test:outgoing')?.fromVertex).to.equal(outgoingV);
+            expect(incoming.length).toEqual(2);
+            expect(incoming.find(x => x.label === 'test:types')).not.toBeUndefined();
+            expect(incoming.find(x => x.label === 'test:outgoing')).not.toBeUndefined();
+            expect(incoming.find(x => x.label === 'test:types')?.fromVertex).toEqual(typeV);
+            expect(incoming.find(x => x.label === 'test:outgoing')?.fromVertex).toEqual(outgoingV);
         });
 
         it('should return filtered incoming', () => {
             const incoming = [...vertex.getIncoming('test:types')];
-            expect(incoming.length).to.equal(1);
-            expect(incoming[0].label).to.equal('test:types');
-            expect(incoming[0].fromVertex).to.equal(typeV);
+            expect(incoming.length).toEqual(1);
+            expect(incoming[0].label).toEqual('test:types');
+            expect(incoming[0].fromVertex).toEqual(typeV);
         });
     });
 
@@ -262,43 +259,43 @@ describe('Vertex', () => {
             vertex = new Vertex('http://example.org/test/instance/a', graph);
             typeV = new Vertex('http://example.org/test/instance/type', graph);
             outgoingV = new Vertex('http://example.org/test/instance/outgoing', graph);
-            sinon.stub(graph, 'getOutgoingEdges').callsFake((id, label) => {
-                if (id !== 'http://example.org/test/instance/a') {   
+            jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id, label) => {
+                if (id !== 'http://example.org/test/instance/a') {
                     return Iterable.empty();
                 }
 
                 if (label === 'http://example.org/test/types' || label === 'test:types') {
                     return new Iterable([
                         { label, from: vertex, to: typeV }
-                    ]);
+                    ]) as any;
                 } else {
                     return new Iterable([
                         { label: 'http://example.org/test/types', from: vertex, to: typeV },
                         { label: 'http://example.org/test/outgoing', from: vertex, to: outgoingV }
-                    ]);
+                    ]) as any;
                 }
             });
         });
 
         it('should return empty when vertex has no outgoing', () => {
             const incoming = [...outgoingV.getOutgoing()];
-            expect(incoming.length).to.equal(0);
+            expect(incoming.length).toEqual(0);
         });
 
         it('should return all outgoing', () => {
             const incoming = [...vertex.getOutgoing()];
-            expect(incoming.length).to.equal(2);
-            expect(incoming.find(x => x.label === 'test:types')).to.not.be.undefined;
-            expect(incoming.find(x => x.label === 'test:outgoing')).to.not.be.undefined;
-            expect(incoming.find(x => x.label === 'test:types')?.toVertex).to.equal(typeV);
-            expect(incoming.find(x => x.label === 'test:outgoing')?.toVertex).to.equal(outgoingV);
+            expect(incoming.length).toEqual(2);
+            expect(incoming.find(x => x.label === 'test:types')).not.toBeUndefined();
+            expect(incoming.find(x => x.label === 'test:outgoing')).not.toBeUndefined();
+            expect(incoming.find(x => x.label === 'test:types')?.toVertex).toEqual(typeV);
+            expect(incoming.find(x => x.label === 'test:outgoing')?.toVertex).toEqual(outgoingV);
         });
 
         it('should return filtered outgoing', () => {
             const incoming = [...vertex.getOutgoing('test:types')];
-            expect(incoming.length).to.equal(1);
-            expect(incoming[0].label).to.equal('test:types');
-            expect(incoming[0].toVertex).to.equal(typeV);
+            expect(incoming.length).toEqual(1);
+            expect(incoming[0].label).toEqual('test:types');
+            expect(incoming[0].toVertex).toEqual(typeV);
         });
     });
 
@@ -313,8 +310,8 @@ describe('Vertex', () => {
             typeAV = new Vertex('http://example.org/test/type/a', graph);
             typeBV = new Vertex('http://example.org/test/type/b', graph);
             nonTypeV = new Vertex('http://example.org/test/instance/b', graph);
-            sinon.stub(graph, 'getOutgoingEdges').callsFake((id, label) => {
-                if (id !== 'http://example.org/test/instance/a') {   
+            jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id, label) => {
+                if (id !== 'http://example.org/test/instance/a') {
                     return Iterable.empty();
                 }
 
@@ -322,27 +319,27 @@ describe('Vertex', () => {
                     return new Iterable([
                         { label, from: vertex, to: typeAV },
                         { label, from: vertex, to: typeBV }
-                    ]);
+                    ]) as any;
                 } else {
                     return new Iterable([
                         { label: 'http://example.org/test/types', from: vertex, to: typeAV },
                         { label: 'http://example.org/test/types', from: vertex, to: typeBV },
                         { label: 'http://example.org/test/outgoing', from: vertex, to: nonTypeV }
-                    ]);
+                    ]) as any;
                 }
             });
         });
 
         it('should return empty when vertex has no types', () => {
-            expect([...nonTypeV.getTypes()].length).to.equal(0); 
+            expect([...nonTypeV.getTypes()].length).toEqual(0);
         });
 
         it('should return all types', () => {
             const types = [...vertex.getTypes()];
-            expect(types.length).to.equal(2);
-            expect(types.some(x => x.id === 'test:type/a')).to.be.true;
-            expect(types.some(x => x.id === 'test:type/b')).to.be.true;
-            expect(types.some(x => x.id === 'test:instance/b')).to.be.false;
+            expect(types.length).toEqual(2);
+            expect(types.some(x => x.id === 'test:type/a')).toEqual(true);
+            expect(types.some(x => x.id === 'test:type/b')).toEqual(true);
+            expect(types.some(x => x.id === 'test:instance/b')).toEqual(false);
         });
     });
 
@@ -356,18 +353,18 @@ describe('Vertex', () => {
         });
 
         it('should throw reference error when attribute name is not valid', () => {
-            expect(() => vertex.hasAttribute(null as any)).to.throw(ReferenceError);
-            expect(() => vertex.hasAttribute(undefined as any)).to.throw(ReferenceError);
-            expect(() => vertex.hasAttribute('')).to.throw(ReferenceError);
+            expect(() => vertex.hasAttribute(null as any)).toThrow(ReferenceError);
+            expect(() => vertex.hasAttribute(undefined as any)).toThrow(ReferenceError);
+            expect(() => vertex.hasAttribute('')).toThrow(ReferenceError);
         });
 
         it('should return false when attribute does not exist', () => {
-            expect(vertex.hasAttribute('test:not:found')).to.be.false;
+            expect(vertex.hasAttribute('test:not:found')).toEqual(false);
         });
 
         it('should return true when attribute exists', () => {
-            expect(vertex.hasAttribute('test:fname')).to.be.true;
-            expect(vertex.hasAttribute('http://example.org/test/lname')).to.be.true;
+            expect(vertex.hasAttribute('test:fname')).toEqual(true);
+            expect(vertex.hasAttribute('http://example.org/test/lname')).toEqual(true);
         });
     });
 
@@ -393,33 +390,33 @@ describe('Vertex', () => {
             ];
 
             for (const [name, value] of params) {
-                expect(() => vertex.hasAttributeValue(name, value)).to.throw(ReferenceError);
+                expect(() => vertex.hasAttributeValue(name, value)).toThrow(ReferenceError);
             }
         });
 
         it('should throw type error when locale specific value is not of type string', () => {
-            expect(() => vertex.hasAttributeValue('test:name', 1 as any, 'en')).to.throw(TypeError);
+            expect(() => vertex.hasAttributeValue('test:name', 1 as any, 'en')).toThrow(TypeError);
         });
 
         it('should return false when attribute does not exist', () => {
-            expect(vertex.hasAttributeValue('test:not:found', 'a')).to.be.false;
+            expect(vertex.hasAttributeValue('test:not:found', 'a')).toEqual(false);
         });
 
         it('should return false when value is attribute value list', () => {
-            expect(vertex.hasAttributeValue('test:name', 'bar')).to.be.false;
+            expect(vertex.hasAttributeValue('test:name', 'bar')).toEqual(false);
         });
 
         it('should return true for value found in attribute value list', () => {
-            expect(vertex.hasAttributeValue('test:name', 'John')).to.be.true;
-            expect(vertex.hasAttributeValue('test:alias', 'jdoe')).to.be.true;
+            expect(vertex.hasAttributeValue('test:name', 'John')).toEqual(true);
+            expect(vertex.hasAttributeValue('test:alias', 'jdoe')).toEqual(true);
         });
 
         it('should return true for value found for locale', () => {
-            expect(vertex.hasAttributeValue('test:alias', 'jdoe', 'en')).to.be.true;
+            expect(vertex.hasAttributeValue('test:alias', 'jdoe', 'en')).toEqual(true);
         });
 
         it('should return false for value not found in locale', () => {
-            expect(vertex.hasAttributeValue('test:alias', 'jdoe', 'es')).to.be.false;
+            expect(vertex.hasAttributeValue('test:alias', 'jdoe', 'es')).toEqual(false);
         });
     });
 
@@ -433,7 +430,7 @@ describe('Vertex', () => {
             incomingA = new Vertex('http://example.org/test/instances/inA', graph);
             incomingB = new Vertex('http://example.org/test/instances/inB', graph);
 
-            sinon.stub(graph, 'getIncomingEdges').callsFake((v, label): Iterable<any> => {
+            jest.spyOn(graph, 'getIncomingEdges').mockImplementation((v, label): Iterable<any> => {
                 if (v !== 'http://example.org/test/instances/target') {
                     return Iterable.empty();
                 }
@@ -454,27 +451,27 @@ describe('Vertex', () => {
         });
 
         it('should false if vertex has no incoming edges', () => {
-            expect(incomingA.hasIncoming()).to.be.false; 
+            expect(incomingA.hasIncoming()).toEqual(false);
         });
 
         it('should return true for vertex with incoming edges', () => {
-            expect(vertex.hasIncoming()).to.be.true;
+            expect(vertex.hasIncoming()).toEqual(true);
         });
 
         it('should return false when vertex has no incoming edges with specified label', () => {
-            expect(vertex.hasIncoming('test:foo')).to.be.false;
+            expect(vertex.hasIncoming('test:foo')).toEqual(false);
         });
 
         it('should return true when vertex has incoming edges with spcified label', () => {
-            expect(vertex.hasIncoming('test:incoming')).to.be.true;
+            expect(vertex.hasIncoming('test:incoming')).toEqual(true);
         });
 
         it('should return false when vertex has no incoming edges with spcified label and vertex', () => {
-            expect(vertex.hasIncoming('test:incoming', 'test:instances/inB')).to.be.false;
+            expect(vertex.hasIncoming('test:incoming', 'test:instances/inB')).toEqual(false);
         });
 
         it('should return true when vertex has incoming edges with spcified label and vertex', () => {
-            expect(vertex.hasIncoming('test:incoming', 'test:instances/inA')).to.be.true;
+            expect(vertex.hasIncoming('test:incoming', 'test:instances/inA')).toEqual(true);
         });
     });
 
@@ -488,7 +485,7 @@ describe('Vertex', () => {
             targetA = new Vertex('http://example.org/test/instances/outA', graph);
             targetB = new Vertex('http://example.org/test/instances/outB', graph);
 
-            sinon.stub(graph, 'getOutgoingEdges').callsFake((v, label): Iterable<any> => {
+            jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((v, label): Iterable<any> => {
                 if (v !== 'http://example.org/test/instances/source') {
                     return Iterable.empty();
                 }
@@ -509,57 +506,57 @@ describe('Vertex', () => {
         });
 
         it('should false if vertex has no outging edges', () => {
-            expect(targetA.hasOutgoing()).to.be.false; 
+            expect(targetA.hasOutgoing()).toEqual(false);
         });
 
         it('should return true for vertex with outgoing edges', () => {
-            expect(vertex.hasOutgoing()).to.be.true;
+            expect(vertex.hasOutgoing()).toEqual(true);
         });
 
         it('should return false when vertex has no outgoing edges with specified label', () => {
-            expect(vertex.hasOutgoing('test:foo')).to.be.false;
+            expect(vertex.hasOutgoing('test:foo')).toEqual(false);
         });
 
         it('should return true when vertex has outgoing edges with spcified label', () => {
-            expect(vertex.hasOutgoing('test:outgoing')).to.be.true;
+            expect(vertex.hasOutgoing('test:outgoing')).toEqual(true);
         });
 
         it('should return false when vertex has no outgoing edges with spcified label and vertex', () => {
-            expect(vertex.hasOutgoing('test:outgoing', 'test:instances/notfound')).to.be.false;
-            expect(vertex.hasOutgoing('test:notfound', 'test:instances/outA')).to.be.false;
+            expect(vertex.hasOutgoing('test:outgoing', 'test:instances/notfound')).toEqual(false);
+            expect(vertex.hasOutgoing('test:notfound', 'test:instances/outA')).toEqual(false);
         });
 
         it('should return true when vertex has incoming edges with spcified label and vertex', () => {
-            expect(vertex.hasOutgoing('test:outgoing', 'test:instances/outA')).to.be.true;
+            expect(vertex.hasOutgoing('test:outgoing', 'test:instances/outA')).toEqual(true);
         });
     });
 
     describe('.isType', () => {
-         let vertex: Vertex;
-         let typeV: Vertex;
+        let vertex: Vertex;
+        let typeV: Vertex;
 
-         beforeEach(() => {
+        beforeEach(() => {
             vertex = new Vertex('http://example.org/test/instance/a', graph);
             typeV = new Vertex('http://example.org/test/type/a', graph);
-            sinon.stub(graph, 'getOutgoingEdges').callsFake((id) => {
-                if (id !== 'http://example.org/test/instance/a') {   
+            jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id) => {
+                if (id !== 'http://example.org/test/instance/a') {
                     return Iterable.empty();
                 }
 
                 return new Iterable([
-                    { label: '@type', from: vertex, to: typeV}
-                ]);
+                    { label: '@type', from: vertex, to: typeV }
+                ]) as any;
             });
-         });
+        });
 
-         it('should return false when vertex has no types', () => {
-            expect(typeV.isType("test:type/a")).to.be.false;
-         });
+        it('should return false when vertex has no types', () => {
+            expect(typeV.isType("test:type/a")).toEqual(false);
+        });
 
-         it('should return true when vertex is of specified type', () => {
-             expect(vertex.isType('test:type/a')).to.be.true;
-             expect(vertex.isType('http://example.org/test/type/a')).to.be.true;
-         });
+        it('should return true when vertex is of specified type', () => {
+            expect(vertex.isType('test:type/a')).toEqual(true);
+            expect(vertex.isType('http://example.org/test/type/a')).toEqual(true);
+        });
     });
 
     describe('.removeIncoming', () => {
@@ -573,7 +570,7 @@ describe('Vertex', () => {
             outA = new Vertex('http://example.org/test/instance/outA', graph);
             outB = new Vertex('http://example.org/test/instance/outB', graph);
             outC = new Vertex('http://example.org/test/instance/outC', graph);
-            sinon.stub(graph, 'getIncomingEdges').callsFake((id) => {
+            jest.spyOn(graph, 'getIncomingEdges').mockImplementation((id) => {
                 if (id !== 'http://example.org/test/instance/target') {
                     return Iterable.empty()
                 }
@@ -582,64 +579,65 @@ describe('Vertex', () => {
                     { label: 'http://example.org/test/type', from: outA, to: vertex },
                     { label: 'http://example.org/test/incoming', from: outB, to: vertex },
                     { label: 'http://example.org/test/incoming', from: outC, to: vertex },
-                ])
+                ]) as any;
             });
         });
 
         it('should remove all incoming', () => {
-            const removeStub = sinon.stub(graph, 'removeEdge');
+            const removeStub = jest.spyOn(graph, 'removeEdge');
             vertex.removeIncoming();
-            
-            expect(removeStub.callCount).to.equal(3);
-            
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/type' &&
-                        edge.from === outA &&
-                        edge.to === vertex
-            }))).to.be.true;
 
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/incoming' &&
-                        edge.from === outB &&
-                        edge.to === vertex
-            }))).to.be.true;
+            expect(removeStub).toHaveBeenCalledTimes(3);
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/type',
+                from: outA,
+                to: vertex
+            }));
+
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/incoming',
+                from: outB,
+                to: vertex
+            }));
         });
 
         it('should remove all incoming edges with specified label', () => {
-            const removeStub = sinon.stub(graph, 'removeEdge');
+            const removeStub = jest.spyOn(graph, 'removeEdge');
             vertex.removeIncoming('test:incoming');
-            
-            expect(removeStub.callCount).to.equal(2);
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/incoming' &&
-                        edge.from === outB &&
-                        edge.to === vertex
-            }))).to.be.true;
 
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/incoming' &&
-                        edge.from === outC &&
-                        edge.to === vertex
-            }))).to.be.true;
+            expect(removeStub).toHaveBeenCalledTimes(2);
+
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/incoming',
+                from: outB,
+                to: vertex
+            }));
+
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/incoming',
+                from: outC,
+                to: vertex
+            }));
         });
 
         it('should remove incoming edges matching specified filter', () => {
-            const removeStub = sinon.stub(graph, 'removeEdge');
+            const removeStub = jest.spyOn(graph, 'removeEdge');
             vertex.removeIncoming('test:incoming', 'test:instance/outB');
             vertex.removeIncoming('test:incoming', v => v.id === 'test:instance/outC');
 
-            expect(removeStub.callCount).to.equal(2);
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/incoming' &&
-                        edge.from === outB &&
-                        edge.to === vertex
-            }))).to.be.true;
+            expect(removeStub).toHaveBeenCalledTimes(2);
 
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/incoming' &&
-                        edge.from === outC &&
-                        edge.to === vertex
-            }))).to.be.true;
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/incoming',
+                from: outB,
+                to: vertex
+            }));
+
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/incoming',
+                from: outC,
+                to: vertex
+            }));
         });
     });
 
@@ -654,7 +652,7 @@ describe('Vertex', () => {
             inA = new Vertex('http://example.org/test/instance/inA', graph);
             inB = new Vertex('http://example.org/test/instance/inB', graph);
             inC = new Vertex('http://example.org/test/instance/inC', graph);
-            sinon.stub(graph, 'getOutgoingEdges').callsFake((id) => {
+            jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id) => {
                 if (id !== 'http://example.org/test/instance/source') {
                     return Iterable.empty()
                 }
@@ -663,64 +661,66 @@ describe('Vertex', () => {
                     { label: 'http://example.org/test/type', from: vertex, to: inA },
                     { label: 'http://example.org/test/outgoing', from: vertex, to: inB },
                     { label: 'http://example.org/test/outgoing', from: vertex, to: inC },
-                ])
+                ]) as any;
             });
         });
 
         it('should remove all outgoing', () => {
-            const removeStub = sinon.stub(graph, 'removeEdge');
+            const removeStub = jest.spyOn(graph, 'removeEdge');
             vertex.removeOutgoing();
-            
-            expect(removeStub.callCount).to.equal(3);
-            
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/type' &&
-                        edge.from === vertex &&
-                        edge.to === inA
-            }))).to.be.true;
 
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/outgoing' &&
-                        edge.from === vertex &&
-                        edge.to === inB
-            }))).to.be.true;
+            expect(removeStub).toHaveBeenCalledTimes(3);
+
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/type',
+                from: vertex,
+                to: inA
+            }));
+
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/outgoing',
+                from: vertex,
+                to: inB
+            }));
         });
 
         it('should remove all outgoing edges with specified label', () => {
-            const removeStub = sinon.stub(graph, 'removeEdge');
+            const removeStub = jest.spyOn(graph, 'removeEdge');
             vertex.removeOutgoing('test:outgoing');
-            
-            expect(removeStub.callCount).to.equal(2);
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/outgoing' &&
-                        edge.from === vertex &&
-                        edge.to === inB
-            }))).to.be.true;
 
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/outgoing' &&
-                        edge.from === vertex &&
-                        edge.to === inC
-            }))).to.be.true;
+            expect(removeStub).toHaveBeenCalledTimes(2);
+
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/outgoing',
+                from: vertex,
+                to: inB
+            }));
+
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/outgoing',
+                from: vertex,
+                to: inC
+            }));
         });
 
         it('should remove outgoing edges matching specified filter', () => {
-            const removeStub = sinon.stub(graph, 'removeEdge');
+            const removeStub = jest.spyOn(graph, 'removeEdge');
             vertex.removeOutgoing('test:outgoing', 'test:instance/inB')
             vertex.removeOutgoing('test:outgoing', v => v.id === 'test:instance/inC');
 
-            expect(removeStub.callCount).to.equal(2);
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/outgoing' &&
-                        edge.from === vertex &&
-                        edge.to === inB
-            }))).to.be.true;
+            expect(removeStub).toHaveBeenCalledTimes(2);
 
-            expect(removeStub.calledWith(sinon.match((edge) => {
-                return edge.label === 'http://example.org/test/outgoing' &&
-                        edge.from === vertex &&
-                        edge.to === inC
-            }))).to.be.true;
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/outgoing',
+                from: vertex,
+                to: inB
+            }));
+
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: 'http://example.org/test/outgoing',
+                from: vertex,
+                to: inC
+            }));
         });
     });
 
@@ -733,49 +733,50 @@ describe('Vertex', () => {
             vertex = new Vertex('http://example.org/test/instance/a', graph);
             typeA = new Vertex('http://example.org/test/type/a', graph);
             typeB = new Vertex('http://example.org/test/type/b', graph);
-            sinon.stub(graph, 'getOutgoingEdges').callsFake((id, label) => {
-                if (id !== 'http://example.org/test/instance/a' || label !== '@type') {   
+            jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id, label) => {
+                if (id !== 'http://example.org/test/instance/a' || label !== '@type') {
                     return Iterable.empty();
                 }
 
                 return new Iterable([
                     { label, from: vertex, to: typeA },
                     { label, from: vertex, to: typeB }
-                ]);
+                ]) as any;
             });
         });
 
         it('should not remove any types', () => {
-            const removeStub = sinon.stub(graph, 'removeEdge');
+            const removeStub = jest.spyOn(graph, 'removeEdge');
             vertex.removeType();
-            expect(removeStub.callCount).to.equal(0);
-            expect(vertex.isType('test:type/a')).to.be.true;
-            expect(vertex.isType('test:type/b')).to.be.true;
+            expect(removeStub).toHaveBeenCalledTimes(0);
+            expect(vertex.isType('test:type/a')).toEqual(true);
+            expect(vertex.isType('test:type/b')).toEqual(true);
         });
 
         it('should remove type', () => {
-            const removeStub = sinon.stub(graph, 'removeEdge');
+            const removeStub = jest.spyOn(graph, 'removeEdge');
             vertex.removeType('test:type/a');
 
-            expect(removeStub.callCount).to.equal(1);
-            expect(removeStub.calledWith(sinon.match((v) => {
-                return v.label === '@type' && v.to === typeA
-            }))).to.be.true
+            expect(removeStub).toHaveBeenCalledTimes(1);
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: '@type',
+                to: typeA
+            }));
         });
 
         it('should remove multiple types', () => {
-            const removeStub = sinon.stub(graph, 'removeEdge');
+            const removeStub = jest.spyOn(graph, 'removeEdge');
             vertex.removeType('test:type/a', 'http://example.org/test/type/b');
-            
-            expect(removeStub.callCount).to.equal(2);
-            
-            expect(removeStub.calledWith(sinon.match((v) => {
-                return v.label === '@type' && v.to === typeA
-            }))).to.be.true
 
-            expect(removeStub.calledWith(sinon.match((v) => {
-                return v.label === '@type' && v.to === typeB
-            }))).to.be.true
+            expect(removeStub).toHaveBeenCalledTimes(2);
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: '@type',
+                to: typeA
+            }));
+            expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
+                label: '@type',
+                to: typeB
+            }));
         });
     });
 
@@ -800,38 +801,38 @@ describe('Vertex', () => {
             ]
 
             for (const [name, value] of params) {
-                expect(() => vertex.setAttributeValue(name, value)).to.throw(ReferenceError);
+                expect(() => vertex.setAttributeValue(name, value)).toThrow(ReferenceError);
             }
         });
 
         it('should throw type error when language value is not string', () => {
-            expect(() => vertex.setAttributeValue('test:a', 100 as any, 'en')).to.throw(TypeError)
+            expect(() => vertex.setAttributeValue('test:a', 100 as any, 'en')).toThrow(TypeError)
         });
 
         it('should replace all attribute values', () => {
             vertex.setAttributeValue('test:aliases', 'foo');
-            expect(vertex.getAttributeValues('test:aliases').count()).to.equal(1)
-            expect(vertex.getAttributeValues('test:aliases').first().value).to.equal('foo');
+            expect(vertex.getAttributeValues('test:aliases').count()).toEqual(1)
+            expect(vertex.getAttributeValues('test:aliases').first().value).toEqual('foo');
         });
 
         it('should set new value', () => {
             vertex.setAttributeValue('test:newAttrib', 'bar');
-            expect(vertex.hasAttribute('test:newAttrib')).to.be.true;
-            expect(vertex.hasAttributeValue('test:newAttrib', 'bar')).to.be.true;
+            expect(vertex.hasAttribute('test:newAttrib')).toEqual(true);
+            expect(vertex.hasAttributeValue('test:newAttrib', 'bar')).toEqual(true);
         });
 
         it('should replace only specific language value', () => {
             vertex.setAttributeValue('test:languages', 'British', 'en');
-            expect(vertex.getAttributeValues('test:languages').count()).to.equal(2);
-            expect(vertex.getAttributeValue('test:languages', 'en')).to.equal('British');
+            expect(vertex.getAttributeValues('test:languages').count()).toEqual(2);
+            expect(vertex.getAttributeValue('test:languages', 'en')).toEqual('British');
         });
 
         it('should append new language value', () => {
             vertex.setAttributeValue('test:languages', 'German', 'de');
-            expect(vertex.getAttributeValues('test:languages').count()).to.equal(3);
-            expect(vertex.hasAttributeValue('test:languages', 'English', 'en')).to.be.true;
-            expect(vertex.hasAttributeValue('test:languages', 'French', 'fr')).to.be.true;
-            expect(vertex.hasAttributeValue('test:languages', 'German', 'de')).to.be.true;
+            expect(vertex.getAttributeValues('test:languages').count()).toEqual(3);
+            expect(vertex.hasAttributeValue('test:languages', 'English', 'en')).toEqual(true);
+            expect(vertex.hasAttributeValue('test:languages', 'French', 'fr')).toEqual(true);
+            expect(vertex.hasAttributeValue('test:languages', 'German', 'de')).toEqual(true);
         });
     });
 
@@ -842,9 +843,16 @@ describe('Vertex', () => {
         beforeEach(() => {
             targetV = new Vertex('http://example.org/test/instance/target', graph);
             sourceV = new Vertex('http://example.org/test/instance/source', graph);
-            sinon.stub(graph, 'hasVertex')
-                .withArgs('http://example.org/test/instance/target').returns(true)
-                .withArgs('http://example.org/test/instance/source').returns(true);
+            jest.spyOn(graph, 'hasVertex')
+                .mockImplementation((id) => {
+                    switch (id) {
+                        case 'http://example.org/test/instance/target':
+                        case 'http://example.org/test/instance/source':
+                            return true;
+                        default:
+                            return false;
+                    }
+                });
         });
 
         it('should throw when label and to vertex is not valid', () => {
@@ -855,58 +863,51 @@ describe('Vertex', () => {
                 ['test:incoming', null as any],
                 ['test:incoming', undefined as any],
                 ['test:incoming', '']
-            ] 
+            ]
 
             for (const [label, source] of params) {
-                expect(() => targetV.setIncoming(label, source)).to.throw(ReferenceError)
+                expect(() => targetV.setIncoming(label, source)).toThrow(ReferenceError)
             }
         });
 
         it('should throw when target vertex does not exist', () => {
-            expect(() => targetV.setIncoming('test:incoming', 'test:instance/foo')).to.throw(Errors.VertexNotFoundError);
+            expect(() => targetV.setIncoming('test:incoming', 'test:instance/foo')).toThrow(errors.VertexNotFoundError);
         });
 
         it('should throw duplicate edge error when incoming already exisst', () => {
-            sinon.stub(graph, 'hasEdge')
-                .withArgs(
-                    'http://example.org/test/incoming', 
-                    'http://example.org/test/instance/source',
-                    'http://example.org/test/instance/target'
-                )
-                .returns(true);
+            jest.spyOn(graph, 'hasEdge').mockReturnValue(true);
 
-            expect(() => targetV.setIncoming('test:incoming', 'test:instance/source')).to.throw(Errors.DuplicateEdgeError);
-            expect(() => targetV.setIncoming('test:incoming', sourceV)).to.throw(Errors.DuplicateEdgeError);
+            expect(() => targetV.setIncoming('test:incoming', 'test:instance/source')).toThrow(errors.DuplicateEdgeError);
+            expect(() => targetV.setIncoming('test:incoming', sourceV)).toThrow(errors.DuplicateEdgeError);
         });
 
         it('should throw cyclic error when incoming is set to itself', () => {
-            expect(() => targetV.setIncoming('test:incoming', targetV)).to.throw(Errors.CyclicEdgeError);
-            expect(() => targetV.setIncoming('test:incoming', 'test:instance/target')).to.throw(Errors.CyclicEdgeError);
+            expect(() => targetV.setIncoming('test:incoming', targetV)).toThrow(errors.CyclicEdgeError);
+            expect(() => targetV.setIncoming('test:incoming', 'test:instance/target')).toThrow(errors.CyclicEdgeError);
         });
 
         it('should create incoming edge', () => {
-            const createEdgeStub = sinon.stub(graph, 'createEdge');
+            const createEdgeStub = jest.spyOn(graph, 'createEdge');
             targetV.setIncoming('test:incoming', sourceV);
-            expect(createEdgeStub.callCount).to.equal(1);
-            expect(createEdgeStub.calledWith(
+            expect(createEdgeStub).toHaveBeenCalledTimes(1);
+            expect(createEdgeStub).toHaveBeenCalledWith(
                 'http://example.org/test/incoming',
                 'http://example.org/test/instance/source',
                 'http://example.org/test/instance/target'
-            )).to.be.true;
+            );
         });
 
         it('should create vertex with incoming edge', () => {
-            const createEdgeStub = sinon.stub(graph, 'createEdge');
-            const createVertex = sinon.stub(graph, 'createVertex');
+            const createEdgeStub = jest.spyOn(graph, 'createEdge');
+            const createVertexStub = jest.spyOn(graph, 'createVertex');
 
             targetV.setIncoming('test:incoming', 'test:instance/foo', true);
-            expect(createEdgeStub.callCount).to.equal(1);
-            expect(createVertex.calledWith('http://example.org/test/instance/foo')).to.be.true;
-            expect(createEdgeStub.calledWith(
+            expect(createVertexStub).toHaveBeenCalledTimes(1);
+            expect(createVertexStub).toHaveBeenCalledWith('http://example.org/test/instance/foo');
+            expect(createEdgeStub).toHaveBeenCalledWith(
                 'http://example.org/test/incoming',
                 'http://example.org/test/instance/foo',
-                'http://example.org/test/instance/target'
-            )).to.be.true;
+                'http://example.org/test/instance/target');
         });
     });
 
@@ -917,9 +918,15 @@ describe('Vertex', () => {
         beforeEach(() => {
             targetV = new Vertex('http://example.org/test/instance/target', graph);
             sourceV = new Vertex('http://example.org/test/instance/source', graph);
-            sinon.stub(graph, 'hasVertex')
-                .withArgs('http://example.org/test/instance/target').returns(true)
-                .withArgs('http://example.org/test/instance/source').returns(true);
+            jest.spyOn(graph, 'hasVertex').mockImplementation((id) => {
+                switch (id) {
+                    case 'http://example.org/test/instance/target':
+                    case 'http://example.org/test/instance/source':
+                        return true;
+                    default:
+                        return false;
+                }
+            });
         });
 
         it('should throw when label and to vertex is not valid', () => {
@@ -930,58 +937,52 @@ describe('Vertex', () => {
                 ['test:outgoing', null as any],
                 ['test:outgoing', undefined as any],
                 ['test:outgoing', '']
-            ] 
+            ]
 
             for (const [label, source] of params) {
-                expect(() => sourceV.setOutgoing(label, source)).to.throw(ReferenceError)
+                expect(() => sourceV.setOutgoing(label, source)).toThrow(ReferenceError)
             }
         });
 
         it('should throw when target vertex does not exist', () => {
-            expect(() => sourceV.setOutgoing('test:outgoing', 'test:instance/foo')).to.throw(Errors.VertexNotFoundError);
+            expect(() => sourceV.setOutgoing('test:outgoing', 'test:instance/foo')).toThrow(errors.VertexNotFoundError);
         });
 
         it('should throw duplicate edge error when incoming already exisst', () => {
-            sinon.stub(graph, 'hasEdge')
-                .withArgs(
-                    'http://example.org/test/outgoing', 
-                    'http://example.org/test/instance/source',
-                    'http://example.org/test/instance/target'
-                )
-                .returns(true);
-
-            expect(() => sourceV.setOutgoing('test:outgoing', 'test:instance/target')).to.throw(Errors.DuplicateEdgeError);
-            expect(() => sourceV.setOutgoing('test:outgoing', targetV)).to.throw(Errors.DuplicateEdgeError);
+            jest.spyOn(graph, 'hasEdge').mockReturnValue(true);
+            expect(() => sourceV.setOutgoing('test:outgoing', 'test:instance/target')).toThrow(errors.DuplicateEdgeError);
+            expect(() => sourceV.setOutgoing('test:outgoing', targetV)).toThrow(errors.DuplicateEdgeError);
         });
 
         it('should throw cyclic error when incoming is set to itself', () => {
-            expect(() => sourceV.setOutgoing('test:outgoing', sourceV)).to.throw(Errors.CyclicEdgeError);
-            expect(() => sourceV.setOutgoing('test:outgoing', 'test:instance/source')).to.throw(Errors.CyclicEdgeError);
+            expect(() => sourceV.setOutgoing('test:outgoing', sourceV)).toThrow(errors.CyclicEdgeError);
+            expect(() => sourceV.setOutgoing('test:outgoing', 'test:instance/source')).toThrow(errors.CyclicEdgeError);
         });
 
         it('should create incoming edge', () => {
-            const createEdgeStub = sinon.stub(graph, 'createEdge');
+            const createEdgeStub = jest.spyOn(graph, 'createEdge');
             sourceV.setOutgoing('test:outgoing', targetV);
-            expect(createEdgeStub.callCount).to.equal(1);
-            expect(createEdgeStub.calledWith(
+
+            expect(createEdgeStub).toHaveBeenCalledTimes(1);
+            expect(createEdgeStub).toHaveBeenCalledWith(
                 'http://example.org/test/outgoing',
                 'http://example.org/test/instance/source',
                 'http://example.org/test/instance/target'
-            )).to.be.true;
+            );
         });
 
         it('should create vertex with incoming edge', () => {
-            const createEdgeStub = sinon.stub(graph, 'createEdge');
-            const createVertex = sinon.stub(graph, 'createVertex');
+            const createEdgeStub = jest.spyOn(graph, 'createEdge');
+            const createVertexStub = jest.spyOn(graph, 'createVertex');
 
             sourceV.setOutgoing('test:outgoing', 'test:instance/foo', true);
-            expect(createEdgeStub.callCount).to.equal(1);
-            expect(createVertex.calledWith('http://example.org/test/instance/foo')).to.be.true;
-            expect(createEdgeStub.calledWith(
+            expect(createVertexStub).toHaveBeenCalledWith('http://example.org/test/instance/foo');
+            expect(createEdgeStub).toHaveBeenCalledTimes(1);
+            expect(createEdgeStub).toHaveBeenCalledWith(
                 'http://example.org/test/outgoing',
                 'http://example.org/test/instance/source',
                 'http://example.org/test/instance/foo'
-            )).to.be.true;
+            );
         });
     });
 
@@ -994,51 +995,53 @@ describe('Vertex', () => {
             vertex = new Vertex('http://example.org/test/instance/a', graph);
             typeAV = new Vertex('http://example.org/test/typeA', graph);
             typeBV = new Vertex('http://example.org/test/typeB', graph);
-            sinon.stub(graph, 'getOutgoingEdges')
-                .withArgs('http://example.org/test/instance/a', '@type')
-                .callsFake(() => {
+            jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((v, label) => {
+                if (v === 'http://example.org/test/instance/a' && label === '@type') {
                     return new Iterable([
                         { label: '@type', from: vertex, to: typeAV }
-                    ]);
-                });
+                    ]) as any;
+                } else {
+                    return Iterable.empty();
+                }
+            }) as any;
         });
 
         it('should add nothing when types is empty', () => {
-            const createEdgeStub = sinon.stub(graph, 'createEdge');
+            const createEdgeStub = jest.spyOn(graph, 'createEdge');
             vertex.setType();
-            expect(createEdgeStub.callCount).to.equal(0)
+            expect(createEdgeStub).toHaveBeenCalledTimes(0);
         });
 
         it('should add nothing when vertex is already of specified type', () => {
-            const createEdgeStub = sinon.stub(graph, 'createEdge');
+            const createEdgeStub = jest.spyOn(graph, 'createEdge');
             vertex.setType('http://example.org/test/typeA');
-            expect(createEdgeStub.callCount).to.equal(0)
+            expect(createEdgeStub).toHaveBeenCalledTimes(0);
         });
 
         it('should create edge to type vertex', () => {
-            const createEdgeStub = sinon.stub(graph, 'createEdge');
+            const createEdgeStub = jest.spyOn(graph, 'createEdge');
             vertex.setType(typeBV);
-            expect(createEdgeStub.callCount).to.equal(1);
-            expect(createEdgeStub.calledWith(
+            expect(createEdgeStub).toHaveBeenCalledTimes(1);
+            expect(createEdgeStub).toHaveBeenCalledWith(
                 '@type',
                 'http://example.org/test/instance/a',
                 'http://example.org/test/typeB'
-            )).to.be.true;
+            );
         });
 
         it('should create vertex and edge to new type', () => {
-            const createEdgeStub = sinon.stub(graph, 'createEdge');
-            const createVertexStub = sinon.stub(graph, 'createVertex');
-            
+            const createEdgeStub = jest.spyOn(graph, 'createEdge');
+            const createVertexStub = jest.spyOn(graph, 'createVertex');
+
             vertex.setType('test:typeC');
-            expect(createVertexStub.callCount).to.equal(1);
-            expect(createVertexStub.calledWith('http://example.org/test/typeC')).to.be.true;
-            expect(createEdgeStub.callCount).to.equal(1);
-            expect(createEdgeStub.calledWith(
+            expect(createVertexStub).toHaveBeenCalledTimes(1);
+            expect(createVertexStub).toHaveBeenCalledWith('http://example.org/test/typeC');
+            expect(createEdgeStub).toHaveBeenCalledTimes(1);
+            expect(createEdgeStub).toHaveBeenCalledWith(
                 '@type',
                 'http://example.org/test/instance/a',
                 'http://example.org/test/typeC'
-            )).to.be.true;
+            );
         });
     });
 });

@@ -1,10 +1,10 @@
 import * as types from './types';
 import { BlankNodePrefix, JsonldKeywords } from './constants';
 import Iterable from 'jsiterable';
-import Errors from './errors';
+import * as errors from './errors';
 import cloneDeep = require('lodash.clonedeep');
 
-type GraphType = types.JsonldGraph<Vertex, types.Edge<Vertex>>;
+type GraphType = types.JsonldGraph<Vertex>;
 
 /**
  * @description Vertex in a graph.
@@ -150,8 +150,10 @@ export default class Vertex implements types.Vertex {
         if (language) {
             const val = values.find(x => x.value === value && x.language === language);
             if (val) {
+                // TODO:
             }
         } else {
+            // TODO
         }
 
         return this;
@@ -311,19 +313,12 @@ export default class Vertex implements types.Vertex {
     }
 
     /**
-     * @description Checks if the vertex has any incoming edges.
-     * @returns {boolean}
-     * @memberof Vertex
-     */
-    hasIncoming(): boolean;
-    /**
      * @description Checks if the vertex has an incoming edge with the specified label.
      * @param {string} label The label of the edge to check.
      * @param {(Vertex | string)} [vertex] Optional. When specified only checks for incoming edges from the specified vertex instance or IRI.
      * @returns {boolean} True if an edge is found, else false.
      * @memberof Vertex
      */
-    hasIncoming(label: string, vertex?: Vertex | string): boolean;
     hasIncoming(label?: string, vertex?: Vertex | string): boolean {
         if (!label) {
             return !!this._graph.getIncomingEdges(this._id).first();
@@ -342,19 +337,12 @@ export default class Vertex implements types.Vertex {
     }
 
     /**
-     * @description Checks if the vertex has any outgoing edges.
-     * @returns {boolean} True if the vertex has any outgoing edges.
-     * @memberof Vertex
-     */
-    hasOutgoing(): boolean;
-    /**
      * @description Checks if the vertex has an outgoing edge with the specified label.
      * @param {string} [label] The label of the edge to check.
      * @param {(Vertex | string)} [vertex] Optional. When specified only checks for outgoing edges to the specified vertex instance or IRI.
      * @returns {boolean}
      * @memberof Vertex
      */
-    hasOutgoing(label?: string, vertex?: Vertex | string): boolean;
     hasOutgoing(label?: string, vertex?: Vertex | string): boolean {
         if (!label) {
             return !!this._graph.getOutgoingEdges(this._id).first();
@@ -491,7 +479,7 @@ export default class Vertex implements types.Vertex {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
         }
 
-        if (value === null || value == undefined) {
+        if (value === null || value === undefined) {
             throw new ReferenceError(`Invalid value. value cannot be ${value}`);
         }
 
@@ -503,11 +491,13 @@ export default class Vertex implements types.Vertex {
 
         const attributeIRI = this._graph.expandIRI(name);
         const values = this._attributes.get(attributeIRI);
+        const type = typeof value === 'object' ? '@json' : undefined;
         if (!values || !language) {
             this._attributes.set(attributeIRI, [
                 {
                     value,
-                    language
+                    language,
+                    type
                 }
             ]);
         } else if (language) {
@@ -517,7 +507,8 @@ export default class Vertex implements types.Vertex {
             } else {
                 values.push({
                     value,
-                    language
+                    language,
+                    type
                 });
             }
         }
@@ -527,11 +518,7 @@ export default class Vertex implements types.Vertex {
 
     setIncoming(label: string, fromVertex: Vertex): this;
     setIncoming(label: string, fromVertex: string, createIfNotExists?: boolean): this;
-    setIncoming(
-        label: string,
-        fromVertex: string | Vertex,
-        createIfNotExists: boolean = false
-    ): this {
+    setIncoming(label: string, fromVertex: string | Vertex, createIfNotExists = false): this {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is '${label}'`);
         }
@@ -547,19 +534,19 @@ export default class Vertex implements types.Vertex {
                 : this._graph.expandIRI(fromVertex.id);
 
         if (this._id === sourceIRI) {
-            throw new Errors.CyclicEdgeError(labelIRI, this._id);
+            throw new errors.CyclicEdgeError(labelIRI, this._id);
         }
 
         if (!this._graph.hasVertex(sourceIRI)) {
             if (createIfNotExists) {
                 this._graph.createVertex(sourceIRI);
             } else {
-                throw new Errors.VertexNotFoundError(sourceIRI);
+                throw new errors.VertexNotFoundError(sourceIRI);
             }
         }
 
         if (this._graph.hasEdge(labelIRI, sourceIRI, this._id)) {
-            throw new Errors.DuplicateEdgeError(labelIRI, sourceIRI, this._id);
+            throw new errors.DuplicateEdgeError(labelIRI, sourceIRI, this._id);
         }
 
         this._graph.createEdge(labelIRI, sourceIRI, this._id);
@@ -568,11 +555,7 @@ export default class Vertex implements types.Vertex {
 
     setOutgoing(label: string, toVertex: Vertex): this;
     setOutgoing(label: string, toVertex: string, createIfNotExists?: boolean): this;
-    setOutgoing(
-        label: string,
-        toVertex: string | Vertex,
-        createIfNotExists: boolean = false
-    ): this {
+    setOutgoing(label: string, toVertex: string | Vertex, createIfNotExists = false): this {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is '${label}'`);
         }
@@ -587,19 +570,19 @@ export default class Vertex implements types.Vertex {
                 : this._graph.expandIRI(toVertex.id);
 
         if (this._id === targetIRI) {
-            throw new Errors.CyclicEdgeError(labelIRI, this._id);
+            throw new errors.CyclicEdgeError(labelIRI, this._id);
         }
 
         if (!this._graph.hasVertex(targetIRI)) {
             if (createIfNotExists) {
                 this._graph.createVertex(targetIRI);
             } else {
-                throw new Errors.VertexNotFoundError(targetIRI);
+                throw new errors.VertexNotFoundError(targetIRI);
             }
         }
 
         if (this._graph.hasEdge(labelIRI, this._id, targetIRI)) {
-            throw new Errors.DuplicateEdgeError(labelIRI, targetIRI, this._id);
+            throw new errors.DuplicateEdgeError(labelIRI, targetIRI, this._id);
         }
 
         this._graph.createEdge(labelIRI, this._id, targetIRI);

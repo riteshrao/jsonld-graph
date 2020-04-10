@@ -18,6 +18,5 @@ export const JsonldKeywords = {
     value: '@value',
     version: '@version',
     vocabulary: '@vocabulary',
-    json: '@json',
-    index: '@index'
+    json: '@json'
 };
