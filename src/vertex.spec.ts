@@ -108,16 +108,18 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
         });
 
         it('should append new localized attribute value', () => {
+            vertex.appendAttributeValue('test:1', 'a');
             vertex.appendAttributeValue('test:1', 'a', 'en');
             vertex.appendAttributeValue('test:1', 'a', 'fr');
             const attributes = [...vertex.getAttributes()];
             expect(attributes.length).toEqual(1)
             expect(attributes[0].name).toEqual('test:1');
-            expect(attributes[0].values.length).toEqual(2);
+            expect(attributes[0].values.length).toEqual(3);
             expect(attributes[0].values[0].value).toEqual('a');
-            expect(attributes[0].values[0].language).toEqual('en');
             expect(attributes[0].values[1].value).toEqual('a');
-            expect(attributes[0].values[1].language).toEqual('fr');
+            expect(attributes[0].values[1].language).toEqual('en');
+            expect(attributes[0].values[2].value).toEqual('a');
+            expect(attributes[0].values[2].language).toEqual('fr');
         });
 
         it('should replace existing localized attribute value', () => {
@@ -129,6 +131,66 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             expect(attributes[0].values.length).toEqual(1);
             expect(attributes[0].values[0].value).toEqual('b');
             expect(attributes[0].values[0].language).toEqual('en');
+        });
+    });
+
+    describe('.deleteAttribute', () => {
+        let vertex: Vertex;
+
+        beforeEach(() => {
+            vertex = new Vertex('http://example.org/instance/a', graph);
+            vertex.appendAttributeValue('test:attribute', 'a');
+            vertex.appendAttributeValue('test:attribute', 'b');
+        });
+
+        it('should throw when attribute name is null, empty or undefined', () => {
+            expect(() => vertex.deleteAttribute(null as any)).toThrow(ReferenceError);
+            expect(() => vertex.deleteAttribute(undefined as any)).toThrow(ReferenceError);
+            expect(() => vertex.deleteAttribute('')).toThrow(ReferenceError);
+        });
+
+        it('should delete all values of attribute', () => {
+            vertex.deleteAttribute('test:attribute');
+            expect(vertex.hasAttribute('test:attribute'));
+        });
+    });
+
+    describe('.deleteAttributeValue', () => {
+        let vertex: Vertex;
+
+        beforeEach(() => {
+            vertex = new Vertex('http://example.org/instances/a', graph);
+            vertex.appendAttributeValue('test:simple', 'a');
+            vertex.appendAttributeValue('test:simple', 'b');
+            vertex.appendAttributeValue('test:simple', 'a', 'en');
+            vertex.appendAttributeValue('test:simple', 'b', 'de');
+            vertex.appendAttributeValue('test:simple', 'c', 'fr');
+        });
+
+        it('should throw when attribute name is null, undefined or empty', () => {
+            expect(() => vertex.deleteAttributeValue(null as any, 'a')).toThrow(ReferenceError);
+            expect(() => vertex.deleteAttributeValue(undefined as any, 'a')).toThrow(ReferenceError);
+            expect(() => vertex.deleteAttributeValue('', 'a')).toThrow(ReferenceError);
+        });
+
+        it('should throw when value is null or undefined', () => {
+            expect(() => vertex.deleteAttributeValue('test:simple', null as any)).toThrow(ReferenceError);
+            expect(() => vertex.deleteAttributeValue('test:simple', undefined as any)).toThrow(ReferenceError);
+        });
+
+        it('should remove all matching values', () => {
+            vertex.deleteAttributeValue('test:simple', 'a');
+            expect(vertex.hasAttributeValue('test:simple', 'a')).toEqual(false);
+            expect(vertex.hasAttributeValue('test:simple', 'a', 'en')).toEqual(false);
+            expect(vertex.hasAttributeValue('test:simple', 'b')).toEqual(true);
+            expect(vertex.hasAttributeValue('test:simple', 'b', 'de')).toEqual(true);
+            expect(vertex.hasAttributeValue('test:simple', 'c')).toEqual(true);
+        });
+
+        it('should remove only language specific value', () => {
+            vertex.deleteAttributeValue('test:simple', 'a', 'en');
+            expect(vertex.hasAttributeValue('test:simple', 'a', 'en')).toEqual(false);
+            expect(vertex.hasAttributeValue('test:simple', 'a')).toEqual(true);
         });
     });
 

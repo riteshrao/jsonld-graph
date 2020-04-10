@@ -148,14 +148,14 @@ export default class Vertex implements types.Vertex {
         }
 
         if (language) {
-            const val = values.find(x => x.value === value && x.language === language);
-            if (val) {
-                // TODO:
-            }
+             const valueIndex = values.findIndex(x => x.value === value && x.language === language);
+             if (valueIndex > -1) {
+                 values.splice(valueIndex, 1);
+             }
         } else {
-            // TODO
+            this._attributes.set(attributeIRI, values.filter(x => x.value !== value));
         }
-
+        
         return this;
     }
 
