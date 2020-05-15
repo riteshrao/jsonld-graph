@@ -43,7 +43,17 @@ export default class Vertex implements types.Vertex {
      * @memberof Node
      */
     set id(iri: string) {
-        throw new Error('Not implemented');
+        if (!iri) {
+            throw new ReferenceError(`Invalid iri. iri is '${iri}'`);
+        }
+
+        const normalizedIRI = this._graph.expandIRI(iri, true);
+        if (this._graph.hasVertex(normalizedIRI)) {
+            throw new errors.DuplicateVertexError(iri);
+        }
+
+        const incoming = [...this.getIncoming()];
+        const outgoing = [...this.getOutgoing()];
     }
 
     /**

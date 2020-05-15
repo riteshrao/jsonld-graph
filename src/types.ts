@@ -276,11 +276,12 @@ export interface JsonldGraph<V extends Vertex> {
     createVertex(id: string, ...typeId: string[]): V;
     /**
      * @description
-     * @param {string} id
+     * @param {string} id The IRI to expand.
+     * @param {boolean} [validate] True to validate the IRI, else false.
      * @returns {string}
      * @memberof JsonldGraph
      */
-    expandIRI(id: string): string;
+    expandIRI(id: string, validate?: boolean): string;
     /**
      * @description Gets all contexts added to the graph.
      * @returns {Iterable<[string, any]>} A tuple where the first element in the tuple is the context IRI and the second element is the context definition.
