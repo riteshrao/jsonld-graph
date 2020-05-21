@@ -79,7 +79,7 @@ export interface Vertex {
      * @type {string}
      * @memberof Vertex
      */
-    id: string;
+    readonly id: string;
     /**
      * @description Adds an attribute value.
      * @param {string} name The name of the attribute to which the value is appended.
@@ -181,14 +181,14 @@ export interface GraphOptions<V extends Vertex> {
      * @type {VertexResolver<V>}
      * @memberof GraphOptions
      */
-    blankTypeResolver?: VertexResolver<V>;
+    blankTypeResolver?: (vertex: Vertex) => string[] | undefined;
 
     /**
      * @description Resolver function that can resolve the id of blank id vertex nodes.
      * @type {VertexResolver<V>}
      * @memberof GraphOptions
      */
-    blankIdResolver?: VertexResolver<V>;
+    blankIdResolver?: (vertex: Vertex) => string | undefined;
 }
 
 export interface GraphLoadOptions {

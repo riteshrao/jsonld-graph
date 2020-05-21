@@ -27,6 +27,10 @@ describe('JsonldGraph', () => {
             expect(() => graph.addContext('http://context', undefined as any)).toThrow(ReferenceError);
         });
 
+        it('should throw when context is not a valid object', () => {
+            expect(() => graph.addContext('http://context', 'foo' as any)).toThrow(TypeError);
+        });
+
         it('should add context', () => {
             graph.addContext('http://context', {});
             expect([...graph.contexts].length).toEqual(1);
@@ -57,6 +61,11 @@ describe('JsonldGraph', () => {
             expect(vertex).toBeTruthy()
             expect(graph.vertexCount).toEqual(1);
         });
+
+        it('should throw duplicate error when another vertex with same id exists', () => {
+            graph.createVertex('urn:test:foo:1');
+            expect(() => graph.createVertex('urn:test:foo:1')).toThrow(errors.DuplicateVertexError);
+        });
     });
 
     describe('.getVertex', () => {
@@ -86,6 +95,23 @@ describe('JsonldGraph', () => {
         it('should return vertex when using compact id', () => {
             const vertex = graph.getVertex('instance:test:A');
             expect(vertex).toBeTruthy()
+        });
+    });
+
+    describe('.getVertices', () => {
+        let graph: JsonldGraph;
+
+        beforeEach(() => {
+            graph = new JsonldGraph();
+            graph.createVertex('urn:test:test:A');
+            graph.createVertex('urn:test:test:B');
+            graph.setPrefix('instance', 'urn:test:');
+        });
+
+        it('should return all vertices in the graph', () => {
+            expect(graph.getVertices().count()).toEqual(2);
+            expect(graph.getVertices().some(x => x.id === 'instance:test:A')).toEqual(true);
+            expect(graph.getVertices().some(x => x.id === 'instance:test:B')).toEqual(true);
         });
     });
 
@@ -634,6 +660,68 @@ describe('JsonldGraph', () => {
             expect(graph.hasVertex('urn:test:instance:a')).toEqual(true);
             expect(graph.hasVertex('i:instance:b')).toEqual(false);
             expect(graph.hasVertex('urn:test:instance:b')).toEqual(true);
+        });
+    });
+
+    describe('.renameVertex', () => {
+        let graph: JsonldGraph;
+
+        beforeEach(() => {
+            graph = new JsonldGraph();
+            graph.setPrefix('test', 'urn:test:');
+            graph.createVertex('test:instanceA');
+
+            const instanceB = graph.createVertex('test:instanceB');
+            instanceB.setOutgoing('test:out', 'test:instanceC', true);
+            instanceB.setIncoming('test:in', 'test:instanceA');
+            instanceB.appendAttributeValue('test:displayName', 'first');
+            instanceB.appendAttributeValue('test:displayName', 'second');
+            instanceB.appendAttributeValue('test:description', 'test', 'en');
+            instanceB.appendAttributeValue('test:description', 'test', 'fr');
+        });
+
+        it('should throw when input arguments is invalid', () => {
+            const tests = [
+                [null as any, 'test:foo'],
+                [undefined as any, 'test:foo'],
+                ['', 'test:foo'],
+                ['test:instanceB', null as any],
+                ['test:instanceB', undefined as any],
+                ['test:instanceB', ''],
+            ];
+
+            for (const [target, newId] of tests) {
+                expect(() => graph.renameVertex(target, newId)).toThrow(ReferenceError);
+            }
+        });
+
+        it('should throw not found error when target vertex does not exist', () => {
+            expect(() => graph.renameVertex('test:notfound', 'urn:foo')).toThrow(errors.VertexNotFoundError);
+        })
+
+        it('should throw duplicate error when new id already exists', () => {
+            expect(() => graph.renameVertex('test:instanceB', 'test:instanceA')).toThrow(errors.DuplicateVertexError);
+        });
+
+        it('should rename vertex to new id', () => {
+            const v = graph.renameVertex('test:instanceB', 'test:instanceD');
+            expect(v.id).toEqual('test:instanceD');
+            expect(v.getAttributes().count()).toEqual(2);
+            expect(v.hasAttributeValue('test:displayName', 'first')).toEqual(true);
+            expect(v.hasAttributeValue('test:displayName', 'second')).toEqual(true);
+            expect(v.hasAttributeValue('test:description', 'test', 'en')).toEqual(true);
+            expect(v.hasAttributeValue('test:description', 'test', 'en')).toEqual(true);
+            expect(v.hasOutgoing('test:out', 'test:instanceC')).toEqual(true);
+            expect(v.hasIncoming('test:in', 'test:instanceA')).toEqual(true);
+            expect(graph.hasVertex('test:instanceB')).toEqual(false);
+            expect(graph.hasEdge('test:out', 'test:instanceB', 'test:instanceC')).toEqual(false);
+            expect(graph.hasEdge('test:in', 'test:instanceC', 'test:instanceB')).toEqual(false);
+        });
+
+        it('should return same vertex when new id is same', () => {
+            const instanceB = graph.getVertex('test:instanceB')!;
+            const renamed = graph.renameVertex(instanceB, 'test:instanceB');
+            expect(renamed).toEqual(instanceB);
         });
     });
 });

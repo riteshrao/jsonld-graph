@@ -39,24 +39,6 @@ export default class Vertex implements types.Vertex {
     }
 
     /**
-     * @description Sets the id of the node.
-     * @memberof Node
-     */
-    set id(iri: string) {
-        if (!iri) {
-            throw new ReferenceError(`Invalid iri. iri is '${iri}'`);
-        }
-
-        const normalizedIRI = this._graph.expandIRI(iri, true);
-        if (this._graph.hasVertex(normalizedIRI)) {
-            throw new errors.DuplicateVertexError(iri);
-        }
-
-        const incoming = [...this.getIncoming()];
-        const outgoing = [...this.getOutgoing()];
-    }
-
-    /**
      * @description Returns true if the node is a blank node, else false.
      * @readonly
      * @type {boolean}
@@ -144,7 +126,7 @@ export default class Vertex implements types.Vertex {
         if (value === null || value === undefined) {
             throw new ReferenceError(`Invalid value. value is '${value}'`);
         }
-        if (language && typeof value !== 'string') {
+        if (language && typeof language !== 'string') {
             throw new TypeError(
                 `Invalid value. Language speciifc attribute values must be strings. Found type ${typeof value}`
             );
@@ -240,10 +222,10 @@ export default class Vertex implements types.Vertex {
     /**
      * @description Gets all vertices that have an outgoing edge to this vertex.
      * @param {string} [label] Optional edge label used to filter edges with the specifed label.
-     * @returns {Iterable<{ label: string; fromVertex: Vertex }>}
+     * @returns {Iterable<{ label: string; fromVertex: types.Vertex }>}
      * @memberof Vertex
      */
-    getIncoming(label?: string): Iterable<{ label: string; fromVertex: Vertex }> {
+    getIncoming(label?: string): Iterable<{ label: string; fromVertex: types.Vertex }> {
         return this._graph.getIncomingEdges(this._id, label).map(x => {
             return {
                 label: this._graph.compactIRI(x.label),
@@ -255,10 +237,10 @@ export default class Vertex implements types.Vertex {
     /**
      * @description Gets all vertices that this vertex has an outgoing edge to.
      * @param {string} [label] Optional edge label used to filter edges with the specified label.
-     * @returns {Iterable<{ label: string; toVertex: Vertex }>}
+     * @returns {Iterable<{ label: string; toVertex: types.Vertex }>}
      * @memberof Vertex
      */
-    getOutgoing(label?: string): Iterable<{ label: string; toVertex: Vertex }> {
+    getOutgoing(label?: string): Iterable<{ label: string; toVertex: types.Vertex }> {
         return this._graph.getOutgoingEdges(this._id, label).map(x => {
             return {
                 label: this._graph.compactIRI(x.label),
@@ -272,7 +254,7 @@ export default class Vertex implements types.Vertex {
      * @returns {Iterable<Vertex>}
      * @memberof Vertex
      */
-    getTypes(): Iterable<Vertex> {
+    getTypes(): Iterable<types.Vertex> {
         return this._graph.getOutgoingEdges(this._id, JsonldKeywords.type).map(x => x.to);
     }
 
@@ -329,7 +311,7 @@ export default class Vertex implements types.Vertex {
      * @returns {boolean} True if an edge is found, else false.
      * @memberof Vertex
      */
-    hasIncoming(label?: string, vertex?: Vertex | string): boolean {
+    hasIncoming(label?: string, vertex?: types.Vertex | string): boolean {
         if (!label) {
             return !!this._graph.getIncomingEdges(this._id).first();
         } else {
@@ -353,7 +335,7 @@ export default class Vertex implements types.Vertex {
      * @returns {boolean}
      * @memberof Vertex
      */
-    hasOutgoing(label?: string, vertex?: Vertex | string): boolean {
+    hasOutgoing(label?: string, vertex?: types.Vertex | string): boolean {
         if (!label) {
             return !!this._graph.getOutgoingEdges(this._id).first();
         } else {
@@ -526,9 +508,9 @@ export default class Vertex implements types.Vertex {
         return this;
     }
 
-    setIncoming(label: string, fromVertex: Vertex): this;
+    setIncoming(label: string, fromVertex: types.Vertex): this;
     setIncoming(label: string, fromVertex: string, createIfNotExists?: boolean): this;
-    setIncoming(label: string, fromVertex: string | Vertex, createIfNotExists = false): this {
+    setIncoming(label: string, fromVertex: string | types.Vertex, createIfNotExists = false): this {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is '${label}'`);
         }
@@ -563,9 +545,9 @@ export default class Vertex implements types.Vertex {
         return this;
     }
 
-    setOutgoing(label: string, toVertex: Vertex): this;
+    setOutgoing(label: string, toVertex: types.Vertex): this;
     setOutgoing(label: string, toVertex: string, createIfNotExists?: boolean): this;
-    setOutgoing(label: string, toVertex: string | Vertex, createIfNotExists = false): this {
+    setOutgoing(label: string, toVertex: string | types.Vertex, createIfNotExists = false): this {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is '${label}'`);
         }

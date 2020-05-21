@@ -31,7 +31,9 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             const args = [
                 [null as any, graph],
                 [undefined as any, graph],
-                ['', graph]
+                ['', graph],
+                ['urn:test:instance', null],
+                ['urn:test:instance', undefined]
             ]
 
             for (const [id, graph] of args) {
@@ -176,6 +178,10 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
         it('should throw when value is null or undefined', () => {
             expect(() => vertex.deleteAttributeValue('test:simple', null as any)).toThrow(ReferenceError);
             expect(() => vertex.deleteAttributeValue('test:simple', undefined as any)).toThrow(ReferenceError);
+        });
+
+        it('should throw when language is not a valid string', () => {
+            expect(() => vertex.deleteAttributeValue('test:simple', 'c', 1 as any)).toThrow(TypeError);
         });
 
         it('should remove all matching values', () => {
@@ -611,6 +617,12 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             });
         });
 
+        it('should throw when type id is null, undefined or empty string', () => {
+            expect(() => vertex.isType(null as any)).toThrow(ReferenceError);
+            expect(() => vertex.isType(undefined as any)).toThrow(ReferenceError);
+            expect(() => vertex.isType('')).toThrow(ReferenceError);
+        });
+
         it('should return false when vertex has no types', () => {
             expect(typeV.isType("test:type/a")).toEqual(false);
         });
@@ -895,6 +907,11 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             expect(vertex.hasAttributeValue('test:languages', 'English', 'en')).toEqual(true);
             expect(vertex.hasAttributeValue('test:languages', 'French', 'fr')).toEqual(true);
             expect(vertex.hasAttributeValue('test:languages', 'German', 'de')).toEqual(true);
+        });
+
+        it('should set json type for objects', () => {
+            vertex.setAttributeValue('test:json:data', { foo: 'bar' });
+            expect(vertex.getAttributeValue<object>('test:json:data')).toEqual({ foo: 'bar' });
         });
     });
 

@@ -40,7 +40,6 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
     private readonly _remoteLoader: Loader;
     private readonly _documentLoader: Loader;
     private readonly _typeFactory: types.GraphTypesFactory<V>;
-    private readonly _loadRemoteContexts: boolean;
 
     /**
      * Creates an instance of JsonldGraph.
@@ -48,7 +47,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @memberof JsonldGraph
      */
     constructor(options: types.GraphOptions<V> = {}) {
-        this._loadRemoteContexts = options.remoteContexts || false;
+        this._options = options;
         this._typeFactory = options.typeFactory || (new GraphTypesFactory() as any);
 
         this._remoteLoader =
@@ -66,7 +65,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
                 });
             }
 
-            if (this._loadRemoteContexts) {
+            if (this._options?.remoteContexts) {
                 return this._remoteLoader(url);
             }
 
@@ -120,7 +119,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
 
         const _that = this;
         return new Iterable(function* blankNodesGenerator() {
-            for (const id of this._indexMap.get(JsonldGraph.IX_BLANK_NODES)) {
+            for (const id of _that._indexMap.get(JsonldGraph.IX_BLANK_NODES)!) {
                 yield _that.getVertex(id)!;
             }
         });
@@ -139,7 +138,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
 
         const _that = this;
         return new Iterable(function* blankTypesGenerator() {
-            for (const id of this._indexMap.get(JsonldGraph.IX_BLANK_TYPES)) {
+            for (const id of _that._indexMap.get(JsonldGraph.IX_BLANK_TYPES)!) {
                 yield _that.getVertex(id)!;
             }
         });
@@ -161,7 +160,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         }
 
         if (typeof context !== 'object') {
-            throw new ReferenceError(
+            throw new TypeError(
                 `Invalid context. Expected context to be a JSON object, but got ${typeof context}`
             );
         }
@@ -276,8 +275,8 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         const expandedId = this.expandIRI(id, true);
         const expandedTypeIds = types && types.map(typeId => this.expandIRI(typeId, true));
         const vertex = this._typeFactory.createVertex(expandedId, this, ...types);
-        this._vertices.set(expandedId, vertex);
 
+        this._vertices.set(expandedId, vertex);
         if (expandedTypeIds && expandedTypeIds.length > 0) {
             vertex.setType(...types);
         }
@@ -532,7 +531,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @memberof JsonldGraph
      */
     async load(inputs: any | any[], options?: types.GraphLoadOptions): Promise<void> {
-        if (!inputs) {
+        if (!inputs || (inputs instanceof Array && inputs.length === 0)) {
             throw new ReferenceError(`Invalid inputs. inputs is '${inputs}'`);
         }
 
@@ -549,6 +548,10 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         for (const entity of entities) {
             this._loadVertex(entity, options);
         }
+
+        if (options?.normalize) {
+            this.normalize()
+        }
     }
 
     /**
@@ -561,7 +564,10 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
             for (const id of blankTypes) {
                 const vertex = this.getVertex(id);
                 if (vertex) {
-                    this._options.blankTypeResolver(vertex);
+                    const types = this._options.blankTypeResolver(vertex);
+                    if (types && types.length > 0) {
+                        vertex.setType(...types)
+                    }
                     if ([...vertex.getTypes()].length > 0) {
                         blankTypes.delete(id);
                     }
@@ -574,10 +580,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
             for (const id of blankNodes) {
                 const vertex = this.getVertex(id);
                 if (vertex) {
-                    this._options.blankIdResolver(vertex);
-                    if (!vertex.id.startsWith(BlankNodePrefix)) {
-                        blankNodes.delete(id);
-                    }
+                    this._normalizeBlankNode(vertex);
                 }
             }
         }
@@ -663,6 +666,58 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         }
 
         this._prefixes.delete(prefix);
+    }
+
+    /**
+     * @description Renames the IRI of an existig vertex.
+     * @param {(string | V)} vertex The vertex to rename.
+     * @param {string} id The new IRI of the vertex.
+     * @returns {V} 
+     * @memberof JsonldGraph
+     */
+    renameVertex(vertex: string | V, id: string): V {
+        if (!vertex) {
+            throw new ReferenceError(`Invalid vertex. vertex is '${vertex}'`);
+        }
+
+        if (!id) {
+            throw new ReferenceError(`Invalid id. id is '${id}'`);
+        }
+
+        const target = typeof vertex === 'string' ? this.getVertex(vertex) : vertex;
+        if (!target) {
+            throw new errors.VertexNotFoundError(vertex as string);
+        }
+
+        const expandedIRI = this.expandIRI(id, true);
+        if (this.expandIRI(target.id) === expandedIRI) {
+            return target; // Renamed id is same as original id.
+        }
+
+        if (this.hasVertex(expandedIRI)) {
+            throw new errors.DuplicateVertexError(id);
+        }
+
+        const renamed = this.createVertex(id);
+        for (const attrib of target.getAttributes()) {
+            for (const val of attrib.values) {
+                renamed.appendAttributeValue(attrib.name, val.value, val.language)
+            }
+        }
+
+        for (const outgoing of target.getOutgoing()) {
+            this.createEdge(outgoing.label, renamed, outgoing.toVertex as V)
+        }
+
+        for (const incoming of target.getIncoming()) {
+            this.createEdge(incoming.label, incoming.fromVertex as V, renamed)
+        }
+
+        this._indexMap.get(JsonldGraph.IX_BLANK_TYPES)?.delete(this.expandIRI(target.id));
+        this._indexMap.get(JsonldGraph.IX_BLANK_NODES)?.delete(this.expandIRI(target.id));
+        this.removeVertex(target);
+
+        return renamed;
     }
 
     /**
@@ -837,12 +892,19 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
     }
 
     private _loadVertex(entity: any, options?: types.GraphLoadOptions): V {
-        const id = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${shortid()}`;
-        const types = entity[JsonldKeywords.type] || [];
+        const id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${shortid()}`;
+        const types: string[] = entity[JsonldKeywords.type] || [];
         const vertex = this._getOrCreateVertex(id, ...types);
-        for (const key of Object.keys(entity).filter(
-            x => x !== JsonldKeywords.id && x !== JsonldKeywords.type
-        )) {
+
+        if (id.startsWith(BlankNodePrefix)) {
+            this._indexMap.get(JsonldGraph.IX_BLANK_NODES)?.add(id)
+        }
+
+        if (!vertex.getTypes().first()) {
+            this._indexMap.get(JsonldGraph.IX_BLANK_TYPES)?.add(id)
+        }
+
+        for (const key of Object.keys(entity).filter(x => x !== JsonldKeywords.id && x !== JsonldKeywords.type)) {
             this._loadPredicate(key, entity[key], vertex, options);
         }
 
@@ -894,6 +956,17 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
                 const reference = this._loadVertex(value, options);
                 this.createEdge(predicate, vertex, reference);
             }
+        }
+    }
+
+    private _normalizeBlankNode(vertex: V): void {
+        for (const incoming of vertex.getIncoming().filter(x => x.fromVertex.id.startsWith(BlankNodePrefix))) {
+            this._normalizeBlankNode(incoming.fromVertex as V)
+        }
+
+        const id = this._options.blankIdResolver!(vertex);
+        if (id) {
+            this.renameVertex(vertex, id);
         }
     }
 
