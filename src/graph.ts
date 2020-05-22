@@ -4,8 +4,6 @@ import { RemoteDocument } from 'jsonld/jsonld-spec';
 import { JsonldKeywords, BlankNodePrefix } from './constants';
 import Edge from './edge';
 import * as errors from './errors';
-import GraphTypesFactory from './factory';
-import * as types from './types';
 import Vertex from './vertex';
 import cloneDeep from 'lodash.clonedeep';
 import shortid from 'shortid';
@@ -14,13 +12,88 @@ type Loader = (url: string) => Promise<RemoteDocument>;
 const PREFIX_REGEX = /^[a-zA-z][a-zA-Z0-9]*$/;
 
 /**
+ * @description Factory interface for creating vertex intsances.
+ * @export
+ * @interface GraphVertexFactory
+ */
+export interface GraphVertexFactory {
+    (iri: string, types: string[], graph: JsonldGraph): Vertex;
+}
+
+/**
+ * @description Graph options.
+ * @export
+ * @interface JsonldGraphOptions
+ */
+export interface GraphOptions {
+    /**
+     * @description True to enable loading contexts from remote sources, else false.
+     * @type {boolean}
+     * @memberof GraphOptions
+     */
+    remoteContexts?: boolean;
+    /**
+     * @description Factory used to create graph edges and vertices.
+     * @type {types.GraphTypesFactory}
+     * @memberof JsonldGraphOptions
+     */
+    vertexFactory?: GraphVertexFactory;
+
+    /**
+     * @description Resolver function that can resolve the type of blank type ertex nodes.
+     * @type {VertexResolver<V>}
+     * @memberof GraphOptions
+     */
+    blankTypeResolver?: (vertex: Vertex) => string[] | undefined;
+
+    /**
+     * @description Resolver function that can resolve the id of blank id vertex nodes.
+     * @type {VertexResolver<V>}
+     * @memberof GraphOptions
+     */
+    blankIdResolver?: (vertex: Vertex) => string | undefined;
+}
+
+/**
+ * @description Graph load options.
+ * @export
+ * @interface GraphLoadOptions
+ */
+export interface GraphLoadOptions {
+    /**
+     * @description The base IRI of inputs.
+     * @type {string}
+     * @memberof GraphLoadOptions
+     */
+    base?: string;
+    /**
+     * @description Contexts to apply to inputs that don't explicitly specify an @context
+     * @type {(string | string [] | object | object[])}
+     * @memberof GraphLoadOptions
+     */
+    contexts?: string | [string] | object | [object];
+    /**
+     * @description True to merge attributes of existing vertices, else append attribute values.
+     * @type {boolean}
+     * @memberof GraphLoadOptions
+     */
+    merge?: boolean;
+    /**
+     * @description Normalize all blank id and blank type vetices after load.
+     * @type {boolean}
+     * @memberof GraphLoadOptions
+     */
+    normalize?: boolean;
+}
+
+/**
  * @description Represents a graph of JSON-LD triples
  * @export
  * @class JsonldGraph
  * @extends {EventEmitter}
  * @implements {JsonldGraph}
  */
-export default class JsonldGraph<V extends types.Vertex = Vertex> implements types.JsonldGraph<V> {
+export default class JsonldGraph {
     private static IX_EDGES_KEY = (label: string): string => `[e]::${label}`;
     private static IX_NODE_INCOMING_ALL = (id: string): string => `[v]::${id}_[in]`;
     private static IX_NODE_INCOMING_EDGES = (id: string, label: string): string =>
@@ -31,24 +104,26 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
     private static IX_BLANK_NODES = `[v]::BLANK_NODES`;
     private static IX_BLANK_TYPES = `[v]::BLANK_TYPES`;
 
-    private readonly _edges = new Map<string, Edge<V>>();
-    private readonly _vertices = new Map<string, V>();
+    private readonly _edges = new Map<string, Edge>();
+    private readonly _vertices = new Map<string, Vertex>();
     private readonly _indexMap = new Map<string, Set<string>>();
     private readonly _prefixes = new Map<string, string>();
     private readonly _contexts = new Map<string, any>();
-    private readonly _options: types.GraphOptions<V>;
+    private readonly _options: GraphOptions;
     private readonly _remoteLoader: Loader;
     private readonly _documentLoader: Loader;
-    private readonly _typeFactory: types.GraphTypesFactory<V>;
+    private readonly _vertexFactory: GraphVertexFactory;
 
     /**
      * Creates an instance of JsonldGraph.
      * @param {types.GraphOptions} [options] Graph options.
      * @memberof JsonldGraph
      */
-    constructor(options: types.GraphOptions<V> = {}) {
+    constructor(options: GraphOptions = {}) {
         this._options = options;
-        this._typeFactory = options.typeFactory || (new GraphTypesFactory() as any);
+        this._vertexFactory = options.vertexFactory || function(iri: string, _: string[], graph: JsonldGraph): Vertex {
+            return new Vertex(iri, graph);
+        }
 
         this._remoteLoader =
             typeof process !== undefined && process.versions && process.versions.node
@@ -112,7 +187,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @type {Iterable<V>}
      * @memberof JsonldGraph
      */
-    get blankNodes(): Iterable<V> {
+    get blankNodes(): Iterable<Vertex> {
         if (!this._indexMap.has(JsonldGraph.IX_BLANK_NODES)) {
             return Iterable.empty();
         }
@@ -131,7 +206,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @type {Iterable<V>}
      * @memberof JsonldGraph
      */
-    get blankTypes(): Iterable<V> {
+    get blankTypes(): Iterable<Vertex> {
         if (!this._indexMap.has(JsonldGraph.IX_BLANK_TYPES)) {
             return Iterable.empty();
         }
@@ -207,7 +282,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @param {[boolean]} createIncoming True to create the incoming vertex, else false.
      * @memberof JsonldGraph
      */
-    createEdge(label: string, fromVertex: string | V, toVertex: string | V): Edge<V> {
+    createEdge(label: string, fromVertex: string | Vertex, toVertex: string | Vertex): Edge {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is '${label}'`);
         }
@@ -233,24 +308,18 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
             throw new errors.CyclicEdgeError(label, outgoingV.id);
         }
 
-        const normalizedEdgeLabel = this.expandIRI(label, true);
-        const expandedOutgoingId = this.expandIRI(outgoingV.id);
-        const expandedIncomingId = this.expandIRI(
-            incomingV ? incomingV.id : (toVertex as string),
-            true
-        );
-
+        const edgeIRI = this.expandIRI(label, true);
         const edgeId = this._formatEdgeId(
-            normalizedEdgeLabel,
-            expandedOutgoingId,
-            expandedIncomingId
+            edgeIRI,
+            outgoingV.iri,
+            incomingV.iri
         );
 
         if (this._edges.has(edgeId)) {
             throw new errors.DuplicateEdgeError(label, outgoingV.id, incomingV!.id);
         }
 
-        const edge = new Edge(normalizedEdgeLabel, outgoingV, incomingV!, this);
+        const edge = new Edge(edgeIRI, outgoingV, incomingV!, this);
         this._edges.set(edgeId, edge);
         this._addEdgeIndices(edge);
         return edge;
@@ -263,19 +332,23 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {V}
      * @memberof JsonldGraph
      */
-    createVertex(id: string, ...types: string[]): V {
+    createVertex(id: string, ...types: string[]): Vertex {
         if (!id) {
             throw new ReferenceError(`Invalid id. id is '${id}'`);
         }
 
-        if (this.hasVertex(id)) {
+        const expandedId = this.expandIRI(id, true);
+        const expandedTypeIds = types && types.map(typeId => this.expandIRI(typeId, true));
+
+        if (this.hasVertex(expandedId)) {
             throw new errors.DuplicateVertexError(id);
         }
 
-        const expandedId = this.expandIRI(id, true);
-        const expandedTypeIds = types && types.map(typeId => this.expandIRI(typeId, true));
-        const vertex = this._typeFactory.createVertex(expandedId, this, ...types);
-
+        const vertex = this._vertexFactory(expandedId, types, this);
+        if (!vertex) {
+            throw new ReferenceError(`Invalid vertex returned from factory. vertex is ${vertex}`);
+        }
+        
         this._vertices.set(expandedId, vertex);
         if (expandedTypeIds && expandedTypeIds.length > 0) {
             vertex.setType(...types);
@@ -296,6 +369,10 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
 
         const prefixIndex = iri.indexOf(':');
         if (prefixIndex <= 0) {
+            if (validate) {
+                this.validateIRI(iri);
+            }
+            
             return iri;
         }
 
@@ -335,7 +412,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {Iterable<E>}
      * @memberof JsonldGraph
      */
-    getEdges(label?: string): Iterable<Edge<V>> {
+    getEdges(label?: string): Iterable<Edge> {
         if (!label) {
             return new Iterable(this._edges.values());
         } else {
@@ -353,7 +430,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {Iterable<E>} Iterable containing all matching incoming edges
      * @memberof JsonldGraph
      */
-    getIncomingEdges(vertex: string, label?: string): Iterable<Edge<V>> {
+    getIncomingEdges(vertex: string, label?: string): Iterable<Edge> {
         if (!vertex) {
             throw new ReferenceError(`Invalid vertex id. vertex id is '${vertex}`);
         }
@@ -377,7 +454,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {Iterable<V>}
      * @memberof JsonldGraph
      */
-    getIncomingVertices(label: string): Iterable<V> {
+    getIncomingVertices(label: string): Iterable<Vertex> {
         if (!label) {
             throw new ReferenceError();
         }
@@ -409,7 +486,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {Iterable<E>} Iterable containing all matching outgoing edges.
      * @memberof JsonldGraph
      */
-    getOutgoingEdges(vertex: string, label?: string): Iterable<Edge<V>> {
+    getOutgoingEdges(vertex: string, label?: string): Iterable<Edge> {
         if (!vertex) {
             throw new ReferenceError(`Invalid vertex id. vertex id is '${vertex}`);
         }
@@ -433,7 +510,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {Iterable<V>}
      * @memberof JsonldGraph
      */
-    getOutgoingVertices(label: string): Iterable<V> {
+    getOutgoingVertices(label: string): Iterable<Vertex> {
         if (!label) {
             throw new ReferenceError();
         }
@@ -464,7 +541,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {Iterable<V>}
      * @memberof JsonldGraph
      */
-    getVertices(): Iterable<V> {
+    getVertices(): Iterable<Vertex> {
         return new Iterable(this._vertices.values());
     }
 
@@ -474,7 +551,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {Vertex}
      * @memberof JsonldGraph
      */
-    getVertex(id: string): V | undefined {
+    getVertex(id: string): Vertex | undefined {
         if (!id) {
             throw new ReferenceError(`Invalid id. id is ${id}`);
         }
@@ -490,7 +567,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {boolean} True if the edge exists.
      * @memberof JsonldGraph
      */
-    hasEdge(label: string, from: string | V, to: string | V): boolean {
+    hasEdge(label: string, from: string | Vertex, to: string | Vertex): boolean {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is '${label}'`);
         }
@@ -530,7 +607,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @param {types.GraphLoadOptions} [options] Optons used to load inputs.
      * @memberof JsonldGraph
      */
-    async load(inputs: any | any[], options?: types.GraphLoadOptions): Promise<void> {
+    async load(inputs: any | any[], options?: GraphLoadOptions): Promise<void> {
         if (!inputs || (inputs instanceof Array && inputs.length === 0)) {
             throw new ReferenceError(`Invalid inputs. inputs is '${inputs}'`);
         }
@@ -604,7 +681,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @param {E} edge The edge instance to remove.
      * @memberof JsonldGraph
      */
-    removeEdge(edge: Edge<V>): void {
+    removeEdge(edge: Edge): void {
         if (!edge) {
             throw new ReferenceError(`Invalid edge. edge is '${edge}'`);
         }
@@ -624,7 +701,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @param {(string | Vertex)} vertex The IRI or vertex instance to remove.
      * @memberof JsonldGraph
      */
-    removeVertex(vertex: string | V): void {
+    removeVertex(vertex: string | Vertex): void {
         if (!vertex) {
             throw new ReferenceError(`Invalid vertex. vertex is '${vertex}'`);
         }
@@ -675,7 +752,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {V} 
      * @memberof JsonldGraph
      */
-    renameVertex(vertex: string | V, id: string): V {
+    renameVertex(vertex: string | Vertex, id: string): Vertex {
         if (!vertex) {
             throw new ReferenceError(`Invalid vertex. vertex is '${vertex}'`);
         }
@@ -706,11 +783,11 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         }
 
         for (const outgoing of target.getOutgoing()) {
-            this.createEdge(outgoing.label, renamed, outgoing.toVertex as V)
+            this.createEdge(outgoing.label, renamed, outgoing.to)
         }
 
         for (const incoming of target.getIncoming()) {
-            this.createEdge(incoming.label, incoming.fromVertex as V, renamed)
+            this.createEdge(incoming.label, incoming.from, renamed)
         }
 
         this._indexMap.get(JsonldGraph.IX_BLANK_TYPES)?.delete(this.expandIRI(target.id));
@@ -759,7 +836,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
      * @returns {Promise<T>}
      * @memberof JsonldGraph
      */
-    async toJson<T extends object = object>(options?: types.JsonFormatOptions): Promise<T> {
+    async toJson<T extends object = object>(options?: any): Promise<T> {
         const triples: object[] = [];
         for (const vertex of this.getVertices()) {
             triples.push(this._toTriple(vertex));
@@ -829,11 +906,11 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         }
     }
 
-    private _addEdgeIndices(edge: Edge<V>): void {
+    private _addEdgeIndices(edge: Edge): void {
         const edgeId = this._formatEdgeId(
-            this.expandIRI(edge.label),
-            this.expandIRI(edge.from.id),
-            this.expandIRI(edge.to.id)
+            edge.iri,
+            edge.from.iri,
+            edge.to.iri
         );
 
         for (const indexKey of this._generateEdgeIndexKeys(edge)) {
@@ -877,21 +954,17 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         return `${label}_${fromVertex}->${toVertex}`;
     }
 
-    private _generateEdgeIndexKeys(edge: Edge<V>): string[] {
-        const labelIRI = this.expandIRI(edge.label);
-        const fromVertexIRI = this.expandIRI(edge.from.id);
-        const toVertexIRI = this.expandIRI(edge.to.id);
-
+    private _generateEdgeIndexKeys(edge: Edge): string[] {
         return [
-            JsonldGraph.IX_EDGES_KEY(labelIRI),
-            JsonldGraph.IX_NODE_INCOMING_ALL(toVertexIRI),
-            JsonldGraph.IX_NODE_INCOMING_EDGES(toVertexIRI, labelIRI),
-            JsonldGraph.IX_NODE_OUTGOING_ALL(fromVertexIRI),
-            JsonldGraph.IX_NODE_OUTGOING_EDGES(fromVertexIRI, labelIRI)
+            JsonldGraph.IX_EDGES_KEY(edge.iri),
+            JsonldGraph.IX_NODE_INCOMING_ALL(edge.to.iri),
+            JsonldGraph.IX_NODE_INCOMING_EDGES(edge.to.iri, edge.iri),
+            JsonldGraph.IX_NODE_OUTGOING_ALL(edge.from.iri),
+            JsonldGraph.IX_NODE_OUTGOING_EDGES(edge.from.iri, edge.iri)
         ];
     }
 
-    private _loadVertex(entity: any, options?: types.GraphLoadOptions): V {
+    private _loadVertex(entity: any, options?: GraphLoadOptions): Vertex {
         const id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${shortid()}`;
         const types: string[] = entity[JsonldKeywords.type] || [];
         const vertex = this._getOrCreateVertex(id, ...types);
@@ -911,7 +984,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         return vertex;
     }
 
-    private _getOrCreateVertex(id: string, ...types: string[]): V {
+    private _getOrCreateVertex(id: string, ...types: string[]): Vertex {
         if (this.hasVertex(id)) {
             const vertex = this.getVertex(id)!;
             vertex.setType(...types);
@@ -924,8 +997,8 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
     private _loadPredicate(
         predicate: string,
         values: any[],
-        vertex: V,
-        options?: types.GraphLoadOptions
+        vertex: Vertex,
+        options?: GraphLoadOptions
     ): void {
         for (const value of values) {
             if (value[JsonldKeywords.list]) {
@@ -959,9 +1032,9 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         }
     }
 
-    private _normalizeBlankNode(vertex: V): void {
-        for (const incoming of vertex.getIncoming().filter(x => x.fromVertex.id.startsWith(BlankNodePrefix))) {
-            this._normalizeBlankNode(incoming.fromVertex as V)
+    private _normalizeBlankNode(vertex: Vertex): void {
+        for (const incoming of vertex.getIncoming().filter(x => x.from.id.startsWith(BlankNodePrefix))) {
+            this._normalizeBlankNode(incoming.from)
         }
 
         const id = this._options.blankIdResolver!(vertex);
@@ -970,7 +1043,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         }
     }
 
-    private _removeEdgeIndices(edge: Edge<V>): void {
+    private _removeEdgeIndices(edge: Edge): void {
         const edgeId = this._formatEdgeId(
             this.expandIRI(edge.label),
             this.expandIRI(edge.from.id),
@@ -988,7 +1061,7 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
         }
     }
 
-    private _toTriple(vertex: V): object {
+    private _toTriple(vertex: Vertex): object {
         const triple: object = {
             [JsonldKeywords.id]: this.expandIRI(vertex.id)
         };
@@ -1007,18 +1080,16 @@ export default class JsonldGraph<V extends types.Vertex = Vertex> implements typ
             });
         }
 
-        for (const { label, toVertex } of vertex.getOutgoing()) {
-            const predicate = this.expandIRI(label);
-            const objectId = this.expandIRI(toVertex.id);
-            if (!triple[predicate]) {
-                triple[predicate] = [];
+        for (const edge of vertex.getOutgoing()) {
+            if (!triple[edge.iri]) {
+                triple[edge.iri] = [];
             }
 
-            if (predicate === JsonldKeywords.type) {
-                triple[predicate].push(objectId);
+            if (edge.iri === JsonldKeywords.type) {
+                triple[edge.iri].push(edge.to.iri);
             } else {
-                triple[predicate].push({
-                    [JsonldKeywords.id]: objectId
+                triple[edge.iri].push({
+                    [JsonldKeywords.id]: edge.to.iri
                 });
             }
         }

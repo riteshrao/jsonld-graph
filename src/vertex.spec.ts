@@ -5,7 +5,8 @@ import Iterable from 'jsiterable';
 
 jest.mock('./graph');
 
-describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
+describe('Vertex', () => {
+    let graph: JsonldGraph;
 
     beforeEach(() => {
         graph = new JsonldGraph();
@@ -81,38 +82,47 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
 
         it('should add new attribute', () => {
             vertex.appendAttributeValue('test:1', '100');
+            vertex.appendAttributeValue('http://example.org/test/2', 100);
             const attributes = [...vertex.getAttributes()];
-            expect(attributes.length).toEqual(1);
+            expect(attributes.length).toEqual(2);
             expect(attributes[0].name).toEqual('test:1');
             expect(attributes[0].values.length).toEqual(1);
             expect(attributes[0].values[0].value).toEqual('100');
+            expect(attributes[1].name).toEqual('test:2');
+            expect(attributes[1].values.length).toEqual(1);
+            expect(attributes[1].values[0].value).toEqual(100);
         });
 
         it('should append value to existing attribute', () => {
             vertex.appendAttributeValue('test:1', '100');
             vertex.appendAttributeValue('test:1', '200');
+            vertex.appendAttributeValue('http://example.org/test/1', 300);
             const attributes = [...vertex.getAttributes()];
             expect(attributes.length).toEqual(1);
             expect(attributes[0].name).toEqual('test:1');
-            expect(attributes[0].values.length).toEqual(2);
+            expect(attributes[0].values.length).toEqual(3);
             expect(attributes[0].values[0].value).toEqual('100');
             expect(attributes[0].values[1].value).toEqual('200');
+            expect(attributes[0].values[2].value).toEqual(300);
         });
 
         it('should add new localized attribute value', () => {
             vertex.appendAttributeValue('test:1', 'a', 'en');
+            vertex.appendAttributeValue('http://example.org/test/1', 'b', 'fr');
             const attributes = [...vertex.getAttributes()];
             expect(attributes.length).toEqual(1)
             expect(attributes[0].name).toEqual('test:1');
-            expect(attributes[0].values.length).toEqual(1);
+            expect(attributes[0].values.length).toEqual(2);
             expect(attributes[0].values[0].value).toEqual('a');
             expect(attributes[0].values[0].language).toEqual('en');
+            expect(attributes[0].values[1].value).toEqual('b');
+            expect(attributes[0].values[1].language).toEqual('fr');
         });
 
         it('should append new localized attribute value', () => {
             vertex.appendAttributeValue('test:1', 'a');
             vertex.appendAttributeValue('test:1', 'a', 'en');
-            vertex.appendAttributeValue('test:1', 'a', 'fr');
+            vertex.appendAttributeValue('http://example.org/test/1', 'a', 'fr');
             const attributes = [...vertex.getAttributes()];
             expect(attributes.length).toEqual(1)
             expect(attributes[0].name).toEqual('test:1');
@@ -151,9 +161,15 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             expect(() => vertex.deleteAttribute('')).toThrow(ReferenceError);
         });
 
-        it('should delete all values of attribute', () => {
+        it('should delete all values of attribute using short id', () => {
             vertex.deleteAttribute('test:attribute');
             expect(vertex.hasAttribute('test:attribute'));
+        });
+
+        it('should delete all values of attribute using qualified iri', () => {
+            vertex.deleteAttribute('http://example.org/test/attribute');
+            expect(vertex.hasAttribute('test:attribute')).toEqual(false);
+            expect(vertex.hasAttribute('http://example.org/test/attribute')).toEqual(false);
         });
     });
 
@@ -197,6 +213,13 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             vertex.deleteAttributeValue('test:simple', 'a', 'en');
             expect(vertex.hasAttributeValue('test:simple', 'a', 'en')).toEqual(false);
             expect(vertex.hasAttributeValue('test:simple', 'a')).toEqual(true);
+        });
+
+        it('should remove nothing when no value matches', () => {
+            vertex.deleteAttributeValue('test:simple', 'foo');
+            vertex.deleteAttributeValue('test:simple', 'bar', 'fr');
+            expect(vertex.getAttributes().count()).toEqual(1);
+            expect(vertex.getAttributeValues('test:simple').count()).toEqual(5);
         });
     });
 
@@ -278,19 +301,35 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             vertex = new Vertex('http://example.org/instance/a', graph);
             typeV = new Vertex('http://example.org/instance/type', graph);
             outgoingV = new Vertex('http://example.org/instance/outgoing', graph);
-            jest.spyOn(graph, 'getIncomingEdges').mockImplementation((id, label) => {
-                if (id !== 'http://example.org/instance/a') {
+            jest.spyOn(graph, 'getIncomingEdges').mockImplementation((vertex, label) => {
+                const labelIRI = label?.replace('test:', 'http://example.org/test/');
+                if (vertex !== 'http://example.org/instance/a') {
                     return Iterable.empty();
                 }
 
-                if (label === 'http://example.org/test/types' || label === 'test:types') {
+                if (labelIRI === 'http://example.org/test/types') {
                     return new Iterable([
-                        { label, from: typeV, to: vertex }
+                        {
+                            iri: labelIRI,
+                            label,
+                            from: typeV,
+                            to: vertex
+                        }
                     ]) as any;
                 } else {
                     return new Iterable([
-                        { label: 'http://example.org/test/types', from: typeV, to: vertex },
-                        { label: 'http://example.org/test/outgoing', from: outgoingV, to: vertex }
+                        {
+                            iri: 'http://example.org/test/types',
+                            label: 'test:types',
+                            from: typeV,
+                            to: vertex
+                        },
+                        {
+                            iri: 'http://example.org/test/outgoing',
+                            label: 'test:outgoing',
+                            from: outgoingV,
+                            to: vertex
+                        }
                     ]) as any;
                 }
             });
@@ -304,17 +343,18 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
         it('should return all incoming', () => {
             const incoming = [...vertex.getIncoming()];
             expect(incoming.length).toEqual(2);
-            expect(incoming.find(x => x.label === 'test:types')).not.toBeUndefined();
-            expect(incoming.find(x => x.label === 'test:outgoing')).not.toBeUndefined();
-            expect(incoming.find(x => x.label === 'test:types')?.fromVertex).toEqual(typeV);
-            expect(incoming.find(x => x.label === 'test:outgoing')?.fromVertex).toEqual(outgoingV);
+            expect(incoming.find(x => x.iri === 'http://example.org/test/types')).not.toBeUndefined();
+            expect(incoming.find(x => x.iri === 'http://example.org/test/outgoing')).not.toBeUndefined();
+            expect(incoming.find(x => x.iri === 'http://example.org/test/types')?.from).toEqual(typeV);
+            expect(incoming.find(x => x.iri === 'http://example.org/test/outgoing')?.from).toEqual(outgoingV);
         });
 
         it('should return filtered incoming', () => {
             const incoming = [...vertex.getIncoming('test:types')];
             expect(incoming.length).toEqual(1);
+            expect(incoming[0].iri).toEqual('http://example.org/test/types');
             expect(incoming[0].label).toEqual('test:types');
-            expect(incoming[0].fromVertex).toEqual(typeV);
+            expect(incoming[0].from).toEqual(typeV);
         });
     });
 
@@ -328,18 +368,29 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             typeV = new Vertex('http://example.org/test/instance/type', graph);
             outgoingV = new Vertex('http://example.org/test/instance/outgoing', graph);
             jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id, label) => {
+                const labelIRI = label?.replace('test:', 'http://example.org/test/');
                 if (id !== 'http://example.org/test/instance/a') {
                     return Iterable.empty();
                 }
 
-                if (label === 'http://example.org/test/types' || label === 'test:types') {
+                if (labelIRI === 'http://example.org/test/types') {
                     return new Iterable([
-                        { label, from: vertex, to: typeV }
+                        { iri: labelIRI, label, from: vertex, to: typeV }
                     ]) as any;
                 } else {
                     return new Iterable([
-                        { label: 'http://example.org/test/types', from: vertex, to: typeV },
-                        { label: 'http://example.org/test/outgoing', from: vertex, to: outgoingV }
+                        {
+                            iri: 'http://example.org/test/types',
+                            label: 'test:types',
+                            from: vertex,
+                            to: typeV
+                        },
+                        {
+                            iri: 'http://example.org/test/outgoing',
+                            label: 'test:outgoing',
+                            from: vertex,
+                            to: outgoingV
+                        }
                     ]) as any;
                 }
             });
@@ -353,17 +404,18 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
         it('should return all outgoing', () => {
             const incoming = [...vertex.getOutgoing()];
             expect(incoming.length).toEqual(2);
-            expect(incoming.find(x => x.label === 'test:types')).not.toBeUndefined();
-            expect(incoming.find(x => x.label === 'test:outgoing')).not.toBeUndefined();
-            expect(incoming.find(x => x.label === 'test:types')?.toVertex).toEqual(typeV);
-            expect(incoming.find(x => x.label === 'test:outgoing')?.toVertex).toEqual(outgoingV);
+            expect(incoming.find(x => x.iri === 'http://example.org/test/types')).not.toBeUndefined();
+            expect(incoming.find(x => x.iri === 'http://example.org/test/outgoing')).not.toBeUndefined();
+            expect(incoming.find(x => x.iri === 'http://example.org/test/types')?.to).toEqual(typeV);
+            expect(incoming.find(x => x.iri === 'http://example.org/test/outgoing')?.to).toEqual(outgoingV);
         });
 
         it('should return filtered outgoing', () => {
             const incoming = [...vertex.getOutgoing('test:types')];
             expect(incoming.length).toEqual(1);
+            expect(incoming[0].iri).toEqual('http://example.org/test/types');
             expect(incoming[0].label).toEqual('test:types');
-            expect(incoming[0].toVertex).toEqual(typeV);
+            expect(incoming[0].to).toEqual(typeV);
         });
     });
 
@@ -385,14 +437,29 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
 
                 if (label === '@type') {
                     return new Iterable([
-                        { label, from: vertex, to: typeAV },
-                        { label, from: vertex, to: typeBV }
+                        { iri: '@type', label, from: vertex, to: typeAV },
+                        { iri: '@type', label, from: vertex, to: typeBV }
                     ]) as any;
                 } else {
                     return new Iterable([
-                        { label: 'http://example.org/test/types', from: vertex, to: typeAV },
-                        { label: 'http://example.org/test/types', from: vertex, to: typeBV },
-                        { label: 'http://example.org/test/outgoing', from: vertex, to: nonTypeV }
+                        {
+                            iri: 'http://example.org/test/types',
+                            label: 'test:types',
+                            from: vertex,
+                            to: typeAV
+                        },
+                        {
+                            iri: 'http://example.org/test/types',
+                            types: 'test:types',
+                            from: vertex,
+                            to: typeBV
+                        },
+                        { 
+                            iri: 'http://example.org/test/outgoing', 
+                            label: 'test:ougoing',
+                            from: vertex, 
+                            to: nonTypeV 
+                        }
                     ]) as any;
                 }
             });
@@ -417,7 +484,7 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
         beforeEach(() => {
             vertex = new Vertex('http://example.org/test/instances/a', graph);
             vertex.setAttributeValue('test:fname', 'John');
-            vertex.setAttributeValue('test:lname', 'Doe');
+            vertex.setAttributeValue('http://example.org/test/lname', 'Doe');
         });
 
         it('should throw reference error when attribute name is not valid', () => {
@@ -432,7 +499,7 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
 
         it('should return true when attribute exists', () => {
             expect(vertex.hasAttribute('test:fname')).toEqual(true);
-            expect(vertex.hasAttribute('http://example.org/test/lname')).toEqual(true);
+            expect(vertex.hasAttribute('test:lname')).toEqual(true);
         });
     });
 
@@ -503,14 +570,15 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
                     return Iterable.empty();
                 }
 
-                if (label === 'http://example.org/test/incoming') {
+                const iri = label?.replace('test:', 'http://example.org/test/');
+                if (iri === 'http://example.org/test/incoming') {
                     return new Iterable([
-                        { label, from: incomingA, to: vertex }
+                        { iri, label, from: incomingA, to: vertex }
                     ]);
                 } else if (!label) {
                     return new Iterable([
-                        { label, from: incomingA, to: vertex },
-                        { label, from: incomingB, to: vertex },
+                        { iri, label, from: incomingA, to: vertex },
+                        { iri, label, from: incomingB, to: vertex },
                     ]);
                 } else {
                     return Iterable.empty()
@@ -558,14 +626,15 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
                     return Iterable.empty();
                 }
 
-                if (label === 'http://example.org/test/outgoing') {
+                const iri = label?.replace('test:', 'http://example.org/test/');
+                if (iri === 'http://example.org/test/outgoing') {
                     return new Iterable([
-                        { label, from: vertex, to: targetA }
+                        { iri, label, from: vertex, to: targetA }
                     ]);
                 } else if (!label) {
                     return new Iterable([
-                        { label, from: vertex, to: targetA },
-                        { label, from: vertex, to: targetB },
+                        { iri, label, from: vertex, to: targetA },
+                        { iri, label, from: vertex, to: targetB },
                     ]);
                 } else {
                     return Iterable.empty()
@@ -650,9 +719,9 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
                 }
 
                 return new Iterable([
-                    { label: 'http://example.org/test/type', from: outA, to: vertex },
-                    { label: 'http://example.org/test/incoming', from: outB, to: vertex },
-                    { label: 'http://example.org/test/incoming', from: outC, to: vertex },
+                    { iri: 'http://example.org/test/type', label: 'test:type', from: outA, to: vertex },
+                    { iri: 'http://example.org/test/incoming', label: 'test:incoming', from: outB, to: vertex },
+                    { iri: 'http://example.org/test/incoming', label: 'test:incoming', from: outC, to: vertex },
                 ]) as any;
             });
         });
@@ -663,13 +732,13 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
 
             expect(removeStub).toHaveBeenCalledTimes(3);
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/type',
+                label: 'test:type',
                 from: outA,
                 to: vertex
             }));
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/incoming',
+                label: 'test:incoming',
                 from: outB,
                 to: vertex
             }));
@@ -682,13 +751,13 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             expect(removeStub).toHaveBeenCalledTimes(2);
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/incoming',
+                label: 'test:incoming',
                 from: outB,
                 to: vertex
             }));
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/incoming',
+                label: 'test:incoming',
                 from: outC,
                 to: vertex
             }));
@@ -697,18 +766,18 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
         it('should remove incoming edges matching specified filter', () => {
             const removeStub = jest.spyOn(graph, 'removeEdge');
             vertex.removeIncoming('test:incoming', 'test:instance/outB');
-            vertex.removeIncoming('test:incoming', v => v.id === 'test:instance/outC');
+            vertex.removeIncoming('test:incoming', v => v.iri === 'http://example.org/test/instance/outC');
 
             expect(removeStub).toHaveBeenCalledTimes(2);
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/incoming',
+                label: 'test:incoming',
                 from: outB,
                 to: vertex
             }));
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/incoming',
+                label: 'test:incoming',
                 from: outC,
                 to: vertex
             }));
@@ -732,9 +801,9 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
                 }
 
                 return new Iterable([
-                    { label: 'http://example.org/test/type', from: vertex, to: inA },
-                    { label: 'http://example.org/test/outgoing', from: vertex, to: inB },
-                    { label: 'http://example.org/test/outgoing', from: vertex, to: inC },
+                    { iri: 'http://example.org/test/type', label: 'test:type', from: vertex, to: inA },
+                    { iri: 'http://example.org/test/outgoing', label: 'test:outgoing', from: vertex, to: inB },
+                    { iri: 'http://example.org/test/outgoing', label: 'test:outgoing', from: vertex, to: inC },
                 ]) as any;
             });
         });
@@ -746,13 +815,13 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             expect(removeStub).toHaveBeenCalledTimes(3);
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/type',
+                label: 'test:type',
                 from: vertex,
                 to: inA
             }));
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/outgoing',
+                label: 'test:outgoing',
                 from: vertex,
                 to: inB
             }));
@@ -765,13 +834,13 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             expect(removeStub).toHaveBeenCalledTimes(2);
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/outgoing',
+                label: 'test:outgoing',
                 from: vertex,
                 to: inB
             }));
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/outgoing',
+                label: 'test:outgoing',
                 from: vertex,
                 to: inC
             }));
@@ -785,13 +854,13 @@ describe('Vertex', () => {let graph: JsonldGraph<Vertex>;
             expect(removeStub).toHaveBeenCalledTimes(2);
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/outgoing',
+                label: 'test:outgoing',
                 from: vertex,
                 to: inB
             }));
 
             expect(removeStub).toHaveBeenCalledWith(expect.objectContaining({
-                label: 'http://example.org/test/outgoing',
+                label: 'test:outgoing',
                 from: vertex,
                 to: inC
             }));

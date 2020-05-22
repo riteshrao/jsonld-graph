@@ -1,41 +1,83 @@
-import * as types from './types';
 import { BlankNodePrefix, JsonldKeywords } from './constants';
 import Iterable from 'jsiterable';
 import * as errors from './errors';
 import cloneDeep = require('lodash.clonedeep');
+import { JsonldGraph, Edge } from 'src';
 
-type GraphType = types.JsonldGraph<Vertex>;
+/**
+ * @description Attribute value type.
+ * @export
+ * @interface AttributeValue
+ * @template T
+ */
+export interface AttributeValue<T = any> {
+    /**
+     * @description Optional @language discriptor of the attribute.
+     * @type {string}
+     * @memberof AttributeValue
+     */
+    language?: string;
+    /**
+     * @description Optional @type discriptor of the attribute.
+     * @type {string}
+     * @memberof AttributeValue
+     */
+    type?: string;
+    /**
+     * @description The attribute value.
+     * @type {T}
+     * @memberof AttributeValue
+     */
+    value: T;
+}
+
 
 /**
  * @description Vertex in a graph.
  * @export
  * @class Vertex
  */
-export default class Vertex implements types.Vertex {
-    private _id: string;
-    private readonly _graph: GraphType;
-    private readonly _attributes = new Map<string, types.AttributeValue[]>();
+export default class Vertex {
+    private _iri: string;
+    private readonly _graph: JsonldGraph;
+    private readonly _attributes = new Map<string, AttributeValue[]>();
 
-    constructor(id: string, graph: GraphType) {
-        if (!id) {
-            throw new ReferenceError(`Invalid id. id is '${id}'`);
+    /**
+     * Creates an instance of Vertex.
+     * @param {string} iri The IRI of the vertex.
+     * @param {JsonldGraph} graph The graph containng the vertex instance.
+     * @memberof Vertex
+     */
+    constructor(iri: string, graph: JsonldGraph) {
+        if (!iri) {
+            throw new ReferenceError(`Invalid id. id is '${iri}'`);
         }
         if (!graph) {
             throw new ReferenceError(`Invalid graph. graph is '${graph}'`);
         }
 
-        this._id = id;
+        this._iri = iri;
         this._graph = graph;
     }
 
     /**
-     * @description Gets the id of the node.
+     * @description Gets the fully qualified IRI of the vertex.
+     * @readonly
+     * @type {string}
+     * @memberof Vertex
+     */
+    get iri(): string {
+        return this._iri;
+    }
+
+    /**
+     * @description Gets the compact id of the vertex. If no configured prefix is found, the full qualified IRI is returned.
      * @readonly
      * @type {string}
      * @memberof Node
      */
     get id(): string {
-        return this._graph.compactIRI(this._id);
+        return this._graph.compactIRI(this._iri);
     }
 
     /**
@@ -45,7 +87,7 @@ export default class Vertex implements types.Vertex {
      * @memberof Vertex
      */
     get isBlankNode(): boolean {
-        return this._id.startsWith(BlankNodePrefix);
+        return this._iri.startsWith(BlankNodePrefix);
     }
 
     /**
@@ -135,28 +177,28 @@ export default class Vertex implements types.Vertex {
         const attributeIRI = this._graph.expandIRI(name);
         const values = this._attributes.get(attributeIRI);
 
-        if (!values) {
+        if (!values || values.length === 0) {
             return this;
         }
 
         if (language) {
-             const valueIndex = values.findIndex(x => x.value === value && x.language === language);
-             if (valueIndex > -1) {
-                 values.splice(valueIndex, 1);
-             }
+            const valueIndex = values.findIndex(x => x.value === value && x.language === language);
+            if (valueIndex > -1) {
+                values.splice(valueIndex, 1);
+            }
         } else {
             this._attributes.set(attributeIRI, values.filter(x => x.value !== value));
         }
-        
+
         return this;
     }
 
     /**
      * @description Gets all attributes of the vertex.
-     * @returns {Iterable<[string, types.AttributeValue[]]>}
+     * @returns {Iterable<[string, AttributeValue[]]>}
      * @memberof Vertex
      */
-    getAttributes(): Iterable<{ name: string; values: types.AttributeValue[] }> {
+    getAttributes(): Iterable<{ name: string; values: AttributeValue[] }> {
         return new Iterable(this._attributes.entries()).map(x => {
             return {
                 name: this._graph.compactIRI(x[0]),
@@ -203,10 +245,10 @@ export default class Vertex implements types.Vertex {
      * @description Gets all values of a specific attribute.
      * @template T The data type of the attribute.
      * @param {string} name
-     * @returns {Iterable<types.AttributeValue<T>>}
+     * @returns {Iterable<AttributeValue<T>>}
      * @memberof Vertex
      */
-    getAttributeValues<T = any>(name: string): Iterable<types.AttributeValue<T>> {
+    getAttributeValues<T = any>(name: string): Iterable<AttributeValue<T>> {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
         }
@@ -225,13 +267,8 @@ export default class Vertex implements types.Vertex {
      * @returns {Iterable<{ label: string; fromVertex: types.Vertex }>}
      * @memberof Vertex
      */
-    getIncoming(label?: string): Iterable<{ label: string; fromVertex: types.Vertex }> {
-        return this._graph.getIncomingEdges(this._id, label).map(x => {
-            return {
-                label: this._graph.compactIRI(x.label),
-                fromVertex: x.from
-            };
-        });
+    getIncoming(label?: string): Iterable<Edge> {
+        return this._graph.getIncomingEdges(this._iri, label);
     }
 
     /**
@@ -240,13 +277,8 @@ export default class Vertex implements types.Vertex {
      * @returns {Iterable<{ label: string; toVertex: types.Vertex }>}
      * @memberof Vertex
      */
-    getOutgoing(label?: string): Iterable<{ label: string; toVertex: types.Vertex }> {
-        return this._graph.getOutgoingEdges(this._id, label).map(x => {
-            return {
-                label: this._graph.compactIRI(x.label),
-                toVertex: x.to
-            };
-        });
+    getOutgoing(label?: string): Iterable<Edge> {
+        return this._graph.getOutgoingEdges(this._iri, label);
     }
 
     /**
@@ -254,8 +286,8 @@ export default class Vertex implements types.Vertex {
      * @returns {Iterable<Vertex>}
      * @memberof Vertex
      */
-    getTypes(): Iterable<types.Vertex> {
-        return this._graph.getOutgoingEdges(this._id, JsonldKeywords.type).map(x => x.to);
+    getTypes(): Iterable<Vertex> {
+        return this._graph.getOutgoingEdges(this._iri, JsonldKeywords.type).map(x => x.to);
     }
 
     /**
@@ -311,18 +343,18 @@ export default class Vertex implements types.Vertex {
      * @returns {boolean} True if an edge is found, else false.
      * @memberof Vertex
      */
-    hasIncoming(label?: string, vertex?: types.Vertex | string): boolean {
+    hasIncoming(label?: string, vertex?: Vertex | string): boolean {
         if (!label) {
-            return !!this._graph.getIncomingEdges(this._id).first();
+            return !!this._graph.getIncomingEdges(this._iri).first();
         } else {
-            let edges = this._graph.getIncomingEdges(this._id, this._graph.expandIRI(label));
+            let edges = this._graph.getIncomingEdges(this._iri, label);
             if (vertex) {
-                const outV =
+                const inIRI =
                     typeof vertex === 'string'
                         ? this._graph.expandIRI(vertex)
-                        : this._graph.expandIRI(vertex.id);
+                        : vertex.iri;
 
-                edges = edges.filter(x => this._graph.expandIRI(x.from.id) === outV);
+                edges = edges.filter(x => x.from.iri === inIRI);
             }
             return !!edges.first();
         }
@@ -335,18 +367,18 @@ export default class Vertex implements types.Vertex {
      * @returns {boolean}
      * @memberof Vertex
      */
-    hasOutgoing(label?: string, vertex?: types.Vertex | string): boolean {
+    hasOutgoing(label?: string, vertex?: Vertex | string): boolean {
         if (!label) {
-            return !!this._graph.getOutgoingEdges(this._id).first();
+            return !!this._graph.getOutgoingEdges(this._iri).first();
         } else {
-            let edges = this._graph.getOutgoingEdges(this._id, this._graph.expandIRI(label));
+            let edges = this._graph.getOutgoingEdges(this._iri, this._graph.expandIRI(label));
             if (vertex) {
-                const outV =
+                const outIRI =
                     typeof vertex === 'string'
                         ? this._graph.expandIRI(vertex)
-                        : this._graph.expandIRI(vertex.id);
+                        : vertex.iri;
 
-                edges = edges.filter(x => this._graph.expandIRI(x.to.id) === outV);
+                edges = edges.filter(x => x.to.iri === outIRI);
             }
             return !!edges.first();
         }
@@ -364,7 +396,7 @@ export default class Vertex implements types.Vertex {
         }
 
         const typeIRI = this._graph.expandIRI(typeId);
-        return this.getTypes().some(x => this._graph.expandIRI(x.id) === typeIRI);
+        return this.getTypes().some(x => x.iri === typeIRI);
     }
 
     /**
@@ -374,20 +406,22 @@ export default class Vertex implements types.Vertex {
      * @returns {this}
      * @memberof Vertex
      */
-    removeIncoming(label?: string, filter?: string | types.VertexSelector<this>): this {
-        let edges = this._graph.getIncomingEdges(this._id);
+    removeIncoming(label?: string, filter?: string): this
+    removeIncoming(label?: string, filter?: (v: Vertex) => boolean): this
+    removeIncoming(label?: string, filter?: any): this {
+        let edges = this._graph.getIncomingEdges(this._iri);
         if (label) {
-            const labelIRI = this._graph.expandIRI(label);
-            edges = edges.filter(x => x.label === labelIRI);
+            const edgeIRI = this._graph.expandIRI(label);
+            edges = edges.filter(x => x.iri === edgeIRI);
         }
 
         if (filter && typeof filter === 'string') {
             const fromIRI = this._graph.expandIRI(filter);
-            edges = edges.filter(x => this._graph.expandIRI(x.from.id) === fromIRI);
+            edges = edges.filter(x => x.from.iri === fromIRI);
         }
 
-        if (filter && typeof filter !== 'string') {
-            edges = edges.filter(x => filter(x.from as this));
+        if (filter && typeof filter === 'function') {
+            edges = edges.filter(x => filter(x.from));
         }
 
         for (const edge of edges) {
@@ -404,20 +438,22 @@ export default class Vertex implements types.Vertex {
      * @returns {this}
      * @memberof Vertex
      */
-    removeOutgoing(label?: string, filter?: string | types.VertexSelector<this>): this {
-        let edges = this._graph.getOutgoingEdges(this._id);
+    removeOutgoing(label?: string, filter?: string): this
+    removeOutgoing(label?: string, filter?: (v: Vertex) => boolean): this
+    removeOutgoing(label?: string, filter?: any): this {
+        let edges = this._graph.getOutgoingEdges(this._iri);
         if (label) {
-            const labelIRI = this._graph.expandIRI(label);
-            edges = edges.filter(x => x.label === labelIRI);
+            const edgeIRI = this._graph.expandIRI(label);
+            edges = edges.filter(x => x.iri === edgeIRI);
         }
 
         if (filter && typeof filter === 'string') {
             const fromIRI = this._graph.expandIRI(filter);
-            edges = edges.filter(x => this._graph.expandIRI(x.to.id) === fromIRI);
+            edges = edges.filter(x => x.to.iri === fromIRI);
         }
 
-        if (filter && typeof filter !== 'string') {
-            edges = edges.filter(x => filter(x.to as this));
+        if (filter && typeof filter === 'function') {
+            edges = edges.filter(x => filter(x.to));
         }
 
         for (const edge of edges) {
@@ -439,9 +475,9 @@ export default class Vertex implements types.Vertex {
         }
 
         const typeIRIs = typeIds.map(x => this._graph.expandIRI(x));
-        const outgoingTypes = this._graph.getOutgoingEdges(this._id, JsonldKeywords.type);
+        const outgoingTypes = this._graph.getOutgoingEdges(this._iri, JsonldKeywords.type);
         for (const typeEdge of outgoingTypes) {
-            if (typeIRIs.some(x => x === this._graph.expandIRI(typeEdge.to.id))) {
+            if (typeIRIs.some(x => x === typeEdge.to.iri)) {
                 this._graph.removeEdge(typeEdge);
             }
         }
@@ -508,9 +544,9 @@ export default class Vertex implements types.Vertex {
         return this;
     }
 
-    setIncoming(label: string, fromVertex: types.Vertex): this;
+    setIncoming(label: string, fromVertex: Vertex): this;
     setIncoming(label: string, fromVertex: string, createIfNotExists?: boolean): this;
-    setIncoming(label: string, fromVertex: string | types.Vertex, createIfNotExists = false): this {
+    setIncoming(label: string, fromVertex: string | Vertex, createIfNotExists = false): this {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is '${label}'`);
         }
@@ -523,10 +559,10 @@ export default class Vertex implements types.Vertex {
         const sourceIRI =
             typeof fromVertex === 'string'
                 ? this._graph.expandIRI(fromVertex)
-                : this._graph.expandIRI(fromVertex.id);
+                : fromVertex.iri;
 
-        if (this._id === sourceIRI) {
-            throw new errors.CyclicEdgeError(labelIRI, this._id);
+        if (this._iri === sourceIRI) {
+            throw new errors.CyclicEdgeError(labelIRI, this._iri);
         }
 
         if (!this._graph.hasVertex(sourceIRI)) {
@@ -537,17 +573,17 @@ export default class Vertex implements types.Vertex {
             }
         }
 
-        if (this._graph.hasEdge(labelIRI, sourceIRI, this._id)) {
-            throw new errors.DuplicateEdgeError(labelIRI, sourceIRI, this._id);
+        if (this._graph.hasEdge(labelIRI, sourceIRI, this._iri)) {
+            throw new errors.DuplicateEdgeError(labelIRI, sourceIRI, this._iri);
         }
 
-        this._graph.createEdge(labelIRI, sourceIRI, this._id);
+        this._graph.createEdge(labelIRI, sourceIRI, this._iri);
         return this;
     }
 
-    setOutgoing(label: string, toVertex: types.Vertex): this;
+    setOutgoing(label: string, toVertex: Vertex): this;
     setOutgoing(label: string, toVertex: string, createIfNotExists?: boolean): this;
-    setOutgoing(label: string, toVertex: string | types.Vertex, createIfNotExists = false): this {
+    setOutgoing(label: string, toVertex: string | Vertex, createIfNotExists = false): this {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is '${label}'`);
         }
@@ -559,10 +595,10 @@ export default class Vertex implements types.Vertex {
         const targetIRI =
             typeof toVertex === 'string'
                 ? this._graph.expandIRI(toVertex)
-                : this._graph.expandIRI(toVertex.id);
+                : toVertex.iri;
 
-        if (this._id === targetIRI) {
-            throw new errors.CyclicEdgeError(labelIRI, this._id);
+        if (this._iri === targetIRI) {
+            throw new errors.CyclicEdgeError(labelIRI, this._iri);
         }
 
         if (!this._graph.hasVertex(targetIRI)) {
@@ -573,11 +609,11 @@ export default class Vertex implements types.Vertex {
             }
         }
 
-        if (this._graph.hasEdge(labelIRI, this._id, targetIRI)) {
-            throw new errors.DuplicateEdgeError(labelIRI, targetIRI, this._id);
+        if (this._graph.hasEdge(labelIRI, this._iri, targetIRI)) {
+            throw new errors.DuplicateEdgeError(labelIRI, targetIRI, this._iri);
         }
 
-        this._graph.createEdge(labelIRI, this._id, targetIRI);
+        this._graph.createEdge(labelIRI, this._iri, targetIRI);
         return this;
     }
 
@@ -588,14 +624,14 @@ export default class Vertex implements types.Vertex {
 
         const typesToAdd = new Set<string>();
         const existingTypes = new Set(
-            this.getOutgoing(JsonldKeywords.type).map(x => this._graph.expandIRI(x.toVertex.id))
+            this.getOutgoing(JsonldKeywords.type).map(x => x.to.iri)
         );
 
         for (const type of types) {
             const typeId =
                 typeof type === 'string'
                     ? this._graph.expandIRI(type)
-                    : this._graph.expandIRI(type.id);
+                    : type.id;
 
             if (!existingTypes.has(typeId)) {
                 typesToAdd.add(typeId);
@@ -609,10 +645,10 @@ export default class Vertex implements types.Vertex {
         return this;
     }
 
-    async toJson<T = any>(options: types.JsonFormatOptions = {}): Promise<T> {
+    async toJson<T = any>(options: any): Promise<T> {
         const formatOptions = cloneDeep(options);
         formatOptions.frame = Object.assign(options.frame || {}, {
-            [JsonldKeywords.id]: this._id
+            [JsonldKeywords.id]: this._iri
         });
 
         const json = await this._graph.toJson(formatOptions);
