@@ -81,26 +81,6 @@ export class ContextNotFoundError extends GraphError {
 }
 
 /**
- * @description Error thrown when a context was not found or specified for an operation context.
- * @export
- * @class ContextNotSpecifiedError
- * @extends {GraphError}
- */
-export class ContextNotSpecifiedError extends GraphError {
-    /**
-     * Creates an instance of ContextNotSpecifiedError.
-     * @param {string} operationContext The operation context the error occurred.
-     * @memberof ContextNotSpecifiedError
-     */
-    constructor(public operationContext: string) {
-        super(
-            `A context was not specified implicitly or explicitly for operation ${operationContext}`
-        );
-        this.name = 'ContextNotSpecifiedError';
-    }
-}
-
-/**
  * @description Error thrown when a duplicate context was found.
  * @export
  * @class DuplicateContextError
@@ -158,30 +138,6 @@ export class DuplicateEdgeError extends GraphError {
     ) {
         super(`Duplicate edge ${label} from vertex ${fromVertexId} to vertex ${toVertexId}.`);
         this.name = 'DuplicateEdgeError';
-    }
-}
-
-/**
- * @description Error thrown when a node referred to by an index edge doesn't exist.
- * @export
- * @class EdgeNotFoundError
- * @extends {GraphError}
- */
-export class EdgeNotFoundError extends GraphError {
-    /**
-     * Creates an instance of EdgeNotFoundError.
-     * @param {string} label The edge label.
-     * @param {string} fromNodeId The id of the outgoing node.
-     * @param {string} direction The edge direction.
-     * @memberof EdgeNotFoundError
-     */
-    constructor(
-        public readonly label: string,
-        public readonly fromNodeId: string,
-        public readonly direction: string
-    ) {
-        super(`Expected ${direction} node with id ${fromNodeId} was not found for edge ${label}`);
-        this.name = 'IndexEdgeNotFoundError';
     }
 }
 

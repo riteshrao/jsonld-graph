@@ -27,6 +27,10 @@ describe('Vertex', () => {
         });
     });
 
+    afterAll(() => {
+        jest.resetAllMocks();
+    });
+
     describe('.ctor', () => {
         it('should throw when constructor arguments is invalid', () => {
             const args = [
@@ -240,7 +244,7 @@ describe('Vertex', () => {
             expect(() => vertex.getAttributeValue('')).toThrow(ReferenceError);
         });
 
-        it('should return undefined or non existent attribute', () => {
+        it('should return undefined for non existent attribute', () => {
             expect(vertex.getAttributeValue('test:x')).toBeUndefined();
         });
 
@@ -454,11 +458,11 @@ describe('Vertex', () => {
                             from: vertex,
                             to: typeBV
                         },
-                        { 
-                            iri: 'http://example.org/test/outgoing', 
+                        {
+                            iri: 'http://example.org/test/outgoing',
                             label: 'test:ougoing',
-                            from: vertex, 
-                            to: nonTypeV 
+                            from: vertex,
+                            to: nonTypeV
                         }
                     ]) as any;
                 }

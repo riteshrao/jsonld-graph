@@ -1,8 +1,8 @@
 import { BlankNodePrefix, JsonldKeywords } from './constants';
 import Iterable from 'jsiterable';
 import * as errors from './errors';
-import cloneDeep = require('lodash.clonedeep');
 import { JsonldGraph, Edge } from 'src';
+import { compact, frame } from 'jsonld';
 
 /**
  * @description Attribute value type.
@@ -31,6 +31,31 @@ export interface AttributeValue<T = any> {
     value: T;
 }
 
+/**
+ * @description JSON formatting options for a vertex.
+ * @export
+ * @interface VertexJsonFormatOptions
+ */
+export interface VertexJsonFormatOptions {
+    /**
+     * @description Makes outgoing references anonymous
+     * @type {boolean}
+     * @memberof VertexJsonFormatOptions
+     */
+    anonymousEmbeds?: boolean;
+    /**
+     * @description Framing instruction for formatting the generated JSON.
+     * @type {*}
+     * @memberof VertexJsonFormatOptions
+     */
+    frame?: any;
+    /**
+     * @description Strips the @context reference in the formatted JSON
+     * @type {boolean}
+     * @memberof VertexJsonFormatOptions
+     */
+    stripContext?: boolean;
+}
 
 /**
  * @description Vertex in a graph.
@@ -645,13 +670,97 @@ export default class Vertex {
         return this;
     }
 
-    async toJson<T = any>(options: any): Promise<T> {
-        const formatOptions = cloneDeep(options);
-        formatOptions.frame = Object.assign(options.frame || {}, {
-            [JsonldKeywords.id]: this._iri
-        });
+    /**
+     * @description Formats the vertex to a JSON object.
+     * @template T
+     * @param {(string | string[] | object | object[])} contexts The context(s) to use for compacting and formatting the JSON output.
+     * @param {VertexJsonFormatOptions} [options={}] Formatting options.
+     * @returns {Promise<T>}
+     * @memberof Vertex
+     */
+    async toJson<T = any>(
+        contexts: string | string[] | object | object[],
+        options: VertexJsonFormatOptions = {}): Promise<T> {
 
-        const json = await this._graph.toJson(formatOptions);
-        return json['@graph'][0];
+        const expanded = this._toExpanded(options);
+        const contextLoader = async (url: string): Promise<any> => {
+            const normalizedUrl = url.toLowerCase();
+            const context = await this._graph.getContext(normalizedUrl);
+            if (context) {
+                return {
+                    contextUrl: undefined,
+                    documentUrl: url,
+                    document: context
+                };
+            } else {
+                throw new errors.ContextNotFoundError(url);
+            }
+        }
+        let json: any;
+        if (options.frame) {
+            const fr = Object.assign({}, options.frame);
+            if (!fr['@context']) {
+                fr['@context'] = contexts;
+            }
+
+            if (!fr['@id']) {
+                fr['@id'] = this.id
+            }
+
+            json = await await frame(expanded, fr, {
+                documentLoader: contextLoader
+            } as any);
+        } else {
+            json = await compact(expanded, contexts, {
+                skipExpansion: true,
+                expandContext: contexts,
+                documentLoader: contextLoader
+            });
+        }
+
+        if (options.stripContext) {
+            delete json['@context'];
+        }
+
+        return json;
+    }
+
+    private _toExpanded(options: VertexJsonFormatOptions): any {
+        const expanded: any = {};
+        expanded[JsonldKeywords.id] = this._iri;
+
+        const types = this.getTypes().items();
+        if (types.length > 0) {
+            expanded[JsonldKeywords.type] = types.map(x => x.iri);
+        }
+
+        for (const [key, values] of this._attributes) {
+            expanded[key] = [];
+            for (const attribValue of values) {
+                const value = { [JsonldKeywords.value]: attribValue.value }
+                if (attribValue.language) {
+                    value[JsonldKeywords.language] = attribValue.language;
+                }
+                if (attribValue.type) {
+                    value[JsonldKeywords.type] = attribValue.type;
+                }
+                expanded[key].push(value);
+            }
+        }
+
+        for (const outgoing of this.getOutgoing().filter(x => x.iri !== JsonldKeywords.type)) {
+            const expandedOut = outgoing.to._toExpanded(options);
+            if (!options.frame && options.anonymousEmbeds) {
+                delete expandedOut[JsonldKeywords.id];
+            }
+
+            if (!expanded[outgoing.iri]) {
+                expanded[outgoing.iri] = [];
+            }
+
+            expanded[outgoing.iri].push(expandedOut);
+        }
+
+        return expanded;
     }
 }

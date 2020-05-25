@@ -163,6 +163,31 @@ describe('JsonldGraph', () => {
         });
     });
 
+    describe('.getContext', () => {
+        let graph: JsonldGraph;
+
+        beforeEach(() => {
+            graph = new JsonldGraph();
+            graph.addContext('http://example.org/context', { test: true });
+        });
+
+        it('should throw when context uri is null, undefined or empty', async () => {
+            await expect(graph.getContext(undefined as any)).rejects.toThrow();
+            await expect(graph.getContext(null as any)).rejects.toThrow();
+            await expect(graph.getContext('')).rejects.toThrow();
+        });
+
+        it('should return undefined for unknown context', async () => {
+            const context = await graph.getContext('http://example.org/unknown');
+            expect(context).toBeUndefined();
+        });
+
+        it('should return stored context', async () => {
+            const context = await graph.getContext('http://example.org/context');
+            expect(context).toEqual({ test: true });
+        });
+    });
+
     describe('.getContexts', () => {
         let graph: JsonldGraph;
 
@@ -539,26 +564,10 @@ describe('JsonldGraph', () => {
     
         it('should throw when inputs are not valid', async () => {
             const graph = new JsonldGraph();
-            try {
-                await graph.load(null);
-                fail('Expected load to fail');
-            } catch (err) {
-                expect(err).toBeInstanceOf(ReferenceError);
-            }
-    
-            try {
-                await graph.load(undefined);
-                fail('Expected load to fail');
-            } catch (err) {
-                expect(err).toBeInstanceOf(ReferenceError);
-            }
-    
-            try {
-                await graph.load([]);
-                fail('Expected load to fail');
-            } catch (err) {
-                expect(err).toBeInstanceOf(ReferenceError);
-            }
+            await expect(graph.load(null)).rejects.toThrow(ReferenceError);
+            await expect(graph.load(undefined)).rejects.toThrow(ReferenceError);
+            await expect(graph.load([])).rejects.toThrow(ReferenceError);
+            await expect(graph.load({ '@context': 'foo' })).rejects.toThrow(errors.DocumentParseError);
         });
     
         it('can load a single entity', async () => {

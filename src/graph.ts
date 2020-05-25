@@ -5,7 +5,6 @@ import { JsonldKeywords, BlankNodePrefix } from './constants';
 import Edge from './edge';
 import * as errors from './errors';
 import Vertex from './vertex';
-import cloneDeep from 'lodash.clonedeep';
 import shortid from 'shortid';
 
 type Loader = (url: string) => Promise<RemoteDocument>;
@@ -71,7 +70,7 @@ export interface GraphLoadOptions {
      * @type {(string | string [] | object | object[])}
      * @memberof GraphLoadOptions
      */
-    contexts?: string | [string] | object | [object];
+    contexts?: string | string[] | object | object[];
     /**
      * @description True to merge attributes of existing vertices, else append attribute values.
      * @type {boolean}
@@ -121,7 +120,7 @@ export default class JsonldGraph {
      */
     constructor(options: GraphOptions = {}) {
         this._options = options;
-        this._vertexFactory = options.vertexFactory || function(iri: string, _: string[], graph: JsonldGraph): Vertex {
+        this._vertexFactory = options.vertexFactory || function (iri: string, _: string[], graph: JsonldGraph): Vertex {
             return new Vertex(iri, graph);
         }
 
@@ -345,14 +344,16 @@ export default class JsonldGraph {
         }
 
         const vertex = this._vertexFactory(expandedId, types, this);
+
         if (!vertex) {
             throw new ReferenceError(`Invalid vertex returned from factory. vertex is ${vertex}`);
         }
-        
+
         this._vertices.set(expandedId, vertex);
         if (expandedTypeIds && expandedTypeIds.length > 0) {
             vertex.setType(...types);
         }
+
         return vertex;
     }
 
@@ -372,7 +373,7 @@ export default class JsonldGraph {
             if (validate) {
                 this.validateIRI(iri);
             }
-            
+
             return iri;
         }
 
@@ -390,6 +391,24 @@ export default class JsonldGraph {
         }
 
         return expandedIri;
+    }
+
+    async getContext(contextUri: string): Promise<any> {
+        if (!contextUri) {
+            throw new ReferenceError(`Invalid contextUri. contextUri is '${contextUri}`);
+        }
+        
+        const context = this._contexts.get(contextUri);
+        if (context) {
+            return Promise.resolve(context);
+        }
+
+        if (this._options?.remoteContexts) {
+            const result = await this._remoteLoader(contextUri);
+            return result.document;
+        }
+
+        return undefined;
     }
 
     /**
@@ -621,7 +640,12 @@ export default class JsonldGraph {
             expandOptions.expandContext = options.contexts;
         }
 
-        const entities = (await jsonld.expand(inputs, expandOptions)) as any[];
+        let entities: any;
+        try {
+            entities = (await jsonld.expand(inputs, expandOptions)) as any[];
+        } catch (err) {
+            throw new errors.DocumentParseError(err);
+        }
         for (const entity of entities) {
             this._loadVertex(entity, options);
         }
@@ -829,46 +853,7 @@ export default class JsonldGraph {
         this._prefixes.set(prefix, iri);
     }
 
-    /**
-     * @description Returns a JSON-LD representation of all the vertices in the graph.
-     * @template T
-     * @param {JsonFormatOptions} options JSON formatting options.
-     * @returns {Promise<T>}
-     * @memberof JsonldGraph
-     */
-    async toJson<T extends object = object>(options?: any): Promise<T> {
-        const triples: object[] = [];
-        for (const vertex of this.getVertices()) {
-            triples.push(this._toTriple(vertex));
-        }
-
-        if (options?.frame) {
-            const frame: object = options ? cloneDeep(options.frame) : {};
-            this._expandIdReferences(frame);
-            if (options?.context && !frame[JsonldKeywords.context]) {
-                frame[JsonldKeywords.context] = options.context;
-            }
-
-            return jsonld.frame(triples, frame, {}) as Promise<T>;
-        } else {
-            const compactOptions: jsonld.Options.Compact = {
-                documentLoader: this._documentLoader,
-                skipExpansion: true
-            };
-
-            if (options?.base) {
-                compactOptions.base = options.base;
-            }
-            if (options?.context) {
-                compactOptions.expandContext = options.context;
-                return jsonld.compact(triples, options?.context, compactOptions) as Promise<T>;
-            } else {
-                return jsonld.compact(triples, options?.context, compactOptions) as Promise<T>;
-            }
-        }
-    }
-
-    /**
+        /**
      * @description Validates an IRI.
      * @param {string} iri The IRI to validate.
      * @returns {void}
@@ -919,33 +904,6 @@ export default class JsonldGraph {
                 this._indexMap.set(indexKey, index);
             } else {
                 this._indexMap.get(indexKey)!.add(edgeId);
-            }
-        }
-    }
-
-    private _expandIdReferences(source: object): void {
-        if (source instanceof Array) {
-            for (const element of source) {
-                this._expandIdReferences(element);
-            }
-        } else {
-            const keys = Object.getOwnPropertyNames(source);
-            for (const key of keys) {
-                if (key === JsonldKeywords.id) {
-                    if (source[key] instanceof Array) {
-                        for (const element of source[key]) {
-                            source[key].splice(
-                                source[key].indexOf(element),
-                                1,
-                                this.expandIRI(element)
-                            );
-                        }
-                    } else if (typeof source[key] === 'string') {
-                        source[key] = this.expandIRI(source[key]);
-                    }
-                } else if (source[key] instanceof Array || typeof source[key] === 'object') {
-                    this._expandIdReferences(source[key]);
-                }
             }
         }
     }
@@ -1059,41 +1017,5 @@ export default class JsonldGraph {
                 }
             }
         }
-    }
-
-    private _toTriple(vertex: Vertex): object {
-        const triple: object = {
-            [JsonldKeywords.id]: this.expandIRI(vertex.id)
-        };
-
-        for (const { name, values } of vertex.getAttributes()) {
-            triple[this.expandIRI(name)] = values.map(x => {
-                const value = { [JsonldKeywords.value]: x.value };
-                if (x.language) {
-                    value[JsonldKeywords.language] = x.language;
-                }
-                if (x.type) {
-                    value[JsonldKeywords.type] = x.type;
-                }
-
-                return value;
-            });
-        }
-
-        for (const edge of vertex.getOutgoing()) {
-            if (!triple[edge.iri]) {
-                triple[edge.iri] = [];
-            }
-
-            if (edge.iri === JsonldKeywords.type) {
-                triple[edge.iri].push(edge.to.iri);
-            } else {
-                triple[edge.iri].push({
-                    [JsonldKeywords.id]: edge.to.iri
-                });
-            }
-        }
-
-        return triple;
     }
 }
