@@ -1,8 +1,11 @@
-import { BlankNodePrefix, JsonldKeywords } from './constants';
 import Iterable from 'jsiterable';
+import { BlankNodePrefix, JsonldKeywords } from './constants';
+import Edge from './edge';
 import * as errors from './errors';
-import { JsonldGraph, Edge } from 'src';
-import { compact, frame } from 'jsonld';
+import JsonldGraph from './graph';
+import * as formatter from './formatter';
+
+type VertexSelector = (v: Vertex) => boolean;
 
 /**
  * @description Attribute value type.
@@ -36,13 +39,19 @@ export interface AttributeValue<T = any> {
  * @export
  * @interface VertexJsonFormatOptions
  */
-export interface VertexJsonFormatOptions {
+export interface VertexFormatOptions {
     /**
      * @description Makes outgoing references anonymous
      * @type {boolean}
      * @memberof VertexJsonFormatOptions
      */
-    anonymousEmbeds?: boolean;
+    blankReferences?: boolean;
+    /**
+     * @description Set to true to format the vertex without any outgoing referneces.
+     * @type {boolean}
+     * @memberof VertexFormatOptions
+     */
+    noReferences?: boolean;
     /**
      * @description Framing instruction for formatting the generated JSON.
      * @type {*}
@@ -123,6 +132,7 @@ export default class Vertex {
      * @returns {this}
      * @memberof Vertex
      */
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     appendAttributeValue(name: string, value: any, language?: string): this {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
@@ -186,6 +196,7 @@ export default class Vertex {
      */
     deleteAttributeValue(name: string, value: any): this;
     deleteAttributeValue(name: string, value: string, language: string): this;
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     deleteAttributeValue(name: string, value: any, language?: string): this {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
@@ -223,9 +234,10 @@ export default class Vertex {
      * @returns {Iterable<[string, AttributeValue[]]>}
      * @memberof Vertex
      */
-    getAttributes(): Iterable<{ name: string; values: AttributeValue[] }> {
+    getAttributes(): Iterable<{ id: string, name: string; values: AttributeValue[] }> {
         return new Iterable(this._attributes.entries()).map(x => {
             return {
+                id: x[0],
                 name: this._graph.compactIRI(x[0]),
                 values: x[1]
             };
@@ -337,6 +349,7 @@ export default class Vertex {
      * @returns {boolean} True if the value exists, else false.
      * @memberof Vertex
      */
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     hasAttributeValue(name: string, value: any, language?: string): boolean {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
@@ -432,8 +445,8 @@ export default class Vertex {
      * @memberof Vertex
      */
     removeIncoming(label?: string, filter?: string): this
-    removeIncoming(label?: string, filter?: (v: Vertex) => boolean): this
-    removeIncoming(label?: string, filter?: any): this {
+    removeIncoming(label?: string, filter?: VertexSelector): this
+    removeIncoming(label?: string, filter?: string | VertexSelector): this {
         let edges = this._graph.getIncomingEdges(this._iri);
         if (label) {
             const edgeIRI = this._graph.expandIRI(label);
@@ -464,8 +477,8 @@ export default class Vertex {
      * @memberof Vertex
      */
     removeOutgoing(label?: string, filter?: string): this
-    removeOutgoing(label?: string, filter?: (v: Vertex) => boolean): this
-    removeOutgoing(label?: string, filter?: any): this {
+    removeOutgoing(label?: string, filter?: VertexSelector): this
+    removeOutgoing(label?: string, filter?: string | VertexSelector): this {
         let edges = this._graph.getOutgoingEdges(this._iri);
         if (label) {
             const edgeIRI = this._graph.expandIRI(label);
@@ -527,6 +540,7 @@ export default class Vertex {
      * @memberof Vertex
      */
     setAttributeValue(name: string, value: string, language: string): this;
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     setAttributeValue(name: string, value: any, language?: string): this {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
@@ -674,15 +688,14 @@ export default class Vertex {
      * @description Formats the vertex to a JSON object.
      * @template T
      * @param {(string | string[] | object | object[])} contexts The context(s) to use for compacting and formatting the JSON output.
-     * @param {VertexJsonFormatOptions} [options={}] Formatting options.
+     * @param {VertexFormatOptions} [options={}] Formatting options.
      * @returns {Promise<T>}
      * @memberof Vertex
      */
     async toJson<T = any>(
         contexts: string | string[] | object | object[],
-        options: VertexJsonFormatOptions = {}): Promise<T> {
+        options: VertexFormatOptions = {}): Promise<T> {
 
-        const expanded = this._toExpanded(options);
         const contextLoader = async (url: string): Promise<any> => {
             const normalizedUrl = url.toLowerCase();
             const context = await this._graph.getContext(normalizedUrl);
@@ -696,71 +709,13 @@ export default class Vertex {
                 throw new errors.ContextNotFoundError(url);
             }
         }
-        let json: any;
+
         if (options.frame) {
-            const fr = Object.assign({}, options.frame);
-            if (!fr['@context']) {
-                fr['@context'] = contexts;
-            }
-
-            if (!fr['@id']) {
-                fr['@id'] = this.id
-            }
-
-            json = await await frame(expanded, fr, {
-                documentLoader: contextLoader
-            } as any);
+            const frame = Object.assign({}, options.frame);
+            frame['@id'] = this.iri;
+            return formatter.toJson([this], contexts, contextLoader, Object.assign({}, options, { frame }));
         } else {
-            json = await compact(expanded, contexts, {
-                skipExpansion: true,
-                expandContext: contexts,
-                documentLoader: contextLoader
-            });
+            return formatter.toJson([this], contexts, contextLoader, options);
         }
-
-        if (options.stripContext) {
-            delete json['@context'];
-        }
-
-        return json;
-    }
-
-    private _toExpanded(options: VertexJsonFormatOptions): any {
-        const expanded: any = {};
-        expanded[JsonldKeywords.id] = this._iri;
-
-        const types = this.getTypes().items();
-        if (types.length > 0) {
-            expanded[JsonldKeywords.type] = types.map(x => x.iri);
-        }
-
-        for (const [key, values] of this._attributes) {
-            expanded[key] = [];
-            for (const attribValue of values) {
-                const value = { [JsonldKeywords.value]: attribValue.value }
-                if (attribValue.language) {
-                    value[JsonldKeywords.language] = attribValue.language;
-                }
-                if (attribValue.type) {
-                    value[JsonldKeywords.type] = attribValue.type;
-                }
-                expanded[key].push(value);
-            }
-        }
-
-        for (const outgoing of this.getOutgoing().filter(x => x.iri !== JsonldKeywords.type)) {
-            const expandedOut = outgoing.to._toExpanded(options);
-            if (!options.frame && options.anonymousEmbeds) {
-                delete expandedOut[JsonldKeywords.id];
-            }
-
-            if (!expanded[outgoing.iri]) {
-                expanded[outgoing.iri] = [];
-            }
-
-            expanded[outgoing.iri].push(expandedOut);
-        }
-
-        return expanded;
     }
 }

@@ -1,11 +1,12 @@
 import Iterable from 'jsiterable';
 import * as jsonld from 'jsonld';
 import { RemoteDocument } from 'jsonld/jsonld-spec';
-import { JsonldKeywords, BlankNodePrefix } from './constants';
+import shortid from 'shortid';
+import { BlankNodePrefix, JsonldKeywords } from './constants';
 import Edge from './edge';
 import * as errors from './errors';
+import * as formatter from './formatter';
 import Vertex from './vertex';
-import shortid from 'shortid';
 
 type Loader = (url: string) => Promise<RemoteDocument>;
 const PREFIX_REGEX = /^[a-zA-z][a-zA-Z0-9]*$/;
@@ -83,6 +84,32 @@ export interface GraphLoadOptions {
      * @memberof GraphLoadOptions
      */
     normalize?: boolean;
+}
+
+/**
+ * @description Graph formatting options used when formatting the graph as expended or.
+ * @export
+ * @interface GraphFormatOptions
+ */
+export interface GraphFormatOptions {
+    /**
+     * @description Makes outgoing references anonymous
+     * @type {boolean}
+     * @memberof VertexJsonFormatOptions
+     */
+    blankReferences?: boolean;
+    /**
+     * @description Framing instructions for formatting the generated JSON.
+     * @type {*}
+     * @memberof GraphFormatOptions
+     */
+    frame?: any;
+    /**
+     * @description Strips the @context reference in the formatted JSON.
+     * @type {*}
+     * @memberof GraphFormatOptions
+     */
+    stripContext?: any;
 }
 
 /**
@@ -397,7 +424,7 @@ export default class JsonldGraph {
         if (!contextUri) {
             throw new ReferenceError(`Invalid contextUri. contextUri is '${contextUri}`);
         }
-        
+
         const context = this._contexts.get(contextUri);
         if (context) {
             return Promise.resolve(context);
@@ -853,12 +880,27 @@ export default class JsonldGraph {
         this._prefixes.set(prefix, iri);
     }
 
-        /**
-     * @description Validates an IRI.
-     * @param {string} iri The IRI to validate.
-     * @returns {void}
-     * @memberof JsonldGraph
-     */
+    async toJson<T = any>(
+        contexts: string | string[] | object | object[],
+        options: GraphFormatOptions = {}): Promise<T> {
+        const vertices: Vertex[] = [];
+
+        for (const v of this.getVertices()) {
+            if (!this._indexMap.has(JsonldGraph.IX_NODE_INCOMING_ALL(v.iri))) {
+                vertices.push(v);
+            }
+        }
+
+        return formatter.toJson(vertices, contexts, this._documentLoader, options);
+    }
+
+
+    /**
+    * @description Validates an IRI.
+    * @param {string} iri The IRI to validate.
+    * @returns {void}
+    * @memberof JsonldGraph
+    */
     validateIRI(iri: string): void {
         if (!iri) {
             throw new ReferenceError(`Invalid iri. iri is '${iri}'`);
