@@ -695,7 +695,7 @@ export default class Vertex {
      * @memberof Vertex
      */
     async toJson<T = any>(
-        contexts: string | string[] | object | object[],
+        contexts: string | string[] | any | any[],
         options: VertexFormatOptions = {}): Promise<T> {
 
         const contextLoader = async (url: string): Promise<any> => {

@@ -71,7 +71,7 @@ export interface GraphLoadOptions {
      * @type {(string | string [] | object | object[])}
      * @memberof GraphLoadOptions
      */
-    contexts?: string | string[] | object | object[];
+    contexts?: string | string[] | any | any[];
     /**
      * @description True to merge attributes of existing vertices, else append attribute values.
      * @type {boolean}
@@ -251,7 +251,7 @@ export default class JsonldGraph {
      * @param {*} context The context definition JSON.
      * @memberof JsonldGraph
      */
-    addContext(url: string, context: object): void {
+    addContext(url: string, context: any): void {
         if (!url) {
             throw new ReferenceError(`Invalid url. url is '${url}'`);
         }
@@ -881,7 +881,7 @@ export default class JsonldGraph {
     }
 
     async toJson<T = any>(
-        contexts: string | string[] | object | object[],
+        contexts: string | string[] | any | any[],
         options: GraphFormatOptions = {}): Promise<T> {
         const vertices: Vertex[] = [];
 

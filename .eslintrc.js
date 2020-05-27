@@ -27,8 +27,12 @@ module.exports = {
               allowedNames: ['_that'], // Allow `const self = this`; `[]` by default
             },
         ],
-        '@typescript-eslint/no-inferrable-types': {
-            ignoreParameters: true
-        }
+        '@typescript-eslint/no-inferrable-types': [
+            'error',
+            {
+                ignoreParameters: true
+            }
+        ],
+        "@typescript-eslint/explicit-module-boundary-types": "off"
     }
 };

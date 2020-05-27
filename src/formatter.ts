@@ -27,7 +27,7 @@ export type ExpandOptions = {
 
 export async function toJson(
     vertices: Vertex[],
-    contexts: string | string[] | object | object[],
+    contexts: string | string[] | any | any[],
     loader: (urn: string) => Promise<any>,
     options: ExpandOptions = {}): Promise<any> {
 

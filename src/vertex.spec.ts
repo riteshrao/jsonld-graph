@@ -984,7 +984,7 @@ describe('Vertex', () => {
 
         it('should set json type for objects', () => {
             vertex.setAttributeValue('test:json:data', { foo: 'bar' });
-            expect(vertex.getAttributeValue<object>('test:json:data')).toEqual({ foo: 'bar' });
+            expect(vertex.getAttributeValue('test:json:data')).toEqual({ foo: 'bar' });
         });
     });
 
