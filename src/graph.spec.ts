@@ -986,7 +986,7 @@ describe('JsonldGraph', () => {
             };
     
             const graph = new JsonldGraph({
-                blankIdResolver: (vertex): string => {
+                blankIriResolver: (vertex): string => {
                     const name = vertex.getAttributeValue("vocab:Entity/name") || shortid();
                     const parent = vertex.getIncoming().first();
                     if (!parent) {

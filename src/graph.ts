@@ -51,7 +51,7 @@ export interface GraphOptions {
      * @type {VertexResolver<V>}
      * @memberof GraphOptions
      */
-    blankIdResolver?: (vertex: Vertex) => string | undefined;
+    blankIriResolver?: (vertex: Vertex) => string | undefined;
 }
 
 /**
@@ -703,7 +703,7 @@ export default class JsonldGraph {
             }
         }
 
-        if (this._options?.blankIdResolver) {
+        if (this._options?.blankIriResolver) {
             const blankNodes = this._indexMap.get(JsonldGraph.IX_BLANK_NODES)!;
             for (const id of blankNodes) {
                 const vertex = this.getVertex(id);
@@ -1037,7 +1037,7 @@ export default class JsonldGraph {
             this._normalizeBlankNode(incoming.from)
         }
 
-        const id = this._options.blankIdResolver!(vertex);
+        const id = this._options.blankIriResolver!(vertex);
         if (id) {
             this.renameVertex(vertex, id);
         }

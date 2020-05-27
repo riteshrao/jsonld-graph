@@ -148,11 +148,13 @@ export default class Vertex {
         }
 
         const attributeIRI = this._graph.expandIRI(name);
+        const type = typeof value === 'object' ? '@json' : undefined;
         if (!this._attributes.has(attributeIRI)) {
             this._attributes.set(attributeIRI, [
                 {
                     value,
-                    language
+                    language,
+                    type
                 }
             ]);
         } else {
