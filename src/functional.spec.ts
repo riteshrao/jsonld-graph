@@ -1,5 +1,6 @@
-import { JsonldGraph, Vertex } from ".";
 import { ContextNotFoundError } from "./errors";
+import JsonldGraph from './graph';
+import Vertex from './vertex';
 
 const context = {
     '@context': {

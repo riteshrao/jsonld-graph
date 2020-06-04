@@ -1,4 +1,5 @@
-import { Vertex, JsonldGraph } from 'src';
+import JsonldGraph from './graph';
+import Vertex from './vertex';
 
 /**
  * @description Edge in a {@link JsonldGraph}

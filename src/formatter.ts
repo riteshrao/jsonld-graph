@@ -1,6 +1,6 @@
-import Vertex from "./vertex";
 import * as jsonld from 'jsonld';
 import { JsonldKeywords } from "./constants";
+import Vertex from "./vertex";
 
 export type ExpandOptions = {
     /**
@@ -60,7 +60,7 @@ export async function toJson(
     return json;
 }
 
-function expand(vertex: Vertex, options: ExpandOptions = {}): any {
+export function expand(vertex: Vertex, options: ExpandOptions = {}): any {
     const expanded: any = { [JsonldKeywords.id]: vertex.iri };
     const types = vertex.getTypes().items();
     if (types.length > 0) {

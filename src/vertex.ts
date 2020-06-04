@@ -2,8 +2,8 @@ import Iterable from 'jsiterable';
 import { BlankNodePrefix, JsonldKeywords } from './constants';
 import Edge from './edge';
 import * as errors from './errors';
-import JsonldGraph from './graph';
 import * as formatter from './formatter';
+import JsonldGraph from './graph';
 
 type VertexSelector = (v: Vertex) => boolean;
 
@@ -719,5 +719,14 @@ export default class Vertex {
         } else {
             return formatter.toJson([this], contexts, contextLoader, options);
         }
+    }
+    
+    /**
+     * @description Gets a raw expanded representation of the vertex and its edges for diagnostic / debug purposes.
+     * @returns {*}
+     * @memberof Vertex
+     */
+    toRawExpanded(): any {
+        return formatter.expand(this);
     }
 }

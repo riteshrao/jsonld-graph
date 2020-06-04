@@ -1,4 +1,5 @@
-import { Edge, JsonldGraph } from './';
+import Edge from './edge';
+import JsonldGraph from './graph';
 
 describe('Edge', () => {
     let graph: JsonldGraph;

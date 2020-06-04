@@ -1,7 +1,7 @@
-import Vertex from './vertex';
-import JsonldGraph from './graph';
-import * as errors from './errors';
 import Iterable from 'jsiterable';
+import * as errors from './errors';
+import JsonldGraph from './graph';
+import Vertex from './vertex';
 
 jest.mock('./graph');
 

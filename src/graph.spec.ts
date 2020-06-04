@@ -1,8 +1,8 @@
-import JsonldGraph from './graph';
-import Vertex from './vertex';
+import shortid from 'shortid';
 import Edge from './edge';
 import * as errors from './errors';
-import shortid from 'shortid';
+import JsonldGraph from './graph';
+import Vertex from './vertex';
 
 describe('JsonldGraph', () => {
     describe('.addContext', () => {
