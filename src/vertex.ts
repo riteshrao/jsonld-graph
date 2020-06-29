@@ -125,6 +125,16 @@ export default class Vertex {
     }
 
     /**
+     * @description Returns the graph associated with the vertex.
+     * @readonly
+     * @type {JsonldGraph}
+     * @memberof Vertex
+     */
+    get graph(): JsonldGraph {
+        return this._graph;
+    }
+
+    /**
      * @description Appends an attribute vlaue.
      * @param {string} name The name of the attribute to which the value is appended.
      * @param {*} value The value to append.
