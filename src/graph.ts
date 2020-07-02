@@ -673,8 +673,15 @@ export default class JsonldGraph {
         } catch (err) {
             throw new errors.DocumentParseError(err);
         }
+        
         for (const entity of entities) {
-            this._loadVertex(entity, options);
+            if (entity['@graph']) {
+                for (const item of entity['@graph']) {
+                    this._loadVertex(item, options);
+                }
+            } else {
+                this._loadVertex(entity, options);
+            }
         }
 
         if (options?.normalize) {

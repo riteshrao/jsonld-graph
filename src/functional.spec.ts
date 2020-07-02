@@ -214,7 +214,7 @@ describe.each([graphCreator, graphLoader])('E2E', (source) => {
                 expect(err.details.cause).toBeInstanceOf(ContextNotFoundError);
             }
         });
-    })
+    });
 });
 
 async function graphCreator(): Promise<JsonldGraph> {
