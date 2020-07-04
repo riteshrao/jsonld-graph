@@ -86,8 +86,8 @@ describe.each([graphCreator, graphLoader])('E2E', (source) => {
             expect(json['@context']).toBeUndefined();
         });
 
-        it('can strip ids from embeds', async () => {
-            const json = await target.toJson('urn:example:org:hr', { blankReferences: true });
+        it('can strip ids from embeds when anonymous referneces is true', async () => {
+            const json = await target.toJson('urn:example:org:hr', { anonymousReferences: true });
             expect(json['@id']).toEqual(target.iri);
             for (const contacts of json.contacts) {
                 expect(contacts['@id']).toBeUndefined();
@@ -96,6 +96,95 @@ describe.each([graphCreator, graphLoader])('E2E', (source) => {
             for (const managers of json.mgr) {
                 expect(managers['@id']).toBeUndefined();
             }
+        });
+
+        it('can stip out ids from embeds using anonymous types filter', async () => {
+            const json = await target.toJson('urn:example:org:hr', {
+                anonymousReferences: (vertex) => vertex.isType('urn:example:org:hr:classes:Contact:Address')
+            });
+
+            for (const contacts of json.contacts) {
+                expect(contacts['@id']).toBeUndefined();
+            }
+
+            for (const managers of json.mgr) {
+                expect(managers['@id']).not.toBeNull();
+                expect(managers['@id']).not.toBeUndefined();
+            }
+        });
+
+        it('can strip types when anonymous types is true', async () => {
+            const json = await target.toJson('urn:example:org:hr', {
+                anonymousTypes: true
+            });
+
+            expect(json['@type']).toBeUndefined();
+            for (const contacts of json.contacts) {
+                expect(contacts['@type']).toBeUndefined();
+            }
+
+            for (const managers of json.mgr) {
+                expect(managers['@type']).toBeUndefined();
+            }
+        });
+
+        it('can strip types using anonymous types filter', async () => {
+            const json = await target.toJson('urn:example:org:hr', {
+                anonymousTypes: (vertex) => vertex.isType('urn:example:org:hr:classes:Contact:Address')
+            });
+
+            for (const contacts of json.contacts) {
+                expect(contacts['@type']).toBeUndefined();
+            }
+
+            for (const managers of json.mgr) {
+                expect(managers['@type']).not.toBeNull();
+                expect(managers['@type']).not.toBeUndefined();
+            }
+        });
+
+        it('can exclude attributes using attribute name', async () => {
+            const json = await target.toJson('urn:example:org:hr', {
+                excludeAttributes: 'urn:example:org:hr:classes:entity:first_name'
+            });
+
+            expect(json.fname).toBeUndefined();
+            for (const manager of json.mgr) {
+                expect(manager.fname).toBeUndefined();
+            }
+        });
+
+        it('can exclude attributes using attribute filter', async () => {
+            const json = await target.toJson('urn:example:org:hr', {
+                excludeAttributes: (vertex, predicate) => {
+                    return vertex.isType('class:Manager') && predicate.startsWith('urn:example:org:hr:classes:entity:first_name')
+                }
+            });
+
+            expect(json.fname).toBeDefined();
+            for (const manager of json.mgr) {
+                expect(manager.fname).toBeUndefined();
+            }
+        });
+
+        it('can exclude all references', async () => {
+            const json = await target.toJson('urn:example:org:hr', {
+                excludeReferences: true
+            });
+
+            expect(json['contacts']).toBeUndefined();
+            expect(json['mgr']).toBeUndefined();
+        });
+
+        it('can exclude references using specified filter', async () => {
+            const json = await target.toJson('urn:example:org:hr', {
+                excludeReferences: (predicate, from) => {
+                    return from.isType('urn:example:org:hr:classes:Person') &&
+                          predicate === 'urn:example:org:hr:classes:entity:contacts'
+                }
+            });
+            
+            expect(json['contacts']).toBeUndefined();
         });
 
         it('can frame output', async () => {
@@ -171,7 +260,7 @@ describe.each([graphCreator, graphLoader])('E2E', (source) => {
         });
 
         it('can strip ids from embeds', async () => {
-            const json = await graph.toJson('urn:example:org:hr', { blankReferences: true });
+            const json = await graph.toJson('urn:example:org:hr', { anonymousReferences: true });
             for (const person of json['@graph']) {
                 if (person.contacts) {
                     for (const contact of person.contacts) {
@@ -335,7 +424,7 @@ async function graphLoader(): Promise<JsonldGraph> {
                     fr: 'Jill Doe'
                 },
                 level: 2,
-                mgr: 'urn:example:org:hr:janed'
+                mgr: 'urn:example:org:hr:janed',
             },
             {
                 '@id': 'urn:example:org:hr:janed',

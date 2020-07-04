@@ -2,17 +2,31 @@ import * as jsonld from 'jsonld';
 import { JsonldKeywords } from "./constants";
 import Vertex from "./vertex";
 
-export type ExpandOptions = {
+/**
+ * @description Expansion format options.
+ * @export
+ * @interface ExpandFormatOptions
+ */
+export interface ExpandFormatOptions {
     /**
-     * @description Set to true to embed references as blank refernces without any @id.
+     * @description Set to true or pass a custom filter to embed references as anonymous refernces without any @id.
      * @type {boolean}
      */
-    blankReferences?: boolean;
+    anonymousReferences?: boolean | ((vertex: Vertex) => boolean);
     /**
-     * @description Framing instructions for formatting the JSON.
-     * @type {*}
+     * @description Set to true or pass a custom filter to supress @type attribute.
+     * @memberof ExpandOptions
      */
-    frame?: any;
+    anonymousTypes?: boolean | ((vertex: Vertex) => boolean);
+    /**
+     * @description Set to true or pass a custom filter to filter out references.
+     */
+    excludeReferences?: boolean | ((predicate: string, from: Vertex, to: Vertex) => boolean);
+
+    /**
+     * @description Optional filter to filter out attribute values.
+     */
+    excludeAttributes?: string | ((vertex: Vertex, name: string) => boolean);
     /**
      * @description Set to true to skip any outgoing references.
      * @type {boolean}
@@ -25,11 +39,21 @@ export type ExpandOptions = {
     stripContext?: any;
 }
 
+/**
+ * @description Json formatting options.
+ * @export
+ * @interface JsonFormatOptions
+ * @extends {ExpandFormatOptions}
+ */
+export interface JsonFormatOptions extends ExpandFormatOptions {
+    frame?: any;
+}
+
 export async function toJson(
     vertices: Vertex[],
     contexts: string | string[] | any | any[],
     loader: (urn: string) => Promise<any>,
-    options: ExpandOptions = {}): Promise<any> {
+    options: JsonFormatOptions = {}): Promise<any> {
 
     const nodes: any[] = [];
     for (const vertex of vertices) {
@@ -60,14 +84,25 @@ export async function toJson(
     return json;
 }
 
-export function expand(vertex: Vertex, options: ExpandOptions = {}): any {
+export function expand(vertex: Vertex, options: ExpandFormatOptions = {}): any {
     const expanded: any = { [JsonldKeywords.id]: vertex.iri };
     const types = vertex.getTypes().items();
-    if (types.length > 0) {
-        expanded[JsonldKeywords.type] = types.map(x => x.iri);
+
+    if (!options.anonymousTypes ||
+        (typeof options.anonymousTypes === 'boolean' && !options.anonymousTypes) ||
+        (typeof options.anonymousTypes !== 'boolean' && !options.anonymousTypes(vertex))) {
+        if (types.length > 0) {
+            expanded[JsonldKeywords.type] = types.map(x => x.iri);
+        }
     }
 
+
     for (const { id, values } of vertex.getAttributes()) {
+        if ((options.excludeAttributes && typeof options.excludeAttributes === 'string' && id.startsWith(options.excludeAttributes)) ||
+            (options.excludeAttributes && typeof options.excludeAttributes !== 'string' && options.excludeAttributes(vertex, id))) {
+            continue
+        }
+
         expanded[id] = [];
         for (const attribValue of values) {
             const value = { [JsonldKeywords.value]: attribValue.value }
@@ -83,15 +118,20 @@ export function expand(vertex: Vertex, options: ExpandOptions = {}): any {
 
     if (!options.noReferences) {
         for (const outgoing of vertex.getOutgoing().filter(x => x.iri !== JsonldKeywords.type)) {
+            if ((options.excludeReferences && typeof options.excludeReferences === 'boolean' && options.excludeReferences === true) ||
+                (options.excludeReferences && typeof options.excludeReferences !== 'boolean' && options.excludeReferences(outgoing.iri, outgoing.from, outgoing.to))) {
+                continue;
+            }
+
             const expandedOut = expand(outgoing.to, options);
-            if (options.blankReferences) {
+            if ((options.anonymousReferences && typeof options.anonymousReferences === 'boolean' && options.anonymousReferences === true) ||
+                (options.anonymousReferences && typeof options.anonymousReferences !== 'boolean' && options.anonymousReferences(outgoing.to))) {
                 delete expandedOut[JsonldKeywords.id];
             }
 
             if (!expanded[outgoing.iri]) {
                 expanded[outgoing.iri] = [];
             }
-
             expanded[outgoing.iri].push(expandedOut);
         }
     }

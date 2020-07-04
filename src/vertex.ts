@@ -35,38 +35,6 @@ export interface AttributeValue<T = any> {
 }
 
 /**
- * @description JSON formatting options for a vertex.
- * @export
- * @interface VertexJsonFormatOptions
- */
-export interface VertexFormatOptions {
-    /**
-     * @description Makes outgoing references anonymous
-     * @type {boolean}
-     * @memberof VertexJsonFormatOptions
-     */
-    blankReferences?: boolean;
-    /**
-     * @description Set to true to format the vertex without any outgoing referneces.
-     * @type {boolean}
-     * @memberof VertexFormatOptions
-     */
-    noReferences?: boolean;
-    /**
-     * @description Framing instruction for formatting the generated JSON.
-     * @type {*}
-     * @memberof VertexJsonFormatOptions
-     */
-    frame?: any;
-    /**
-     * @description Strips the @context reference in the formatted JSON
-     * @type {boolean}
-     * @memberof VertexJsonFormatOptions
-     */
-    stripContext?: boolean;
-}
-
-/**
  * @description Vertex in a graph.
  * @export
  * @class Vertex
@@ -706,7 +674,7 @@ export default class Vertex {
      */
     async toJson<T = any>(
         contexts: string | string[] | any | any[],
-        options: VertexFormatOptions = {}): Promise<T> {
+        options: formatter.JsonFormatOptions = {}): Promise<T> {
 
         const contextLoader = async (url: string): Promise<any> => {
             const normalizedUrl = url.toLowerCase();
@@ -736,7 +704,7 @@ export default class Vertex {
      * @returns {*}
      * @memberof Vertex
      */
-    toRawExpanded(): any {
-        return formatter.expand(this);
+    toRawExpanded(options?: formatter.ExpandFormatOptions): any {
+        return formatter.expand(this, options);
     }
 }

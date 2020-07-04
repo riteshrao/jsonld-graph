@@ -87,32 +87,6 @@ export interface GraphLoadOptions {
 }
 
 /**
- * @description Graph formatting options used when formatting the graph as expended or.
- * @export
- * @interface GraphFormatOptions
- */
-export interface GraphFormatOptions {
-    /**
-     * @description Makes outgoing references anonymous
-     * @type {boolean}
-     * @memberof VertexJsonFormatOptions
-     */
-    blankReferences?: boolean;
-    /**
-     * @description Framing instructions for formatting the generated JSON.
-     * @type {*}
-     * @memberof GraphFormatOptions
-     */
-    frame?: any;
-    /**
-     * @description Strips the @context reference in the formatted JSON.
-     * @type {*}
-     * @memberof GraphFormatOptions
-     */
-    stripContext?: any;
-}
-
-/**
  * @description Represents a graph of JSON-LD triples
  * @export
  * @class JsonldGraph
@@ -889,7 +863,7 @@ export default class JsonldGraph {
 
     async toJson<T = any>(
         contexts: string | string[] | any | any[],
-        options: GraphFormatOptions = {}): Promise<T> {
+        options: formatter.JsonFormatOptions = {}): Promise<T> {
         const vertices: Vertex[] = [];
 
         for (const v of this.getVertices()) {
