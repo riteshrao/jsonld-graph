@@ -673,12 +673,16 @@ export default class JsonldGraph {
             for (const id of blankTypes) {
                 const vertex = this.getVertex(id);
                 if (vertex) {
-                    const types = this._options.blankTypeResolver(vertex);
-                    if (types && types.length > 0) {
-                        vertex.setType(...types)
-                    }
-                    if ([...vertex.getTypes()].length > 0) {
+                    if (vertex.getTypes().first()) {
                         blankTypes.delete(id);
+                    } else {
+                        const types = this._options.blankTypeResolver(vertex);
+                        if (types && types.length > 0) {
+                            vertex.setType(...types)
+                        }
+                        if (vertex.getTypes().first()) {
+                            blankTypes.delete(id);
+                        }
                     }
                 }
             }
