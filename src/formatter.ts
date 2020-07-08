@@ -18,12 +18,17 @@ export interface ExpandFormatOptions {
      * @description Set to true or pass a custom filter to embed references as anonymous refernces without any @id.
      * @type {boolean}
      */
-    anonymousReferences?: boolean | ((vertex: Vertex) => boolean);
+    anonymousReferences?: boolean | ((predicate: string, from: Vertex, to: Vertex) => boolean);
     /**
      * @description Set to true or pass a custom filter to supress @type attribute.
      * @memberof ExpandOptions
      */
     anonymousTypes?: boolean | ((vertex: Vertex) => boolean);
+    /**
+     * @description Set to true or pass a custom filter to embed references as compact @ids rather then embedding the reference.
+     * @memberof ExpandFormatOptions
+     */
+    compactReferences?: boolean | ((predicate: string, from: Vertex, to: Vertex) => boolean);
     /**
      * @description Set to true or pass a custom filter to filter out references.
      */
@@ -97,6 +102,11 @@ export async function toJson(
 }
 
 export function expand(vertex: Vertex, options: ExpandFormatOptions = {}): any {
+    return _expand(vertex, options, []);
+}
+
+function _expand(vertex: Vertex, options: ExpandFormatOptions = {}, visitStack: string[]) {
+    visitStack.push(vertex.iri);
     const expanded: any = { [JsonldKeywords.id]: vertex.iri };
     const types = vertex.getTypes().items();
 
@@ -135,16 +145,26 @@ export function expand(vertex: Vertex, options: ExpandFormatOptions = {}): any {
                 continue;
             }
 
-            const expandedOut = expand(outgoing.to, options);
-            if ((options.anonymousReferences && typeof options.anonymousReferences === 'boolean' && options.anonymousReferences === true) ||
-                (options.anonymousReferences && typeof options.anonymousReferences !== 'boolean' && options.anonymousReferences(outgoing.to))) {
-                delete expandedOut[JsonldKeywords.id];
-            }
+            if ((options.compactReferences && typeof options.compactReferences === 'boolean' && options.compactReferences === true) ||
+                (options.compactReferences && typeof options.compactReferences !== 'boolean' && options.compactReferences(outgoing.iri, outgoing.from, outgoing.to))) {
+                if (!expanded[outgoing.iri]) {
+                    expanded[outgoing.iri] = [];
+                }
+                expanded[outgoing.iri].push({ '@id': outgoing.to.iri });
+            } else {
+                if (!visitStack.includes(outgoing.to.iri)) {
+                    const expandedOut = _expand(outgoing.to, options, visitStack);
+                    if ((options.anonymousReferences && typeof options.anonymousReferences === 'boolean' && options.anonymousReferences === true) ||
+                        (options.anonymousReferences && typeof options.anonymousReferences !== 'boolean' && options.anonymousReferences(outgoing.iri, outgoing.from, outgoing.to))) {
+                        delete expandedOut[JsonldKeywords.id];
+                    }
 
-            if (!expanded[outgoing.iri]) {
-                expanded[outgoing.iri] = [];
+                    if (!expanded[outgoing.iri]) {
+                        expanded[outgoing.iri] = [];
+                    }
+                    expanded[outgoing.iri].push(expandedOut);
+                }
             }
-            expanded[outgoing.iri].push(expandedOut);
         }
     }
 

@@ -622,12 +622,43 @@ export default class JsonldGraph {
     }
 
     /**
+     * @description Loads a set of expanded inputs into the graph.
+     * @param {(any | any[])} inputs The inputs to load into the graph.
+     * @memberof JsonldGraph
+     */
+    load(entities: any | any[], options?: GraphLoadOptions): void {
+        if (!entities) {
+            throw new TypeError(`Invalid entities. entities is ${entities}`);
+        }
+
+        if (entities instanceof Array) {
+            for (const entity of entities) {
+                if (entity['@graph']) {
+                    for (const item of entity['@graph']) {
+                        this._loadVertex(item, options);
+                    }
+                } else {
+                    this._loadVertex(entity, options);
+                }
+            }
+        } else {
+            if (entities['@graph']) {
+                for (const item of entities['@graph']) {
+                    this._loadVertex(item, options);
+                }
+            } else {
+                this._loadVertex(entities, options);
+            }
+        }
+    }
+
+    /**
      * @description Parses and loads JSON-LD inputs into the graph.
      * @param {(any | any[])} inputs A JSON object or an array of JSON objects to load.
      * @param {types.GraphLoadOptions} [options] Optons used to load inputs.
      * @memberof JsonldGraph
      */
-    async load(inputs: any | any[], options?: GraphLoadOptions): Promise<void> {
+    async parse(inputs: any | any[], options?: GraphLoadOptions): Promise<void> {
         if (!inputs || (inputs instanceof Array && inputs.length === 0)) {
             throw new ReferenceError(`Invalid inputs. inputs is '${inputs}'`);
         }
@@ -647,16 +678,8 @@ export default class JsonldGraph {
         } catch (err) {
             throw new errors.DocumentParseError(err);
         }
-        
-        for (const entity of entities) {
-            if (entity['@graph']) {
-                for (const item of entity['@graph']) {
-                    this._loadVertex(item, options);
-                }
-            } else {
-                this._loadVertex(entity, options);
-            }
-        }
+
+        this.load(entities, options);
 
         if (options?.normalize) {
             this.normalize()
@@ -863,6 +886,18 @@ export default class JsonldGraph {
         }
 
         this._prefixes.set(prefix, iri);
+    }
+
+    async toExpanded(): Promise<any> {
+        const expanded = []
+
+        for (const v of this.getVertices()) {
+            expanded.push(formatter.expand(v, { compactReferences: true }));
+        }
+
+        return {
+            '@graph': expanded
+        };
     }
 
     async toJson<T = any>(

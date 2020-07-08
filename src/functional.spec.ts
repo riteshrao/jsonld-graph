@@ -25,7 +25,7 @@ const context = {
     }
 }
 
-describe.each([graphCreator, graphLoader])('E2E', (source) => {
+describe.each([graphCreator, graphParser])('E2E', (source) => {
 
     let graph: JsonldGraph;
 
@@ -101,7 +101,7 @@ describe.each([graphCreator, graphLoader])('E2E', (source) => {
 
         it('can stip out ids from embeds using anonymous types filter', async () => {
             const json = await target.toJson('urn:example:org:hr', {
-                anonymousReferences: (vertex) => vertex.isType('urn:example:org:hr:classes:Contact:Address')
+                anonymousReferences: (_, __, vertex) => vertex.isType('urn:example:org:hr:classes:Contact:Address')
             });
 
             for (const contacts of json.contacts) {
@@ -412,7 +412,7 @@ async function graphCreator(): Promise<JsonldGraph> {
     return graph;
 }
 
-async function graphLoader(): Promise<JsonldGraph> {
+async function graphParser(): Promise<JsonldGraph> {
     const graph = new JsonldGraph({
         blankIriResolver: (v) => {
             if (v.isType('class:Contact:Address')) {
@@ -498,7 +498,7 @@ async function graphLoader(): Promise<JsonldGraph> {
         ]
     };
 
-    await graph.load(document, { normalize: true });
+    await graph.parse(document, { normalize: true });
     return graph;
 }
 
