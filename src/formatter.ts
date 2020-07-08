@@ -2,6 +2,12 @@ import * as jsonld from 'jsonld';
 import { JsonldKeywords } from "./constants";
 import Vertex from "./vertex";
 
+interface ExpandedEntity {
+    '@id': string,
+    '@type'?: string[],
+    [key: string]: any
+}
+
 /**
  * @description Expansion format options.
  * @export
@@ -37,6 +43,12 @@ export interface ExpandFormatOptions {
      * @type {*}
      */
     stripContext?: any;
+
+    /**
+     * @description Custom transform function to execute on the expanded format.
+     * @memberof ExpandFormatOptions
+     */
+    transform?: (input: ExpandedEntity) => ExpandedEntity;
 }
 
 /**
@@ -136,5 +148,9 @@ export function expand(vertex: Vertex, options: ExpandFormatOptions = {}): any {
         }
     }
 
-    return expanded;
+    if (options.transform) {
+        return options.transform(expanded);
+    } else {
+        return expanded;
+    }
 }

@@ -15,6 +15,7 @@ const context = {
         dispname: { '@id': 'entity:disp_name', '@container': '@language' },
         mgr: { '@id': 'employee:manager', '@type': '@id', '@container': '@set' },
         data: { '@id': 'entity:data', '@type': '@json' },
+        contact: 'entity:contact',
         contacts: { '@id': 'entity:contacts', '@container': '@set' },
         addrType: { '@id': 'entity:contact:type', '@language': null },
         street: { '@id': 'entity:contact:street', '@language': null },
@@ -34,7 +35,7 @@ describe.each([graphCreator, graphLoader])('E2E', (source) => {
 
     describe('query', () => {
         it('can query for all vertices', () => {
-            expect(graph.vertexCount).toEqual(8);
+            expect(graph.vertexCount).toEqual(9);
             expect(graph.hasVertex('class:Person')).toEqual(true);
             expect(graph.hasVertex('class:Manager')).toEqual(true);
             expect(graph.hasVertex('class:Contact:Address')).toEqual(true);
@@ -180,10 +181,10 @@ describe.each([graphCreator, graphLoader])('E2E', (source) => {
             const json = await target.toJson('urn:example:org:hr', {
                 excludeReferences: (predicate, from) => {
                     return from.isType('urn:example:org:hr:classes:Person') &&
-                          predicate === 'urn:example:org:hr:classes:entity:contacts'
+                        predicate === 'urn:example:org:hr:classes:entity:contacts'
                 }
             });
-            
+
             expect(json['contacts']).toBeUndefined();
         });
 
@@ -234,6 +235,25 @@ describe.each([graphCreator, graphLoader])('E2E', (source) => {
             } catch (err) {
                 expect(err.details.cause).toBeInstanceOf(ContextNotFoundError);
             }
+        });
+
+        it('can format using custom transform', async () => {
+            const json = await graph.getVertex('urn:example:org:hr:janed')!.toJson('urn:example:org:hr', {
+                transform: (expanded) => {
+                    if (expanded['@type']?.includes('urn:example:org:hr:classes:Person')) {
+                        if (expanded['urn:example:org:hr:classes:entity:contacts'] &&
+                            expanded['urn:example:org:hr:classes:entity:contacts'].length === 1) {
+                            expanded['urn:example:org:hr:classes:entity:contact'] = expanded['urn:example:org:hr:classes:entity:contacts'];
+                            delete expanded['urn:example:org:hr:classes:entity:contacts'];
+                        }
+                    }
+                    return expanded;
+                }
+            });
+
+            expect(json.contacts).toBeUndefined();
+            expect(json.contact).not.toBeUndefined();
+            expect(json.contact).not.toBeNull();
         });
     });
 
@@ -287,7 +307,7 @@ describe.each([graphCreator, graphLoader])('E2E', (source) => {
                 }
             });
 
-            expect(json['@graph'].length).toEqual(2);
+            expect(json['@graph'].length).toEqual(3);
             expect(Object.keys(json['@graph'][0]).length).toEqual(4);
             expect(Object.keys(json['@graph'][0]).some(x => x === '@id')).toEqual(true);
             expect(Object.keys(json['@graph'][0]).some(x => x === '@type')).toEqual(true);
@@ -302,6 +322,28 @@ describe.each([graphCreator, graphLoader])('E2E', (source) => {
             } catch (err) {
                 expect(err.details.cause).toBeInstanceOf(ContextNotFoundError);
             }
+        });
+
+        it('can format using custom transform', async () => {
+            const json = await graph.toJson('urn:example:org:hr', {
+                transform: (expanded) => {
+                    if (expanded['@type']?.includes('urn:example:org:hr:classes:Person')) {
+                        if (expanded['urn:example:org:hr:classes:entity:contacts'] &&
+                            expanded['urn:example:org:hr:classes:entity:contacts'].length === 1) {
+                            expanded['urn:example:org:hr:classes:entity:contact'] = expanded['urn:example:org:hr:classes:entity:contacts'];
+                            delete expanded['urn:example:org:hr:classes:entity:contacts'];
+                        }
+                    }
+                    return expanded;
+                }
+            });
+
+            const johnd = json['@graph'].find((x: any) => x['@id'] === 'urn:example:org:hr:johnd');
+            expect(johnd.contacts).toBeDefined();
+            expect(johnd.contacts).not.toBeNull();
+            expect(johnd.mgr[0].contacts).toBeUndefined();
+            expect(johnd.mgr[0].contact).toBeDefined();
+            expect(johnd.mgr[0].contact).not.toBeNull();
         });
     });
 });
@@ -339,6 +381,14 @@ async function graphCreator(): Promise<JsonldGraph> {
         .setAttributeValue('class:entity:contact:state', 'CA')
         .setAttributeValue('class:entity:contact:zip', 102992);
 
+    graph.createVertex('urn:example:org:hr:janed:contact:primary')
+        .setType('class:Contact:Address')
+        .setAttributeValue('class:entity:contact:type', 'primary')
+        .setAttributeValue('class:entity:contact:street', '123 Sunshine Street')
+        .setAttributeValue('class:entity:contact:city', 'LA')
+        .setAttributeValue('class:entity:contact:state', 'CA')
+        .setAttributeValue('class:entity:contact:zip', 102992);
+
     graph.createVertex('urn:example:org:hr:janed')
         .setType('class:Person', 'class:Manager')
         .setAttributeValue('class:entity:first_name', 'Jane')
@@ -357,6 +407,7 @@ async function graphCreator(): Promise<JsonldGraph> {
     graph.createEdge('class:entity:contacts', 'urn:example:org:hr:johnd', 'urn:example:org:hr:johnd:contact:secondary');
     graph.createEdge('class:employee:manager', 'urn:example:org:hr:johnd', 'urn:example:org:hr:janed');
     graph.createEdge('class:employee:manager', 'urn:example:org:hr:jilld', 'urn:example:org:hr:janed');
+    graph.createEdge('class:entity:contacts', 'urn:example:org:hr:janed', 'urn:example:org:hr:janed:contact:primary');
 
     return graph;
 }
@@ -432,7 +483,17 @@ async function graphLoader(): Promise<JsonldGraph> {
                 fname: 'Jane',
                 lname: 'Doe',
                 dispname: 'Jane Doe',
-                level: 2
+                level: 2,
+                contacts: [
+                    {
+                        '@type': 'urn:example:org:hr:classes:Contact:Address',
+                        addrType: 'primary',
+                        street: '123 Sunshine Rd',
+                        city: 'LA',
+                        state: 'CA',
+                        zip: 12343
+                    }
+                ]
             }
         ]
     };
