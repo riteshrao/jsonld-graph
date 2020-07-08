@@ -2,10 +2,10 @@ import * as jsonld from 'jsonld';
 import { JsonldKeywords } from "./constants";
 import Vertex from "./vertex";
 
-interface ExpandedEntity {
+export interface ExpandedEntity {
     '@id': string,
     '@type'?: string[],
-    [key: string]: any
+    [key: string]: string | any[] | undefined
 }
 
 /**
