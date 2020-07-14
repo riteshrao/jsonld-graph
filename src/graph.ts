@@ -914,7 +914,6 @@ export default class JsonldGraph {
         return formatter.toJson(vertices, contexts, this._documentLoader, options);
     }
 
-
     /**
     * @description Validates an IRI.
     * @param {string} iri The IRI to validate.

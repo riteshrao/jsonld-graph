@@ -53,7 +53,7 @@ export interface ExpandFormatOptions {
      * @description Custom transform function to execute on the expanded format.
      * @memberof ExpandFormatOptions
      */
-    transform?: (input: ExpandedEntity) => ExpandedEntity;
+    transform?: (vertex: Vertex, input: ExpandedEntity) => ExpandedEntity;
 }
 
 /**
@@ -169,7 +169,7 @@ function _expand(vertex: Vertex, options: ExpandFormatOptions = {}, visitStack: 
     }
 
     if (options.transform) {
-        return options.transform(expanded);
+        return options.transform(vertex, expanded);
     } else {
         return expanded;
     }

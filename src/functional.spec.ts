@@ -239,7 +239,7 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
 
         it('can format using custom transform', async () => {
             const json = await graph.getVertex('urn:example:org:hr:janed')!.toJson('urn:example:org:hr', {
-                transform: (expanded) => {
+                transform: (_, expanded) => {
                     if (expanded['@type']?.includes('urn:example:org:hr:classes:Person')) {
                         if (expanded['urn:example:org:hr:classes:entity:contacts'] &&
                             expanded['urn:example:org:hr:classes:entity:contacts'].length === 1) {
@@ -326,7 +326,7 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
 
         it('can format using custom transform', async () => {
             const json = await graph.toJson('urn:example:org:hr', {
-                transform: (expanded) => {
+                transform: (_, expanded) => {
                     if (expanded['@type']?.includes('urn:example:org:hr:classes:Person')) {
                         if (expanded['urn:example:org:hr:classes:entity:contacts'] &&
                             expanded['urn:example:org:hr:classes:entity:contacts'].length === 1) {
