@@ -1046,7 +1046,9 @@ export default class JsonldGraph {
                 // Either the value is an inline anonymous entity or a reference to another entity.
                 // In either case a vertex is created for the object and loaded.
                 const reference = this._loadVertex(value, options);
-                this.createEdge(predicate, vertex, reference);
+                if (!this.hasEdge(predicate, vertex, reference)) {
+                    this.createEdge(predicate, vertex, reference);
+                }
             }
         }
     }

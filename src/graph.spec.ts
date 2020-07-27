@@ -1089,6 +1089,42 @@ describe('JsonldGraph', () => {
     
             expect(graph.blankNodes.count()).toEqual(0);
         });
+
+        it('can load multiple references', async () => {
+            const graph = new JsonldGraph();
+            graph.addContext('http://example.org/hr', context);
+            graph.setPrefix('vocab', 'http://example.org/hr/classes/');
+            graph.setPrefix('hr', 'http://example.org/hr/instances/');
+    
+            await graph.parse({
+                '@context': 'http://example.org/hr',
+                '@graph': [
+                    {
+                        '@id': 'http://example.org/hr/instances/johnd',
+                        '@type': 'Employee',
+                        'manager': {
+                            '@id': 'http://example.org/hr/instances/jaked',
+                            manager: [
+                                'http://example.org/hr/instances/jilld'
+                            ]
+                        }
+                    },
+                    {
+                        '@id': 'http://example.org/hr/instances/janed',
+                        '@type': 'Manager',
+                        'manager': {
+                            '@id': 'http://example.org/hr/instances/jaked',
+                            manager: [
+                                'http://example.org/hr/instances/jilld'
+                            ]
+                        }
+                    }
+                ]
+            });
+
+            expect(graph.hasVertex('http://example.org/hr/instances/jaked'));
+            expect(graph.getVertex('http://example.org/hr/instances/jaked')?.hasOutgoing('vocab:manager', 'http://example.org/hr/instances/jilld'));
+        });
     });
 
     describe('.removeContext', () => {
