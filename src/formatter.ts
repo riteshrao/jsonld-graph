@@ -18,21 +18,21 @@ export interface ExpandFormatOptions {
      * @description Set to true or pass a custom filter to embed references as anonymous refernces without any @id.
      * @type {boolean}
      */
-    anonymousReferences?: boolean | ((predicate: string, from: Vertex, to: Vertex) => boolean);
+    anonymousReferences?: boolean | ((source: Vertex, predicate?: string, target?: Vertex) => boolean);
     /**
      * @description Set to true or pass a custom filter to supress @type attribute.
      * @memberof ExpandOptions
      */
-    anonymousTypes?: boolean | ((vertex: Vertex) => boolean);
+    anonymousTypes?: boolean | ((source: Vertex, predicate?: string, target?: Vertex) => boolean);
     /**
      * @description Set to true or pass a custom filter to embed references as compact @ids rather then embedding the reference.
      * @memberof ExpandFormatOptions
      */
-    compactReferences?: boolean | ((predicate: string, from: Vertex, to: Vertex) => boolean);
+    compactReferences?: boolean | ((source: Vertex, predicate?: string, target?: Vertex) => boolean);
     /**
      * @description Set to true or pass a custom filter to filter out references.
      */
-    excludeReferences?: boolean | ((predicate: string, from: Vertex, to: Vertex) => boolean);
+    excludeReferences?: boolean | ((source: Vertex, predicate?: string, target?: Vertex) => boolean);
 
     /**
      * @description Optional filter to filter out attribute values.
@@ -141,12 +141,12 @@ function _expand(vertex: Vertex, options: ExpandFormatOptions = {}, visitStack: 
     if (!options.noReferences) {
         for (const outgoing of vertex.getOutgoing().filter(x => x.iri !== JsonldKeywords.type)) {
             if ((options.excludeReferences && typeof options.excludeReferences === 'boolean' && options.excludeReferences === true) ||
-                (options.excludeReferences && typeof options.excludeReferences !== 'boolean' && options.excludeReferences(outgoing.iri, outgoing.from, outgoing.to))) {
+                (options.excludeReferences && typeof options.excludeReferences !== 'boolean' && options.excludeReferences(outgoing.from, outgoing.iri, outgoing.to))) {
                 continue;
             }
 
             if ((options.compactReferences && typeof options.compactReferences === 'boolean' && options.compactReferences === true) ||
-                (options.compactReferences && typeof options.compactReferences !== 'boolean' && options.compactReferences(outgoing.iri, outgoing.from, outgoing.to))) {
+                (options.compactReferences && typeof options.compactReferences !== 'boolean' && options.compactReferences(outgoing.from, outgoing.iri, outgoing.to))) {
                 if (!expanded[outgoing.iri]) {
                     expanded[outgoing.iri] = [];
                 }
@@ -155,8 +155,15 @@ function _expand(vertex: Vertex, options: ExpandFormatOptions = {}, visitStack: 
                 if (!visitStack.includes(outgoing.to.iri)) {
                     const expandedOut = _expand(outgoing.to, options, visitStack);
                     if ((options.anonymousReferences && typeof options.anonymousReferences === 'boolean' && options.anonymousReferences === true) ||
-                        (options.anonymousReferences && typeof options.anonymousReferences !== 'boolean' && options.anonymousReferences(outgoing.iri, outgoing.from, outgoing.to))) {
+                        (options.anonymousReferences && typeof options.anonymousReferences !== 'boolean' && options.anonymousReferences(outgoing.from, outgoing.iri, outgoing.to))) {
                         delete expandedOut[JsonldKeywords.id];
+                    }
+
+                    if (expandedOut[JsonldKeywords.id] &&
+                        (options.anonymousTypes && typeof options.anonymousTypes === 'boolean' && options.anonymousTypes === true) ||
+                        (options.anonymousTypes && typeof options.anonymousTypes !== 'boolean' && options.anonymousTypes(outgoing.from, outgoing.iri, outgoing.to))) {
+
+                        delete expandedOut[JsonldKeywords.type];
                     }
 
                     if (!expanded[outgoing.iri]) {

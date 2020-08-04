@@ -101,7 +101,7 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
 
         it('can stip out ids from embeds using anonymous types filter', async () => {
             const json = await target.toJson('urn:example:org:hr', {
-                anonymousReferences: (_, __, vertex) => vertex.isType('urn:example:org:hr:classes:Contact:Address')
+                anonymousReferences: (_, __, vertex) => vertex!.isType('urn:example:org:hr:classes:Contact:Address')
             });
 
             for (const contacts of json.contacts) {
@@ -179,8 +179,8 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
 
         it('can exclude references using specified filter', async () => {
             const json = await target.toJson('urn:example:org:hr', {
-                excludeReferences: (predicate, from) => {
-                    return from.isType('urn:example:org:hr:classes:Person') &&
+                excludeReferences: (source, predicate) => {
+                    return source.isType('urn:example:org:hr:classes:Person') &&
                         predicate === 'urn:example:org:hr:classes:entity:contacts'
                 }
             });
