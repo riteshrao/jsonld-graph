@@ -154,12 +154,14 @@ function _expand(vertex: Vertex, options: ExpandFormatOptions = {}, visitStack: 
             } else {
                 if (!visitStack.includes(outgoing.to.iri)) {
                     const expandedOut = _expand(outgoing.to, options, visitStack);
-                    if ((options.anonymousReferences && typeof options.anonymousReferences === 'boolean' && options.anonymousReferences === true) ||
+                    if (expandedOut[JsonldKeywords.id] &&
+                        (options.anonymousReferences && typeof options.anonymousReferences === 'boolean' && options.anonymousReferences === true) ||
                         (options.anonymousReferences && typeof options.anonymousReferences !== 'boolean' && options.anonymousReferences(outgoing.from, outgoing.iri, outgoing.to))) {
+                            
                         delete expandedOut[JsonldKeywords.id];
                     }
 
-                    if (expandedOut[JsonldKeywords.id] &&
+                    if (expandedOut[JsonldKeywords.type] &&
                         (options.anonymousTypes && typeof options.anonymousTypes === 'boolean' && options.anonymousTypes === true) ||
                         (options.anonymousTypes && typeof options.anonymousTypes !== 'boolean' && options.anonymousTypes(outgoing.from, outgoing.iri, outgoing.to))) {
 
