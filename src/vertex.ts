@@ -111,7 +111,7 @@ export default class Vertex {
      * @memberof Vertex
      */
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    appendAttributeValue(name: string, value: any, language?: string): this {
+    appendAttributeValue(name: string, value: any, language?: string, isJson: boolean = false): this {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
         }
@@ -126,7 +126,7 @@ export default class Vertex {
         }
 
         const attributeIRI = this._graph.expandIRI(name);
-        const type = typeof value === 'object' ? '@json' : undefined;
+        const type = isJson || typeof value === 'object' ? '@json' : undefined;
         if (!this._attributes.has(attributeIRI)) {
             this._attributes.set(attributeIRI, [
                 {
@@ -521,7 +521,7 @@ export default class Vertex {
      */
     setAttributeValue(name: string, value: string, language: string): this;
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    setAttributeValue(name: string, value: any, language?: string): this {
+    setAttributeValue(name: string, value: any, language?: string, isJson: boolean = false): this {
         if (!name) {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
         }
@@ -538,7 +538,7 @@ export default class Vertex {
 
         const attributeIRI = this._graph.expandIRI(name);
         const values = this._attributes.get(attributeIRI);
-        const type = typeof value === 'object' ? '@json' : undefined;
+        const type = isJson || typeof value === 'object' ? '@json' : undefined;
         if (!values || !language) {
             this._attributes.set(attributeIRI, [
                 {
@@ -698,7 +698,7 @@ export default class Vertex {
             return formatter.toJson([this], contexts, contextLoader, options);
         }
     }
-    
+
     /**
      * @description Gets a raw expanded representation of the vertex and its edges for diagnostic / debug purposes.
      * @returns {*}

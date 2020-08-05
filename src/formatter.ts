@@ -157,7 +157,7 @@ function _expand(vertex: Vertex, options: ExpandFormatOptions = {}, visitStack: 
                     if (expandedOut[JsonldKeywords.id] &&
                         (options.anonymousReferences && typeof options.anonymousReferences === 'boolean' && options.anonymousReferences === true) ||
                         (options.anonymousReferences && typeof options.anonymousReferences !== 'boolean' && options.anonymousReferences(outgoing.from, outgoing.iri, outgoing.to))) {
-                            
+
                         delete expandedOut[JsonldKeywords.id];
                     }
 
