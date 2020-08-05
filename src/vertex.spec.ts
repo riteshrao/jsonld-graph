@@ -986,6 +986,11 @@ describe('Vertex', () => {
             vertex.setAttributeValue('test:json:data', { foo: 'bar' });
             expect(vertex.getAttributeValue('test:json:data')).toEqual({ foo: 'bar' });
         });
+
+        it('should set json type for primitive values', () => {
+            vertex.setAttributeValue('test:json:data', 1, undefined, true);
+            expect(vertex.getAttributeValues('test:json:data').first().type).toEqual('@json');
+        });
     });
 
     describe('.setIncoming', () => {

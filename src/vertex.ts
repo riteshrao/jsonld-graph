@@ -520,6 +520,7 @@ export default class Vertex {
      * @memberof Vertex
      */
     setAttributeValue(name: string, value: string, language: string): this;
+    setAttributeValue(name: string, value: any, language?: string | undefined, isJson?: boolean | undefined): this;
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     setAttributeValue(name: string, value: any, language?: string, isJson: boolean = false): this {
         if (!name) {
