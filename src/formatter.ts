@@ -28,11 +28,11 @@ export interface ExpandFormatOptions {
      * @description Set to true or pass a custom filter to embed references as compact @ids rather then embedding the reference.
      * @memberof ExpandFormatOptions
      */
-    compactReferences?: boolean | ((source: Vertex, predicate?: string, target?: Vertex) => boolean);
+    compactReferences?: boolean | ((source: Vertex, predicate: string, target: Vertex) => boolean);
     /**
      * @description Set to true or pass a custom filter to filter out references.
      */
-    excludeReferences?: boolean | ((source: Vertex, predicate?: string, target?: Vertex) => boolean);
+    excludeReferences?: boolean | ((source: Vertex, predicate: string, target: Vertex) => boolean);
 
     /**
      * @description Optional filter to filter out attribute values.
