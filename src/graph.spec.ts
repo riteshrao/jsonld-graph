@@ -906,6 +906,9 @@ describe('JsonldGraph', () => {
             expect(typeof data).toEqual('object');
             expect(data.field1).toEqual('value1');
             expect(data.field2).toEqual('value2');
+
+            const attrib = johnd.getAttributeValues('vocab:Employee/data').first();
+            expect(attrib.type).toEqual('@json');
         });
 
         it('can merge multiple documents', async () => {

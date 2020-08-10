@@ -1033,13 +1033,15 @@ export default class JsonldGraph {
                     vertex.setAttributeValue(
                         predicate,
                         value[JsonldKeywords.value],
-                        value[JsonldKeywords.language]
+                        value[JsonldKeywords.language],
+                        value[JsonldKeywords.type] === '@json'
                     );
                 } else {
                     vertex.appendAttributeValue(
                         predicate,
                         value[JsonldKeywords.value],
-                        value[JsonldKeywords.language]
+                        value[JsonldKeywords.language],
+                        value[JsonldKeywords.type] === '@json'
                     );
                 }
             } else {
