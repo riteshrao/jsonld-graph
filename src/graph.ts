@@ -931,7 +931,6 @@ export default class JsonldGraph {
 
         const schemeIndex = iri.indexOf(':');
         if (schemeIndex <= 0) {
-            console.log(iri);
             throw new errors.InvalidIRIError(iri, 'IRI scheme not specified');
         }
 
