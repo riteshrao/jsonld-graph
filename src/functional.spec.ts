@@ -1,4 +1,4 @@
-import { ContextNotFoundError } from "./errors";
+import { ContextNotFoundError } from './errors';
 import JsonldGraph from './graph';
 import Vertex from './vertex';
 
