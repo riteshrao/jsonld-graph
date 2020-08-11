@@ -102,7 +102,7 @@ export async function toJson(
 }
 
 export function expand(vertex: Vertex, options: ExpandFormatOptions = {}): any {
-    return _expand(vertex, options, []);
+    return _expand(vertex, options);
 }
 
 function _expand(vertex: Vertex, options: ExpandFormatOptions = {}) {
