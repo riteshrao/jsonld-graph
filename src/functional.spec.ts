@@ -260,7 +260,6 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
     describe('format graph', () => {
         it('should work', async () => {
             const json = await graph.toJson('urn:example:org:hr');
-
             expect(json['@context']).toEqual('urn:example:org:hr');
             expect(json['@graph'].length).toEqual(2);
             expect(json['@graph'].some((x: any) => x['@id'] === 'urn:example:org:hr:jilld')).toEqual(true);
