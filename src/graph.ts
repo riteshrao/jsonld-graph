@@ -38,14 +38,12 @@ export interface GraphOptions {
      * @memberof JsonldGraphOptions
      */
     vertexFactory?: GraphVertexFactory;
-
     /**
      * @description Resolver function that can resolve the type of blank type ertex nodes.
      * @type {VertexResolver<V>}
      * @memberof GraphOptions
      */
     blankTypeResolver?: (vertex: Vertex) => string[] | undefined;
-
     /**
      * @description Resolver function that can resolve the id of blank id vertex nodes.
      * @type {VertexResolver<V>}
@@ -84,6 +82,11 @@ export interface GraphLoadOptions {
      * @memberof GraphLoadOptions
      */
     normalize?: boolean;
+    /**
+     * @description Optional callback function to invoke for translating an identity
+     * @memberof GraphLoadOptions
+     */
+    identityTranslator?: (id: string) => string;
 }
 
 /**
@@ -984,14 +987,17 @@ export default class JsonldGraph {
     }
 
     private _loadVertex(entity: any, options?: GraphLoadOptions): Vertex {
-        const id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${shortid()}`;
+        let id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${shortid()}`;
         const types: string[] = entity[JsonldKeywords.type] || [];
-        const vertex = this._getOrCreateVertex(id, ...types);
-
+        
         if (id.startsWith(BlankNodePrefix)) {
             this._indexMap.get(JsonldGraph.IX_BLANK_NODES)?.add(id)
+        } else if (options?.identityTranslator) {
+            id = options.identityTranslator(id) || id;
         }
-
+        
+        console.log(id);
+        const vertex = this._getOrCreateVertex(id, ...types);
         if (!vertex.getTypes().first()) {
             this._indexMap.get(JsonldGraph.IX_BLANK_TYPES)?.add(id)
         }

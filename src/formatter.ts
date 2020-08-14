@@ -54,6 +54,11 @@ export interface ExpandFormatOptions {
      * @memberof ExpandFormatOptions
      */
     transform?: (vertex: Vertex, input: ExpandedEntity) => ExpandedEntity;
+    /**
+     * @description Custom translation function to execute to transalate an identity.
+     * @memberof ExpandFormatOptions
+     */
+    identityTranslator?: (id: string) => string;
 }
 
 /**
@@ -106,7 +111,11 @@ export function expand(vertex: Vertex, options: ExpandFormatOptions = {}): any {
 }
 
 function _expand(vertex: Vertex, options: ExpandFormatOptions = {}) {
-    const expanded: any = { [JsonldKeywords.id]: vertex.iri };
+    const id = options.identityTranslator 
+        ? options.identityTranslator(vertex.iri) || vertex.iri 
+        : vertex.iri
+
+    const expanded: any = { [JsonldKeywords.id]: id };
     const types = vertex.getTypes().items();
 
     if (!options.anonymousTypes ||

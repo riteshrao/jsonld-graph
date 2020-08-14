@@ -593,19 +593,19 @@ describe('JsonldGraph', () => {
         });
 
         it('should work', async () => {
-           const graph = new JsonldGraph();
-           await graph.load(expanded);
+            const graph = new JsonldGraph();
+            await graph.load(expanded);
 
-           expect(graph.hasVertex('http://example.org/hr/classes/Employee')).toEqual(true);
-           expect(graph.hasVertex('http://example.org/hr/classes/Manager')).toEqual(true);
-           expect(graph.hasVertex('http://example.org/hr/instances/johnd')).toEqual(true);
-           expect(graph.hasVertex('http://example.org/hr/instances/janed')).toEqual(true);
-           expect(graph.getVertex('http://example.org/hr/instances/johnd')?.getAttributeValue('http://example.org/hr/classes/Employee/firstName')).toEqual('John');
-           expect(graph.getVertex('http://example.org/hr/instances/johnd')?.getAttributeValue('http://example.org/hr/classes/Employee/lastName')).toEqual('Doe');
-           expect(graph.getVertex('http://example.org/hr/instances/janed')?.getAttributeValue('http://example.org/hr/classes/Employee/firstName')).toEqual('Jane');
-           expect(graph.getVertex('http://example.org/hr/instances/janed')?.getAttributeValue('http://example.org/hr/classes/Employee/lastName')).toEqual('Doe');
-           expect(graph.hasEdge('http://example.org/hr/classes/Employee/manager', 'http://example.org/hr/instances/johnd', 'http://example.org/hr/instances/janed')).toEqual(true);
-           expect(graph.hasEdge('http://example.org/hr/classes/Manager/manages', 'http://example.org/hr/instances/janed', 'http://example.org/hr/instances/johnd')).toEqual(true);
+            expect(graph.hasVertex('http://example.org/hr/classes/Employee')).toEqual(true);
+            expect(graph.hasVertex('http://example.org/hr/classes/Manager')).toEqual(true);
+            expect(graph.hasVertex('http://example.org/hr/instances/johnd')).toEqual(true);
+            expect(graph.hasVertex('http://example.org/hr/instances/janed')).toEqual(true);
+            expect(graph.getVertex('http://example.org/hr/instances/johnd')?.getAttributeValue('http://example.org/hr/classes/Employee/firstName')).toEqual('John');
+            expect(graph.getVertex('http://example.org/hr/instances/johnd')?.getAttributeValue('http://example.org/hr/classes/Employee/lastName')).toEqual('Doe');
+            expect(graph.getVertex('http://example.org/hr/instances/janed')?.getAttributeValue('http://example.org/hr/classes/Employee/firstName')).toEqual('Jane');
+            expect(graph.getVertex('http://example.org/hr/instances/janed')?.getAttributeValue('http://example.org/hr/classes/Employee/lastName')).toEqual('Doe');
+            expect(graph.hasEdge('http://example.org/hr/classes/Employee/manager', 'http://example.org/hr/instances/johnd', 'http://example.org/hr/instances/janed')).toEqual(true);
+            expect(graph.hasEdge('http://example.org/hr/classes/Manager/manages', 'http://example.org/hr/instances/janed', 'http://example.org/hr/instances/johnd')).toEqual(true);
         });
 
     });
@@ -631,7 +631,7 @@ describe('JsonldGraph', () => {
                 zip: 'Contact/address/zip'
             }
         };
-    
+
         it('should throw when inputs are not valid', async () => {
             const graph = new JsonldGraph();
             await expect(graph.parse(null)).rejects.toThrow(ReferenceError);
@@ -639,13 +639,13 @@ describe('JsonldGraph', () => {
             await expect(graph.parse([])).rejects.toThrow(ReferenceError);
             await expect(graph.parse({ '@context': 'foo' })).rejects.toThrow(errors.DocumentParseError);
         });
-    
+
         it('can load a single entity', async () => {
             const graph = new JsonldGraph();
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse({
                 '@context': [
                     { '@base': 'http://example.org/hr/instances/' },
@@ -656,10 +656,10 @@ describe('JsonldGraph', () => {
                 firstName: 'John',
                 lastName: 'Doe'
             });
-    
+
             expect(graph.hasVertex('hr:johnd')).toEqual(true);
             expect(graph.hasVertex('vocab:Employee')).toEqual(true);
-    
+
             const johnd = graph.getVertex('hr:johnd');
             expect(johnd).toBeTruthy();
             expect(johnd!.getAttributeValue('vocab:Employee/firstName')).toEqual('John');
@@ -672,7 +672,7 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse({
                 '@context': [
                     { '@base': 'http://example.org/hr/instances/' },
@@ -693,17 +693,17 @@ describe('JsonldGraph', () => {
                     }
                 ]
             });
-    
+
             expect(graph.hasVertex('hr:johnd')).toEqual(true);
             expect(graph.hasVertex('hr:janed')).toEqual(true);
             expect(graph.hasVertex('vocab:Employee')).toEqual(true);
-    
+
             const johnd = graph.getVertex('hr:johnd');
             expect(johnd).toBeTruthy();
             expect(johnd!.getAttributeValue('vocab:Employee/firstName')).toEqual('John');
             expect(johnd!.getAttributeValue('vocab:Employee/lastName')).toEqual('Doe');
             expect(johnd!.isType('vocab:Employee')).toEqual(true);
-    
+
             const janed = graph.getVertex('hr:janed');
             expect(janed).toBeTruthy();
             expect(janed!.getAttributeValue('vocab:Employee/firstName')).toEqual('Jane');
@@ -716,7 +716,7 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse([
                 {
                     '@context': [
@@ -739,17 +739,17 @@ describe('JsonldGraph', () => {
                     lastName: 'Doe'
                 }
             ]);
-    
+
             expect(graph.hasVertex('hr:johnd')).toEqual(true);
             expect(graph.hasVertex('hr:janed')).toEqual(true);
             expect(graph.hasVertex('vocab:Employee')).toEqual(true);
-    
+
             const johnd = graph.getVertex('hr:johnd');
             expect(johnd).toBeTruthy();
             expect(johnd!.getAttributeValue('vocab:Employee/firstName')).toEqual('John');
             expect(johnd!.getAttributeValue('vocab:Employee/lastName')).toEqual('Doe');
             expect(johnd!.isType('vocab:Employee')).toEqual(true);
-    
+
             const janed = graph.getVertex('hr:janed');
             expect(janed).toBeTruthy();
             expect(janed!.getAttributeValue('vocab:Employee/firstName')).toEqual('Jane');
@@ -762,7 +762,7 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse({
                 '@context': 'http://example.org/hr',
                 '@graph': [
@@ -778,10 +778,10 @@ describe('JsonldGraph', () => {
                     }
                 ]
             });
-    
+
             expect(graph.hasEdge('vocab:Employee/manager', 'hr:johnd', 'hr:janed')).toEqual(true);
             expect(graph.hasEdge('vocab:Manager/manages', 'hr:janed', 'hr:johnd')).toEqual(true);
-    
+
             const johnd = graph.getVertex('hr:johnd')!;
             const janed = graph.getVertex('hr:janed')!;
             expect(johnd.hasOutgoing('vocab:Employee/manager', janed)).toEqual(true);
@@ -795,7 +795,7 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse({
                 '@context': [
                     { '@base': 'http://example.org/hr/instances/' },
@@ -806,7 +806,7 @@ describe('JsonldGraph', () => {
                 lastName: 'Doe',
                 displayName: ['John Doe', 'John D']
             });
-    
+
             const johnd = graph.getVertex('hr:johnd')!;
             const displayNames = [...johnd.getAttributeValues('vocab:Entity/displayName')];
             expect(displayNames.length).toEqual(2);
@@ -819,7 +819,7 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse({
                 '@context': [
                     { '@base': 'http://example.org/hr/instances/' },
@@ -833,7 +833,7 @@ describe('JsonldGraph', () => {
                     fr: 'fr description'
                 }
             });
-    
+
             const johnd = graph.getVertex('hr:johnd')!;
             expect(johnd.getAttributeValue('vocab:Entity/description', 'en')).toEqual('en description');
             expect(johnd.getAttributeValue('vocab:Entity/description', 'fr')).toEqual('fr description');
@@ -844,7 +844,7 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse({
                 '@context': [
                     { '@base': 'http://example.org/hr/instances/' },
@@ -866,14 +866,14 @@ describe('JsonldGraph', () => {
                     }
                 ]
             });
-    
+
             expect(graph.hasVertex('hr:johnd')).toEqual(true);
             expect(graph.hasVertex('hr:contact/a')).toEqual(true);
             expect(graph.hasVertex('hr:contact/b')).toEqual(true);
-    
+
             const johnd = graph.getVertex('hr:johnd')!;
             expect(johnd.hasOutgoing('vocab:Entity/accounts')).toEqual(true);
-    
+
             const accounts = [...johnd.getOutgoing('vocab:Entity/accounts')];
             expect(accounts.length).toEqual(2);
             expect(accounts[0].to.id).toEqual('hr:contact/a');
@@ -887,7 +887,7 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse({
                 '@context': [
                     { '@base': 'http://example.org/hr/instances/' },
@@ -899,7 +899,7 @@ describe('JsonldGraph', () => {
                     field2: 'value2'
                 }
             });
-    
+
             const johnd = graph.getVertex('hr:johnd')!;
             const data = johnd.getAttributeValue<{ field1: string; field2: string }>('vocab:Employee/data');
             expect(data).toBeTruthy();
@@ -916,7 +916,7 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             const document1 = {
                 '@context': [
                     { '@base': 'http://example.org/hr/instances/' },
@@ -929,7 +929,7 @@ describe('JsonldGraph', () => {
                     'en': 'en desc'
                 }
             }
-    
+
             const document2 = {
                 '@context': [
                     { '@base': 'http://example.org/hr/instances/' },
@@ -942,7 +942,7 @@ describe('JsonldGraph', () => {
                     'fr': 'fr desc'
                 }
             }
-    
+
             await graph.parse([document1, document2], { merge: true });
             const johnd = graph.getVertex('hr:johnd')!;
             expect(johnd.getAttributeValue('vocab:Employee/firstName')).toEqual('John. D');
@@ -956,40 +956,40 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             const document = {
                 '@context': 'http://example.org/hr',
                 '@id': 'johnd',
                 firstName: 'John',
                 lastName: 'Doe',
             };
-    
+
             await graph.parse(document, { base: 'http://example.org/hr/instances/' });
             expect(graph.hasVertex('http://example.org/hr/instances/johnd')).toEqual(true);
             expect(graph.hasVertex('hr:johnd')).toEqual(true);
         });
-    
+
         it('can load using supplied context', async () => {
             const graph = new JsonldGraph();
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             const document = {
                 '@id': 'http://example.org/hr/instances/johnd',
                 firstName: 'John',
                 lastName: 'Doe',
             };
-    
+
             const customContext = {
                 '@context': {
                     firstName: 'http://example.org/other/fname',
                     lastName: 'http://example.org/other/lname'
                 }
             };
-    
+
             await graph.parse(document, { contexts: customContext });
-    
+
             expect(graph.getVertex('hr:johnd')?.hasAttribute('http://example.org/other/fname')).toEqual(true);
             expect(graph.getVertex('hr:johnd')?.hasAttribute('http://example.org/other/lname')).toEqual(true);
         });
@@ -1009,7 +1009,7 @@ describe('JsonldGraph', () => {
                     lastName: 'Doe'
                 }
             };
-    
+
             const graph = new JsonldGraph({
                 blankTypeResolver: (vertex): string[] => {
                     const incoming = vertex.getIncoming().first();
@@ -1022,9 +1022,9 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse(document, { normalize: true });
-    
+
             expect(graph.getVertex('hr:johnd')?.isType('vocab:Employee')).toEqual(true);
             expect(graph.getVertex('hr:janed')?.isType('vocab:Manager')).toEqual(true);
             expect(graph.blankTypes.count()).toEqual(0);
@@ -1057,7 +1057,7 @@ describe('JsonldGraph', () => {
                     }
                 }
             };
-    
+
             const graph = new JsonldGraph({
                 blankIriResolver: (vertex): string => {
                     const name = vertex.getAttributeValue("vocab:Entity/name") || shortid();
@@ -1069,27 +1069,27 @@ describe('JsonldGraph', () => {
                     }
                 }
             });
-    
+
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse(document, { normalize: true });
-    
+
             expect(graph.hasVertex('hr:johnd:janed')).toEqual(true);
-    
+
             expect(graph
                 .getVertex('hr:johnd')!
                 .getOutgoing('vocab:Contact/address')
                 .first()
                 .to.id.startsWith('hr:johnd')).toEqual(true);
-    
+
             expect(graph
                 .getVertex('hr:johnd:janed')!
                 .getOutgoing('vocab:Contact/address')
                 .first()
                 .to.id.startsWith('hr:johnd:janed')).toEqual(true);
-    
+
             expect(graph.blankNodes.count()).toEqual(0);
         });
 
@@ -1098,7 +1098,7 @@ describe('JsonldGraph', () => {
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
-    
+
             await graph.parse({
                 '@context': 'http://example.org/hr',
                 '@graph': [
@@ -1127,6 +1127,51 @@ describe('JsonldGraph', () => {
 
             expect(graph.hasVertex('http://example.org/hr/instances/jaked'));
             expect(graph.getVertex('http://example.org/hr/instances/jaked')?.hasOutgoing('vocab:manager', 'http://example.org/hr/instances/jilld'));
+        });
+
+        it('can translate identities', async () => {
+            const graph = new JsonldGraph();
+            graph.addContext('http://example.org/hr', context);
+            graph.setPrefix('vocab', 'http://example.org/hr/classes/');
+            graph.setPrefix('hr', 'http://example.org/hr/instances/');
+
+            const translator = (id: string) => {
+                if (id.includes('johnd')) {
+                    return 'http://example.org/hr/instances/newjohn'
+                } else {
+                    return id;
+                }
+            }
+            await graph.parse({
+                '@context': 'http://example.org/hr',
+                '@graph': [
+                    {
+                        '@id': 'http://example.org/hr/instances/johnd',
+                        '@type': 'Employee',
+                        'manager': {
+                            '@id': 'http://example.org/hr/instances/jaked',
+                            manager: [
+                                'http://example.org/hr/instances/jilld'
+                            ]
+                        }
+                    },
+                    {
+                        '@id': 'http://example.org/hr/instances/janed',
+                        '@type': 'Manager',
+                        'manager': {
+                            '@id': 'http://example.org/hr/instances/jaked',
+                            manager: [
+                                'http://example.org/hr/instances/jilld'
+                            ]
+                        }
+                    }
+                ]
+            }, {
+                identityTranslator: translator
+            });
+
+            expect(graph.hasVertex('http://example.org/hr/instances/newjohn')).toEqual(true);
+            expect(graph.hasVertex('http://example.org/hr/instances/johnd')).toEqual(false);
         });
     });
 

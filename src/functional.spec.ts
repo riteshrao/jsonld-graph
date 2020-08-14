@@ -255,6 +255,16 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
             expect(json.contact).not.toBeUndefined();
             expect(json.contact).not.toBeNull();
         });
+
+        it('can translate identity', async () => {
+            const json = await graph.getVertex('urn:example:org:hr:janed')!.toJson('urn:example:org:hr', {
+                identityTranslator: (id) => {
+                    return 'urn:example:org:hr:newjane'
+                }
+            });
+
+            expect(json['@id']).toEqual('urn:example:org:hr:newjane');
+        });
     });
 
     describe('format graph', () => {
