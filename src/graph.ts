@@ -996,7 +996,6 @@ export default class JsonldGraph {
             id = options.identityTranslator(id) || id;
         }
         
-        console.log(id);
         const vertex = this._getOrCreateVertex(id, ...types);
         if (!vertex.getTypes().first()) {
             this._indexMap.get(JsonldGraph.IX_BLANK_TYPES)?.add(id)
