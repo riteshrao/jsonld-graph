@@ -123,6 +123,11 @@ function _expand(vertex: Vertex, options: ExpandFormatOptions = {}) {
         (typeof options.anonymousTypes !== 'boolean' && !options.anonymousTypes(vertex))) {
         if (types.length > 0) {
             expanded[JsonldKeywords.type] = types.map(x => x.iri);
+            if (options.identityTranslator) {
+                for (let i = 0; i < expanded[JsonldKeywords.type].length; i++) {
+                    expanded[JsonldKeywords.type][i] = options.identityTranslator(expanded[JsonldKeywords.type][i]) || expanded[JsonldKeywords.type][i];
+                }
+            }
         }
     }
 

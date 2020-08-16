@@ -992,8 +992,16 @@ export default class JsonldGraph {
         
         if (id.startsWith(BlankNodePrefix)) {
             this._indexMap.get(JsonldGraph.IX_BLANK_NODES)?.add(id)
-        } else if (options?.identityTranslator) {
-            id = options.identityTranslator(id) || id;
+        }
+
+        if (options?.identityTranslator) {
+            if (!id.startsWith(BlankNodePrefix)) {
+                id = options.identityTranslator(id) || id;
+            }
+
+            for (let i = 0; i < types.length; i++) {
+                types[i] = options.identityTranslator(types[i]);
+            }
         }
         
         const vertex = this._getOrCreateVertex(id, ...types);

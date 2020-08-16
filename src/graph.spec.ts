@@ -1129,7 +1129,7 @@ describe('JsonldGraph', () => {
             expect(graph.getVertex('http://example.org/hr/instances/jaked')?.hasOutgoing('vocab:manager', 'http://example.org/hr/instances/jilld'));
         });
 
-        it('can translate identities', async () => {
+        it('can translate @ids', async () => {
             const graph = new JsonldGraph();
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
@@ -1172,6 +1172,52 @@ describe('JsonldGraph', () => {
 
             expect(graph.hasVertex('http://example.org/hr/instances/newjohn')).toEqual(true);
             expect(graph.hasVertex('http://example.org/hr/instances/johnd')).toEqual(false);
+        });
+
+        it('can translate @type', async () => {
+            const graph = new JsonldGraph();
+            graph.addContext('http://example.org/hr', context);
+            graph.setPrefix('vocab', 'http://example.org/hr/classes/');
+            graph.setPrefix('hr', 'http://example.org/hr/instances/');
+
+            const translator = (id: string) => {
+                if (id === 'http://example.org/hr/classes/Employee') {
+                    return id = 'http://example.org/hr/classes/NewEmployee'
+                } else {
+                    return id;
+                }
+            }
+
+            await graph.parse({
+                '@context': 'http://example.org/hr',
+                '@graph': [
+                    {
+                        '@id': 'http://example.org/hr/instances/johnd',
+                        '@type': 'Employee',
+                        'manager': {
+                            '@id': 'http://example.org/hr/instances/jaked',
+                            manager: [
+                                'http://example.org/hr/instances/jilld'
+                            ]
+                        }
+                    },
+                    {
+                        '@id': 'http://example.org/hr/instances/janed',
+                        '@type': 'Manager',
+                        'manager': {
+                            '@id': 'http://example.org/hr/instances/jaked',
+                            manager: [
+                                'http://example.org/hr/instances/jilld'
+                            ]
+                        }
+                    }
+                ]
+            }, {
+                identityTranslator: translator
+            });
+
+            expect(graph.getVertex('hr:johnd')?.isType('vocab:NewEmployee')).toEqual(true);
+            expect(graph.getVertex('hr:janed')?.isType('vocab:Manager')).toEqual(true);
         });
     });
 

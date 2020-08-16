@@ -258,12 +258,31 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
 
         it('can translate identity', async () => {
             const json = await graph.getVertex('urn:example:org:hr:janed')!.toJson('urn:example:org:hr', {
-                identityTranslator: (id) => {
+                identityTranslator: () => {
                     return 'urn:example:org:hr:newjane'
                 }
             });
 
             expect(json['@id']).toEqual('urn:example:org:hr:newjane');
+        });
+
+        fit('can translate @type', async () => {
+            const json = await graph.getVertex('urn:example:org:hr:janed')!.toJson('urn:example:org:hr', {
+                identityTranslator: (id) => {
+                    if (id === 'urn:example:org:hr:classes:Person') {
+                        return 'urn:example:org:hr:classes:NewPerson';
+                    }
+
+                    if (id == 'urn:example:org:hr:classes:Manager') {
+                        return 'urn:example:org:hr:classes:NewManager'
+                    }
+
+                    return id;
+                }
+            });
+
+            expect(json['@type']).toContain('NewPerson');
+            expect(json['@type']).toContain('NewManager');
         });
     });
 
