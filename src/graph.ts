@@ -7,6 +7,7 @@ import Edge from './edge';
 import * as errors from './errors';
 import * as formatter from './formatter';
 import Vertex from './vertex';
+import { constants } from 'buffer';
 
 type Loader = (url: string) => Promise<RemoteDocument>;
 const PREFIX_REGEX = /^[a-zA-z][a-zA-Z0-9]*$/;
@@ -989,7 +990,7 @@ export default class JsonldGraph {
     private _loadVertex(entity: any, options?: GraphLoadOptions): Vertex {
         let id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${shortid()}`;
         const types: string[] = entity[JsonldKeywords.type] || [];
-        
+
         if (id.startsWith(BlankNodePrefix)) {
             this._indexMap.get(JsonldGraph.IX_BLANK_NODES)?.add(id)
         }
@@ -1003,7 +1004,7 @@ export default class JsonldGraph {
                 types[i] = options.identityTranslator(types[i]);
             }
         }
-        
+
         const vertex = this._getOrCreateVertex(id, ...types);
         if (!vertex.getTypes().first()) {
             this._indexMap.get(JsonldGraph.IX_BLANK_TYPES)?.add(id)
@@ -1073,9 +1074,34 @@ export default class JsonldGraph {
             this._normalizeBlankNode(incoming.from)
         }
 
-        const id = this._options.blankIriResolver!(vertex);
-        if (id) {
-            this.renameVertex(vertex, id);
+        const newIri = this._options.blankIriResolver!(vertex);
+        if (newIri && newIri !== vertex.iri) {
+            if (!this.hasVertex(newIri)) {
+                this.renameVertex(vertex, newIri);
+            } else {
+                // Copy over all attriutes and references from the blank node to the existing node.
+                const existing = this.getVertex(newIri)!;
+                for (const attribute of vertex.getAttributes()) {
+                    for (const value of attribute.values) {
+                        existing.setAttributeValue(attribute.name, value.value, value.language, value.type === JsonldKeywords.json);
+                    }
+                }
+
+                for (const incoming of vertex.getIncoming()) {
+                    if (!existing.hasIncoming(incoming.iri, incoming.from)) {
+                        existing.setIncoming(incoming.iri, incoming.from);
+                    }
+                }
+
+                for (const outgoing of vertex.getOutgoing()) {
+                    if (!existing.hasOutgoing(outgoing.iri, outgoing.to)) {
+                        existing.setOutgoing(outgoing.iri, outgoing.to)
+                    }
+                }
+
+                this.removeVertex(vertex);
+                this._indexMap.get(JsonldGraph.IX_BLANK_NODES)?.delete(this.expandIRI(vertex.iri));
+            }
         }
     }
 
