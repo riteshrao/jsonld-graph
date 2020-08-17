@@ -266,7 +266,7 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
             expect(json['@id']).toEqual('urn:example:org:hr:newjane');
         });
 
-        fit('can translate @type', async () => {
+        it('can translate @type', async () => {
             const json = await graph.getVertex('urn:example:org:hr:janed')!.toJson('urn:example:org:hr', {
                 identityTranslator: (id) => {
                     if (id === 'urn:example:org:hr:classes:Person') {
@@ -372,6 +372,22 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
             expect(johnd.mgr[0].contacts).toBeUndefined();
             expect(johnd.mgr[0].contact).toBeDefined();
             expect(johnd.mgr[0].contact).not.toBeNull();
+        });
+
+        it('can translate referneces', async () => {
+            const json = await graph.toJson('urn:example:org:hr', {
+                identityTranslator: (id) => {
+                    if (id === 'urn:example:org:hr:janed') {
+                        return 'urn:example:org:hr:newjaned'
+                    }
+                    return id;
+                }
+            });
+
+            const johnd = json['@graph'].find((x: any) => x['@id'] === 'urn:example:org:hr:johnd');
+            const jilld = json['@graph'].find((x: any) => x['@id'] === 'urn:example:org:hr:jilld');
+            expect(johnd.mgr[0]['@id']).toEqual('urn:example:org:hr:newjaned');
+            expect(jilld.mgr[0]['@id']).toEqual('urn:example:org:hr:newjaned');
         });
     });
 });

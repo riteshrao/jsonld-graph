@@ -162,7 +162,13 @@ function _expand(vertex: Vertex, options: ExpandFormatOptions = {}) {
                 if (!expanded[outgoing.iri]) {
                     expanded[outgoing.iri] = [];
                 }
-                expanded[outgoing.iri].push({ '@id': outgoing.to.iri });
+
+                const referenceIri: string = options.identityTranslator
+                    ? options.identityTranslator(outgoing.to.iri)
+                    : outgoing.to.iri;
+
+                expanded[outgoing.iri].push({ '@id': referenceIri });
+                
             } else {
                 const expandedOut = _expand(outgoing.to, options);
                 if (expandedOut[JsonldKeywords.id] &&
