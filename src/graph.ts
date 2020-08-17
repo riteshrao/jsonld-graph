@@ -7,7 +7,6 @@ import Edge from './edge';
 import * as errors from './errors';
 import * as formatter from './formatter';
 import Vertex from './vertex';
-import { constants } from 'buffer';
 
 type Loader = (url: string) => Promise<RemoteDocument>;
 const PREFIX_REGEX = /^[a-zA-z][a-zA-Z0-9]*$/;
