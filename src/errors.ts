@@ -212,3 +212,15 @@ export class InvalidPrefixError extends GraphError {
         super(`Invalid prefix ${prefix}. Error: ${error}`);
     }
 }
+
+/**
+ * @description Error thrown when an error occured while trying to normalize blank id nodes.
+ * @export
+ * @class IdNormalizationError
+ * @extends {GraphError}
+ */
+export class BlankIdNormalizationError extends GraphError {
+    constructor(public readonly iri: string, message: string) {
+        super(`Failed to normalize node ${iri}. Error: ${message}`)
+    }
+}

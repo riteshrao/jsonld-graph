@@ -1152,6 +1152,65 @@ describe('JsonldGraph', () => {
             expect(graph.blankNodes.count()).toEqual(0);
         });
 
+        it('can resolve conflicts types on blank id normalization', async () => {
+            const document = {
+                '@context': [
+                    { '@base': 'http://example.org/hr/instances/' },
+                    'http://example.org/hr'
+                ],
+                '@graph': [
+                    {
+                        '@id': 'johnd',
+                        firstName: 'John',
+                        lastName: 'Doe',
+                        address: {
+                            street: 'Sunshine Street',
+                            city: 'LA',
+                            state: 'CA',
+                            zip: '11111'
+                        },
+                        manager: {
+                            '@type': 'Person',
+                            name: 'janed',
+                            firstName: 'Jane',
+                            lastName: 'Doe',
+                            
+                        }
+                    },
+                    {
+                        '@type': 'Manager',
+                        name: 'janed',
+                        address: {
+                            street: 'Sunshine Street',
+                            city: 'LA',
+                            state: 'CA',
+                            zip: '11111'
+                        }
+                    }
+                ]
+            };
+
+            const graph = new JsonldGraph({
+                blankIriResolver: (vertex): string | undefined => {
+                    const name = vertex.getAttributeValue("vocab:Entity/name") || shortid();
+                    return 'http://example.org/hr/instances/' + name;
+                },
+                typeConflictResolver: (source: string[], target: string[]) => {
+                    return source.concat(target);
+                }
+            });
+
+            graph.addContext('http://example.org/hr', context);
+            graph.setPrefix('vocab', 'http://example.org/hr/classes/');
+            graph.setPrefix('hr', 'http://example.org/hr/instances/');
+
+            await graph.parse(document, { normalize: true});
+
+            const janed = graph.getVertex('hr:janed');
+            expect(janed!.isType('vocab:Person')).toEqual(true);
+            expect(janed!.isType('vocab:Manager')).toEqual(true);
+        });
+
         it('can load multiple references', async () => {
             const graph = new JsonldGraph();
             graph.addContext('http://example.org/hr', context);

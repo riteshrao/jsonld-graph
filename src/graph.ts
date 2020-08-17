@@ -50,6 +50,11 @@ export interface GraphOptions {
      * @memberof GraphOptions
      */
     blankIriResolver?: (vertex: Vertex) => string | undefined;
+    /**
+     * @description Conflict resolver that can resolve @type of anode being merged
+     * @memberof GraphOptions
+     */
+    typeConflictResolver?: (source: string[], target: string[]) => string[] | undefined;
 }
 
 /**
@@ -1080,6 +1085,33 @@ export default class JsonldGraph {
             } else {
                 // Copy over all attriutes and references from the blank node to the existing node.
                 const existing = this.getVertex(newIri)!;
+                const existingTypes = existing.getTypes().items();
+                const incomingTypes = vertex.getTypes().items();
+                if (existingTypes.length > 0 && incomingTypes.length > 0) {
+                    if (this._options.typeConflictResolver) {
+                        const resolvedTypes = this._options.typeConflictResolver(
+                            existingTypes.map(x => x.iri),
+                            incomingTypes.map(x => x.iri)
+                        );
+
+                        if (resolvedTypes !== undefined) {
+                            for (const existing of existingTypes) {
+                                existing.removeType(existing.iri);
+                            }
+
+                            for (const resolved of resolvedTypes) {
+                                existing.setType(resolved);
+                            }
+                        }
+                    } else {
+                        throw new errors.BlankIdNormalizationError(newIri, 
+                            `Found conflicting @type after normalizing blank id node.\n` +
+                            `Existing types: ${existingTypes.map(x => x.iri).join(',')},\n` +
+                            `Blank node types: ${incomingTypes.map(x => x.iri).join(',')}`);
+                    }
+                }
+
+
                 for (const attribute of vertex.getAttributes()) {
                     for (const value of attribute.values) {
                         existing.setAttributeValue(attribute.name, value.value, value.language, value.type === JsonldKeywords.json);
