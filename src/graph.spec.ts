@@ -1114,7 +1114,7 @@ describe('JsonldGraph', () => {
                             name: 'janed',
                             firstName: 'Jane',
                             lastName: 'Doe',
-                            
+
                         }
                     },
                     {
@@ -1127,7 +1127,7 @@ describe('JsonldGraph', () => {
                         }
                     }
                 ]
-                
+
             };
 
             const graph = new JsonldGraph({
@@ -1174,11 +1174,11 @@ describe('JsonldGraph', () => {
                             name: 'janed',
                             firstName: 'Jane',
                             lastName: 'Doe',
-                            
+
                         }
                     },
                     {
-                        '@type': 'Manager',
+                        '@type': ['Manager', 'Employee'],
                         name: 'janed',
                         address: {
                             street: 'Sunshine Street',
@@ -1196,7 +1196,9 @@ describe('JsonldGraph', () => {
                     return 'http://example.org/hr/instances/' + name;
                 },
                 typeConflictResolver: (source: string[], target: string[]) => {
-                    return source.concat(target);
+                    return source
+                        .filter(x => !x.includes('Employee'))
+                        .concat(target.filter(x => !x.includes('Employee')));
                 }
             });
 
@@ -1204,11 +1206,12 @@ describe('JsonldGraph', () => {
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
             graph.setPrefix('hr', 'http://example.org/hr/instances/');
 
-            await graph.parse(document, { normalize: true});
+            await graph.parse(document, { normalize: true });
 
             const janed = graph.getVertex('hr:janed');
             expect(janed!.isType('vocab:Person')).toEqual(true);
             expect(janed!.isType('vocab:Manager')).toEqual(true);
+            expect(janed!.isType('vocab:Employee')).toEqual(false);
         });
 
         it('can load multiple references', async () => {

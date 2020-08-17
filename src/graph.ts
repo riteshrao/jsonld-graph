@@ -1085,8 +1085,8 @@ export default class JsonldGraph {
             } else {
                 // Copy over all attriutes and references from the blank node to the existing node.
                 const existing = this.getVertex(newIri)!;
-                const existingTypes = existing.getTypes().items();
                 const incomingTypes = vertex.getTypes().items();
+                const existingTypes = existing.getTypes().items();
                 if (existingTypes.length > 0 && incomingTypes.length > 0) {
                     if (this._options.typeConflictResolver) {
                         const resolvedTypes = this._options.typeConflictResolver(
@@ -1095,8 +1095,8 @@ export default class JsonldGraph {
                         );
 
                         if (resolvedTypes !== undefined) {
-                            for (const existing of existingTypes) {
-                                existing.removeType(existing.iri);
+                            for (const existingType of existingTypes) {
+                                existing.removeType(existingType.iri);
                             }
 
                             for (const resolved of resolvedTypes) {
@@ -1108,6 +1108,10 @@ export default class JsonldGraph {
                             `Found conflicting @type after normalizing blank id node.\n` +
                             `Existing types: ${existingTypes.map(x => x.iri).join(',')},\n` +
                             `Blank node types: ${incomingTypes.map(x => x.iri).join(',')}`);
+                    }
+                } else if (existingTypes.length > 0 && incomingTypes.length === 0) {
+                    for (const existingType of existingTypes) {
+                        existing.setType(existingType);
                     }
                 }
 
@@ -1124,7 +1128,7 @@ export default class JsonldGraph {
                     }
                 }
 
-                for (const outgoing of vertex.getOutgoing()) {
+                for (const outgoing of vertex.getOutgoing().filter(x => x.iri !== JsonldKeywords.type)) {
                     if (!existing.hasOutgoing(outgoing.iri, outgoing.to)) {
                         existing.setOutgoing(outgoing.iri, outgoing.to)
                     }
