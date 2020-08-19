@@ -896,7 +896,7 @@ export default class JsonldGraph {
         this._prefixes.set(prefix, iri);
     }
 
-    async toExpanded(): Promise<any> {
+    toExpanded(): any {
         const expanded = []
 
         for (const v of this.getVertices()) {
