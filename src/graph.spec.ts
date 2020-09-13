@@ -1470,6 +1470,7 @@ describe('JsonldGraph', () => {
             instanceB.appendAttributeValue('test:displayName', 'second');
             instanceB.appendAttributeValue('test:description', 'test', 'en');
             instanceB.appendAttributeValue('test:description', 'test', 'fr');
+            instanceB.appendAttributeValue('test:json', 'test', undefined, true);
         });
 
         it('should throw when input arguments is invalid', () => {
@@ -1498,11 +1499,13 @@ describe('JsonldGraph', () => {
         it('should rename vertex to new id', () => {
             const v = graph.renameVertex('test:instanceB', 'test:instanceD');
             expect(v.id).toEqual('test:instanceD');
-            expect(v.getAttributes().count()).toEqual(2);
+            expect(v.getAttributes().count()).toEqual(3);
             expect(v.hasAttributeValue('test:displayName', 'first')).toEqual(true);
             expect(v.hasAttributeValue('test:displayName', 'second')).toEqual(true);
             expect(v.hasAttributeValue('test:description', 'test', 'en')).toEqual(true);
             expect(v.hasAttributeValue('test:description', 'test', 'en')).toEqual(true);
+            expect(v.hasAttributeValue('test:json', 'test')).toEqual(true);
+            expect(v.getAttributeValues('test:json').first().type).toEqual('@json');
             expect(v.hasOutgoing('test:out', 'test:instanceC')).toEqual(true);
             expect(v.hasIncoming('test:in', 'test:instanceA')).toEqual(true);
             expect(graph.hasVertex('test:instanceB')).toEqual(false);

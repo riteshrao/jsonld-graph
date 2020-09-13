@@ -845,7 +845,7 @@ export default class JsonldGraph {
         const renamed = this.createVertex(id);
         for (const attrib of target.getAttributes()) {
             for (const val of attrib.values) {
-                renamed.appendAttributeValue(attrib.name, val.value, val.language)
+                renamed.appendAttributeValue(attrib.name, val.value, val.language, val.type === '@json')
             }
         }
 
