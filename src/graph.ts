@@ -1009,7 +1009,27 @@ export default class JsonldGraph {
             }
         }
 
-        const vertex = this._getOrCreateVertex(id, ...types);
+        const vertex = this._getOrCreateVertex(id);
+        if (vertex.getTypes().count() > 0 && types.length > 0 && this._options.typeConflictResolver) {
+            // Existing type found with @types and new vertex also has types. Resolve the conflict.
+            const resolvedTypes = this._options.typeConflictResolver(
+                vertex.getTypes().map(x => x.iri).items(),
+                types
+            )
+
+            if (resolvedTypes !== undefined) {
+                for (const existingType of vertex.getTypes().items()) {
+                    vertex.removeType(existingType.iri);
+                }
+
+                for (const resolved of resolvedTypes) {
+                    vertex.setType(resolved);
+                }
+            }
+        } else if (types.length > 0) {
+            vertex.setType(...types);
+        }
+
         if (!vertex.getTypes().first()) {
             this._indexMap.get(JsonldGraph.IX_BLANK_TYPES)?.add(id)
         }
@@ -1104,7 +1124,7 @@ export default class JsonldGraph {
                             }
                         }
                     } else {
-                        throw new errors.BlankIdNormalizationError(newIri, 
+                        throw new errors.BlankIdNormalizationError(newIri,
                             `Found conflicting @type after normalizing blank id node.\n` +
                             `Existing types: ${existingTypes.map(x => x.iri).join(',')},\n` +
                             `Blank node types: ${incomingTypes.map(x => x.iri).join(',')}`);

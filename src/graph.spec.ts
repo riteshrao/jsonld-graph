@@ -1214,6 +1214,66 @@ describe('JsonldGraph', () => {
             expect(janed!.isType('vocab:Employee')).toEqual(false);
         });
 
+        it('can resolve conflicts on progressive loads', async () => {
+            const graph = new JsonldGraph({
+                typeConflictResolver: (source: string[], target: string[]) => {
+                    return source
+                        .filter(x => !x.includes('Employee'))
+                        .concat(target.filter(x => !x.includes('Employee')));
+                }
+            });
+
+            const doc1 = {
+                '@context': [
+                    { '@base': 'http://example.org/hr/instances/' },
+                    'http://example.org/hr'
+                ],
+                '@id': 'johnd',
+                firstName: 'John',
+                lastName: 'Doe',
+                address: {
+                    street: 'Sunshine Street',
+                    city: 'LA',
+                    state: 'CA',
+                    zip: '11111'
+                },
+                manager: {
+                    '@id': 'janed',
+                    '@type': 'Person',
+                    name: 'janed',
+                    firstName: 'Jane',
+                    lastName: 'Doe',
+                }
+            };
+
+            const doc2 = {
+                '@context': [
+                    { '@base': 'http://example.org/hr/instances/' },
+                    'http://example.org/hr'
+                ],
+                '@id': 'janed',
+                '@type': ['Manager', 'Employee'],
+                name: 'janed',
+                address: {
+                    street: 'Sunshine Street',
+                    city: 'LA',
+                    state: 'CA',
+                    zip: '11111'
+                }
+            }
+
+            graph.addContext('http://example.org/hr', context);
+            graph.setPrefix('vocab', 'http://example.org/hr/classes/');
+            graph.setPrefix('hr', 'http://example.org/hr/instances/');
+            await graph.parse(doc1, { normalize: true });
+            await graph.parse(doc2, { normalize: true });
+
+            const janed = graph.getVertex('hr:janed');
+            expect(janed!.isType('vocab:Person')).toEqual(true);
+            expect(janed!.isType('vocab:Manager')).toEqual(true);
+            expect(janed!.isType('vocab:Employee')).toEqual(false);
+        });
+
         it('can load multiple references', async () => {
             const graph = new JsonldGraph();
             graph.addContext('http://example.org/hr', context);
