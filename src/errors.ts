@@ -61,6 +61,18 @@ export class DuplicatePrefixIRIError extends GraphError {
 }
 
 /**
+ * @description Error thrown when an entity with the same @id is defined multiple times.
+ * @export
+ * @class DuplicateEntityDefinition
+ * @extends {GraphError}
+ */
+export class DuplicateEntityDefinition extends GraphError {
+    constructor(public readonly id: string) {
+        super(`Duplicate definition for ${id} found in input. Duplicate definitions with the same @id are not supported.`);
+    }
+}
+
+/**
  * @description Error thrown when an referenced context is not found.
  * @export
  * @class ContextNotFoundError

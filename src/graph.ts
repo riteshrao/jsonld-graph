@@ -92,6 +92,12 @@ export interface GraphLoadOptions {
      * @memberof GraphLoadOptions
      */
     identityTranslator?: (id: string) => string;
+    /**
+     * @description Set to true to only allow unique @id definitions.
+     * @type {boolean}
+     * @memberof GraphLoadOptions
+     */
+    unique?: boolean;
 }
 
 /**
@@ -112,11 +118,11 @@ export default class JsonldGraph {
     private static IX_BLANK_NODES = `[v]::BLANK_NODES`;
     private static IX_BLANK_TYPES = `[v]::BLANK_TYPES`;
 
-    private readonly _edges = new Map<string, Edge>();
-    private readonly _vertices = new Map<string, Vertex>();
-    private readonly _indexMap = new Map<string, Set<string>>();
-    private readonly _prefixes = new Map<string, string>();
-    private readonly _contexts = new Map<string, any>();
+    private _edges = new Map<string, Edge>();
+    private _vertices = new Map<string, Vertex>();
+    private _indexMap = new Map<string, Set<string>>();
+    private _prefixes = new Map<string, string>();
+    private _contexts = new Map<string, any>();
     private readonly _options: GraphOptions;
     private readonly _remoteLoader: Loader;
     private readonly _documentLoader: Loader;
@@ -421,6 +427,52 @@ export default class JsonldGraph {
     }
 
     /**
+     * @description Clones the graph entires into a new graph where all current entries are shared.
+     * @param {GraphOptions} [options={}]
+     * @returns {JsonldGraph}
+     * @memberof JsonldGraph
+     */
+    clone(options: GraphOptions = {}): JsonldGraph {
+        const edges = new Map<string, Edge>();
+        const vertices = new Map<string, Vertex>();
+        const indices = new Map<string, Set<string>>();
+        const prefixes = new Map<string, string>();
+        const contexts = new Map<string, any>();
+
+        for (const [iri, edge] of this._edges) {
+            edges.set(iri, edge);
+        }
+
+        for (const [iri, vertex] of this._vertices) {
+            vertices.set(iri, vertex);
+        }
+
+        for (const [iri, entries] of this._indexMap) {
+            const clonedEntries = new Set<string>();
+            for (const entry of entries) {
+                clonedEntries.add(entry);
+            }
+
+            indices.set(iri, clonedEntries);
+        }
+
+        for (const [prefix, iri] of this._prefixes) {
+            prefixes.set(prefix, iri);
+        }
+
+        for (const [iri, def] of this._contexts) {
+            contexts.set(iri, def);
+        }
+
+        const cloned = new JsonldGraph(options);
+        cloned._edges = edges;
+        cloned._vertices = vertices;
+        cloned._prefixes = prefixes;
+        cloned._contexts = contexts;
+        return cloned;
+    }
+
+    /**
      * @description Gets all the contexts associated with the graph.
      * @readonly
      * @type {Iterable<[string, any]>}
@@ -639,23 +691,24 @@ export default class JsonldGraph {
             throw new TypeError(`Invalid entities. entities is ${entities}`);
         }
 
+        const idTracker = new Set<string>();
         if (entities instanceof Array) {
             for (const entity of entities) {
                 if (entity['@graph']) {
                     for (const item of entity['@graph']) {
-                        this._loadVertex(item, options);
+                        this._loadVertex(item, idTracker, options);
                     }
                 } else {
-                    this._loadVertex(entity, options);
+                    this._loadVertex(entity, idTracker, options);
                 }
             }
         } else {
             if (entities['@graph']) {
                 for (const item of entities['@graph']) {
-                    this._loadVertex(item, options);
+                    this._loadVertex(item, idTracker, options);
                 }
             } else {
-                this._loadVertex(entities, options);
+                this._loadVertex(entities, idTracker, options);
             }
         }
     }
@@ -991,12 +1044,18 @@ export default class JsonldGraph {
         ];
     }
 
-    private _loadVertex(entity: any, options?: GraphLoadOptions): Vertex {
+    private _loadVertex(entity: any, idTracker: Set<string>, options?: GraphLoadOptions): Vertex {
         let id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${shortid()}`;
         const types: string[] = entity[JsonldKeywords.type] || [];
 
         if (id.startsWith(BlankNodePrefix)) {
             this._indexMap.get(JsonldGraph.IX_BLANK_NODES)?.add(id)
+        } else {
+            if (options?.unique && idTracker.has(id) && Object.keys(entity).length > 1) {
+                throw new errors.DuplicateEntityDefinition(id);
+            } else {
+                idTracker.add(id);
+            }
         }
 
         if (options?.identityTranslator) {
@@ -1035,7 +1094,7 @@ export default class JsonldGraph {
         }
 
         for (const key of Object.keys(entity).filter(x => x !== JsonldKeywords.id && x !== JsonldKeywords.type)) {
-            this._loadPredicate(key, entity[key], vertex, options);
+            this._loadPredicate(key, entity[key], vertex, idTracker, options);
         }
 
         return vertex;
@@ -1055,12 +1114,13 @@ export default class JsonldGraph {
         predicate: string,
         values: any[],
         vertex: Vertex,
+        idTracker: Set<string>,
         options?: GraphLoadOptions
     ): void {
         for (const value of values) {
             if (value[JsonldKeywords.list]) {
                 // Value is a list. Recurse over list and load individual values
-                this._loadPredicate(predicate, value[JsonldKeywords.list], vertex, options);
+                this._loadPredicate(predicate, value[JsonldKeywords.list], vertex, idTracker, options);
                 return;
             } else if (
                 value[JsonldKeywords.value] !== null &&
@@ -1085,7 +1145,7 @@ export default class JsonldGraph {
             } else {
                 // Either the value is an inline anonymous entity or a reference to another entity.
                 // In either case a vertex is created for the object and loaded.
-                const reference = this._loadVertex(value, options);
+                const reference = this._loadVertex(value, idTracker, options);
                 if (!this.hasEdge(predicate, vertex, reference)) {
                     this.createEdge(predicate, vertex, reference);
                 }
