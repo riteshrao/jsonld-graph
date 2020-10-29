@@ -1,6 +1,12 @@
 import JsonldGraph from './graph';
 import Vertex from './vertex';
 
+export interface SerializedEdge {
+    iri: string;
+    from: string;
+    to: string;
+}
+
 /**
  * @description Edge in a {@link JsonldGraph}
  * @export
@@ -57,5 +63,31 @@ export default class Edge {
      */
     get label(): string {
         return this._graph.compactIRI(this._iri);
+    }
+
+    /**
+     * @description Serializes the edge.
+     * @returns {SerializedEdge}
+     * @memberof Edge
+     */
+    serialize(): SerializedEdge {
+        return {
+            iri: this._iri,
+            from: this.from.iri,
+            to: this.to.iri
+        }
+    }
+
+    /**
+     * @description Deserializes an edge.
+     * @static
+     * @param {SerializedEdge} serialized The serialized representation of the edge to create the edge instance fro.
+     * @param {JsonldGraph} graph The graph to associate the edge with.
+     * @memberof Edge
+     */
+    static deserialize(serialized: SerializedEdge, graph: JsonldGraph) {
+        const fromV = graph.getVertex(serialized.from)!;
+        const toV = graph.getVertex(serialized.to)!;
+        return new Edge(serialized.iri, fromV, toV, graph);
     }
 }

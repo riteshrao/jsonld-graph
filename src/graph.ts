@@ -3,10 +3,10 @@ import * as jsonld from 'jsonld';
 import { RemoteDocument } from 'jsonld/jsonld-spec';
 import shortid from 'shortid';
 import { BlankNodePrefix, JsonldKeywords } from './constants';
-import Edge from './edge';
+import Edge, { SerializedEdge } from './edge';
 import * as errors from './errors';
 import * as formatter from './formatter';
-import Vertex from './vertex';
+import Vertex, { SerializedVertex } from './vertex';
 
 type Loader = (url: string) => Promise<RemoteDocument>;
 const PREFIX_REGEX = /^[a-zA-z][a-zA-Z0-9]*$/;
@@ -98,6 +98,12 @@ export interface GraphLoadOptions {
      * @memberof GraphLoadOptions
      */
     unique?: boolean;
+}
+
+export interface SerializedGraph {
+    vertices: SerializedVertex[];
+    edges: SerializedEdge[];
+    indices: Record<string, string[]>;
 }
 
 /**
@@ -424,52 +430,6 @@ export default class JsonldGraph {
         }
 
         return undefined;
-    }
-
-    /**
-     * @description Clones the graph entires into a new graph where all current entries are shared.
-     * @param {GraphOptions} [options={}]
-     * @returns {JsonldGraph}
-     * @memberof JsonldGraph
-     */
-    clone(options: GraphOptions = {}): JsonldGraph {
-        const edges = new Map<string, Edge>();
-        const vertices = new Map<string, Vertex>();
-        const indices = new Map<string, Set<string>>();
-        const prefixes = new Map<string, string>();
-        const contexts = new Map<string, any>();
-
-        for (const [iri, edge] of this._edges) {
-            edges.set(iri, edge);
-        }
-
-        for (const [iri, vertex] of this._vertices) {
-            vertices.set(iri, vertex);
-        }
-
-        for (const [iri, entries] of this._indexMap) {
-            const clonedEntries = new Set<string>();
-            for (const entry of entries) {
-                clonedEntries.add(entry);
-            }
-
-            indices.set(iri, clonedEntries);
-        }
-
-        for (const [prefix, iri] of this._prefixes) {
-            prefixes.set(prefix, iri);
-        }
-
-        for (const [iri, def] of this._contexts) {
-            contexts.set(iri, def);
-        }
-
-        const cloned = new JsonldGraph(options);
-        cloned._edges = edges;
-        cloned._vertices = vertices;
-        cloned._prefixes = prefixes;
-        cloned._contexts = contexts;
-        return cloned;
     }
 
     /**
@@ -947,6 +907,61 @@ export default class JsonldGraph {
         }
 
         this._prefixes.set(prefix, iri);
+    }
+
+    /**
+     * @description Serializes the graph.
+     * @returns {SerializedGraph}
+     * @memberof JsonldGraph
+     */
+    serialize(): SerializedGraph {
+        const serialized: SerializedGraph = {
+            vertices: [],
+            edges: [],
+            indices: {}
+        };
+
+        for (const [_, vertex] of this._vertices) {
+            serialized.vertices.push(vertex.serialize())
+        }
+
+        for (const [_, edge] of this._edges) {
+            serialized.edges.push(edge.serialize())
+        }
+
+        for (const [key, entries] of this._indexMap) {
+            serialized.indices[key] = [...entries];
+        }
+
+        return serialized;
+    }
+
+    /**
+     * @description Deserializes a graph.
+     * @static
+     * @param {SerializedGraph} serialized The serialized graph to deserialize.
+     * @returns {JsonldGraph}
+     * @memberof JsonldGraph
+     */
+    static deserialize(serialized: SerializedGraph): JsonldGraph {
+        const graph = new JsonldGraph();
+        for (const item of serialized.vertices) {
+            const vertex = Vertex.deserialize(item, graph);
+            graph._vertices.set(vertex.iri, vertex);
+        }
+        
+        for (const item of serialized.edges) {
+            const edge = Edge.deserialize(item, graph);
+            const edgeId = graph._formatEdgeId(edge.iri, edge.from.iri, edge.to.iri);
+            graph._edges.set(edgeId, edge);
+        }
+
+        for (const key of Object.keys(serialized.indices)) {
+            const entries = new Set<string>(serialized.indices[key]);
+            graph._indexMap.set(key, entries);
+        }
+
+        return graph;
     }
 
     toExpanded(): any {

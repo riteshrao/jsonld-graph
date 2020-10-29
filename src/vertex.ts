@@ -34,6 +34,11 @@ export interface AttributeValue<T = any> {
     value: T;
 }
 
+export interface SerializedVertex {
+    iri: string;
+    attributes: Record<string, AttributeValue[]>;
+}
+
 /**
  * @description Vertex in a graph.
  * @export
@@ -41,8 +46,8 @@ export interface AttributeValue<T = any> {
  */
 export default class Vertex {
     private _iri: string;
+    private _attributes: Record<string, AttributeValue[]> = {};
     private readonly _graph: JsonldGraph;
-    private readonly _attributes = new Map<string, AttributeValue[]>();
 
     /**
      * Creates an instance of Vertex.
@@ -127,16 +132,16 @@ export default class Vertex {
 
         const attributeIRI = this._graph.expandIRI(name);
         const type = isJson || typeof value === 'object' ? '@json' : undefined;
-        if (!this._attributes.has(attributeIRI)) {
-            this._attributes.set(attributeIRI, [
+        if (!this._attributes[attributeIRI]) {
+            this._attributes[attributeIRI] = [
                 {
                     value,
                     language,
                     type
                 }
-            ]);
+            ];
         } else {
-            const values = this._attributes.get(attributeIRI)!;
+            const values = this._attributes[attributeIRI]!;
             if (language) {
                 const existing = values.find(x => x.language === language);
                 if (existing) {
@@ -163,7 +168,7 @@ export default class Vertex {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
         }
 
-        this._attributes.delete(this._graph.expandIRI(name));
+        delete this._attributes[this._graph.expandIRI(name)];
         return this;
     }
 
@@ -191,7 +196,7 @@ export default class Vertex {
         }
 
         const attributeIRI = this._graph.expandIRI(name);
-        const values = this._attributes.get(attributeIRI);
+        const values = this._attributes[attributeIRI];
 
         if (!values || values.length === 0) {
             return this;
@@ -203,7 +208,7 @@ export default class Vertex {
                 values.splice(valueIndex, 1);
             }
         } else {
-            this._attributes.set(attributeIRI, values.filter(x => x.value !== value));
+            this._attributes[attributeIRI] = values.filter(x => x.value !== value);
         }
 
         return this;
@@ -215,13 +220,13 @@ export default class Vertex {
      * @memberof Vertex
      */
     getAttributes(): Iterable<{ id: string, name: string; values: AttributeValue[] }> {
-        return new Iterable(this._attributes.entries()).map(x => {
+        return new Iterable(Object.keys(this._attributes).map(key => {
             return {
-                id: x[0],
-                name: this._graph.compactIRI(x[0]),
-                values: x[1]
-            };
-        });
+                id: key,
+                name: this._graph.compactIRI(key),
+                values: this._attributes[key]
+            }
+        }));
     }
 
     /**
@@ -246,11 +251,11 @@ export default class Vertex {
         }
 
         const attributeIRI = this._graph.expandIRI(name);
-        if (!this._attributes.has(attributeIRI)) {
+        if (!this._attributes[attributeIRI]) {
             return undefined;
         }
 
-        const values = this._attributes.get(attributeIRI)!;
+        const values = this._attributes[attributeIRI]!;
         if (language) {
             return values.find(x => x.language === language)?.value;
         } else {
@@ -271,11 +276,11 @@ export default class Vertex {
         }
 
         const attributeIRI = this._graph.expandIRI(name);
-        if (!this._attributes.has(attributeIRI)) {
+        if (!this._attributes[attributeIRI]) {
             return Iterable.empty();
         }
 
-        return new Iterable(this._attributes.get(attributeIRI)!.values());
+        return new Iterable(this._attributes[attributeIRI]!.values());
     }
 
     /**
@@ -318,7 +323,7 @@ export default class Vertex {
             throw new ReferenceError(`Invalid name. name is '${name}'`);
         }
 
-        return this._attributes.has(this._graph.expandIRI(name));
+        return this._attributes[this._graph.expandIRI(name)] !== undefined;
     }
 
     /**
@@ -344,7 +349,7 @@ export default class Vertex {
         }
 
         const attributeIRI = this._graph.expandIRI(name);
-        const values = this._attributes.get(attributeIRI);
+        const values = this._attributes[attributeIRI];
         if (values) {
             return language
                 ? values.some(x => x.language === language && x.value === value)
@@ -538,16 +543,16 @@ export default class Vertex {
         }
 
         const attributeIRI = this._graph.expandIRI(name);
-        const values = this._attributes.get(attributeIRI);
+        const values = this._attributes[attributeIRI];
         const type = isJson || typeof value === 'object' ? '@json' : undefined;
         if (!values || !language) {
-            this._attributes.set(attributeIRI, [
+            this._attributes[attributeIRI] = [
                 {
                     value,
                     language,
                     type
                 }
-            ]);
+            ];
         } else if (language) {
             const langValue = values.find(x => x.language === language);
             if (langValue) {
@@ -707,5 +712,31 @@ export default class Vertex {
      */
     toRawExpanded(options?: formatter.ExpandFormatOptions): any {
         return formatter.expand(this, options);
+    }
+
+    /**
+     * @description Serializes the vertex.
+     * @returns {SerializedVertex}
+     * @memberof Vertex
+     */
+    serialize(): SerializedVertex {
+        return {
+            iri: this._iri,
+            attributes: this._attributes
+        }
+    }
+
+    /**
+     * @description Creates a vertex from a serialized input.
+     * @static
+     * @param {SerializedVertex} serialized The serialized input to create a vertex from.
+     * @param {JsonldGraph} graph The graph to associate the vertex with.
+     * @returns {Vertex}
+     * @memberof Vertex
+     */
+    static deserialize(serialized: SerializedVertex, graph: JsonldGraph): Vertex {
+        const vertex = new Vertex(serialized.iri, graph);
+        vertex._attributes = serialized.attributes;
+        return vertex;
     }
 }
