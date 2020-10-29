@@ -921,11 +921,11 @@ export default class JsonldGraph {
             indices: {}
         };
 
-        for (const [_, vertex] of this._vertices) {
+        for (const [, vertex] of this._vertices) {
             serialized.vertices.push(vertex.serialize())
         }
 
-        for (const [_, edge] of this._edges) {
+        for (const [, edge] of this._edges) {
             serialized.edges.push(edge.serialize())
         }
 
