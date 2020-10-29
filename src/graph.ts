@@ -943,8 +943,8 @@ export default class JsonldGraph {
      * @returns {JsonldGraph}
      * @memberof JsonldGraph
      */
-    static deserialize(serialized: SerializedGraph): JsonldGraph {
-        const graph = new JsonldGraph();
+    static deserialize(serialized: SerializedGraph, options?: GraphOptions): JsonldGraph {
+        const graph = new JsonldGraph(options);
         for (const item of serialized.vertices) {
             const vertex = Vertex.deserialize(item, graph);
             graph._vertices.set(vertex.iri, vertex);
