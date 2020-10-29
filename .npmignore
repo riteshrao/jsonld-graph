@@ -1,12 +1,11 @@
 /node_modules/
 /src/
+/lib/*.spec.js
 /coverage/
 /.nyc_output/
 /*.tgz
 /tsconfig.json
-/tslint.json
-/wallaby.js
 /src/
 /sample/
 /test/
-/types/
+/.github/

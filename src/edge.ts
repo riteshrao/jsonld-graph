@@ -1,119 +1,93 @@
-import GraphIndex, { IndexEdge } from './graphIndex';
+import JsonldGraph from './graph';
 import Vertex from './vertex';
 
-/**
- * @description Edge selector function.
- * @export
- * @interface EdgeSelector
- */
-export interface EdgeSelector {
-    (edge: Edge): boolean;
+export interface SerializedEdge {
+    iri: string;
+    from: string;
+    to: string;
 }
 
 /**
- * @description Edge filter type that can be used to match edges based on a supplied filter.
+ * @description Edge in a {@link JsonldGraph}
  * @export
- * @class EdgeFilter
+ * @class GraphEdge
  */
-export class EdgeFilter {
-    private readonly _filter: string | EdgeSelector;
+export default class Edge {
+    private readonly _iri: string;
+    private readonly _graph: JsonldGraph;
 
     /**
-     * @description Creates an instance of EdgeFilter.
-     * @param {(string | types.EdgeSelector)} filter The filter definition to use.
-     * @memberof EdgeFilter
-     */
-    constructor(filter?: string | EdgeSelector) {
-        this._filter = filter;
-    }
-
-    /**
-     * @description Checks if the configured filter matches the specified edge.
-     * @param {Edge} edge The edge to match.
-     * @returns
-     * @memberof EdgeFilter
-     */
-    match(edge: Edge) {
-        if (!this._filter) {
-            return true;
-        }
-
-        if (typeof this._filter === 'string') {
-            return edge.label === this._filter;
-        }
-
-        return this._filter(edge);
-    }
-}
-
-/**
- * @description Represents an edge in the graph with outgoing and incoming vertex references.
- * @export
- * @class Edge
- */
-export class Edge {
-    private readonly _graphEdge: IndexEdge;
-    private readonly _index: GraphIndex;
-
-    /**
-     * @description Creates an instance of Edge.
-     * @param {IndexEdge} indexEdge The edge index this edge wraps.
+     * Creates an instance of Edge.
+     * @param {string} iri The IRI of the edge.
+     * @param {V} from The outgoing vertex.
+     * @param {V} to The incoming vertex.
      * @memberof Edge
      */
-    constructor(indexEdge: IndexEdge, index: GraphIndex) {
-        if (!indexEdge) {
-            throw new ReferenceError(`Invalid graphEdge. graphEdge is ${indexEdge}`);
+    constructor(
+        iri: string,
+        public readonly from: Vertex,
+        public readonly to: Vertex,
+        graph: JsonldGraph) {
+        if (!iri) {
+            throw new ReferenceError(`Invalid label. label is '${iri}'`);
+        }
+        if (!from) {
+            throw new ReferenceError(`Invalid from vertex. from vertex is ${from}`);
+        }
+        if (!to) {
+            throw new ReferenceError(`Invalid to vertex. to vertex is ${to}`);
+        }
+        if (!graph) {
+            throw new ReferenceError(`Invalid json`)
         }
 
-        if (!index) {
-            throw new ReferenceError(`Invalid `);
-        }
-
-        this._graphEdge = indexEdge;
-        this._index = index;
+        this._iri = iri;
+        this._graph = graph;
     }
 
     /**
-     * @description Gets the id of the edge.
+     * @description Gets the fully qualified IRI of the edge.
      * @readonly
-     * @returns {string}
+     * @type {string}
      * @memberof Edge
      */
-    get id(): string {
-        return this._graphEdge.id;
+    get iri(): string {
+        return this._iri;
     }
 
     /**
-     * @description Gets the edge label.
+     * @description Gets the compact edge label. If no configured prefix is found, the fully qualified IRI of the edge is returned.
      * @readonly
      * @type {string}
      * @memberof Edge
      */
     get label(): string {
-        return this._graphEdge.label;
+        return this._graph.compactIRI(this._iri);
     }
 
     /**
-     * @description Gets the reference to the outgoing vertex.
-     * @readonly
-     * @type {Vertex}
+     * @description Serializes the edge.
+     * @returns {SerializedEdge}
      * @memberof Edge
      */
-    get fromVertex(): Vertex {
-        const node = this._index.getNode(this._graphEdge.fromNodeId);
-        return new Vertex(node, this._index);
+    serialize(): SerializedEdge {
+        return {
+            iri: this._iri,
+            from: this.from.iri,
+            to: this.to.iri
+        }
     }
 
     /**
-     * @description Gets the reference to the incoming vertex.
-     * @readonly
-     * @type {Vertex}
+     * @description Deserializes an edge.
+     * @static
+     * @param {SerializedEdge} serialized The serialized representation of the edge to create the edge instance fro.
+     * @param {JsonldGraph} graph The graph to associate the edge with.
      * @memberof Edge
      */
-    get toVertex(): Vertex {
-        const node = this._index.getNode(this._graphEdge.toNodeId);
-        return new Vertex(node, this._index);
+    static deserialize(serialized: SerializedEdge, graph: JsonldGraph) {
+        const fromV = graph.getVertex(serialized.from)!;
+        const toV = graph.getVertex(serialized.to)!;
+        return new Edge(serialized.iri, fromV, toV, graph);
     }
 }
-
-export default Edge;

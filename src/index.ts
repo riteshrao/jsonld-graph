@@ -1,9 +1,6 @@
-import JsonldGraph from './graph';
-
-export * from './constants';
-export * from './edge';
 export * from './errors';
-export * from './graph';
-export * from './vertex';
+export { default as Edge } from './edge';
+export { default as JsonldGraph } from './graph';
+export { default as Vertex } from './vertex';
+export { ExpandFormatOptions, JsonFormatOptions, ExpandedEntity } from './formatter'
 
-export default JsonldGraph;

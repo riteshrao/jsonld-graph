@@ -1,286 +1,454 @@
 import Iterable from 'jsiterable';
-
 import { BlankNodePrefix, JsonldKeywords } from './constants';
-import GraphIndex, { IndexNode, AttributeValue } from './graphIndex';
-import JsonFormatOptions from './formatOptions';
+import Edge from './edge';
+import * as errors from './errors';
+import * as formatter from './formatter';
+import JsonldGraph from './graph';
+
+type VertexSelector = (v: Vertex) => boolean;
 
 /**
- * @description Vertex selector function.
+ * @description Attribute value type.
  * @export
- * @interface VertexSelector
+ * @interface AttributeValue
+ * @template T
  */
-export interface VertexSelector {
-    (vertex: Vertex): boolean;
+export interface AttributeValue<T = any> {
+    /**
+     * @description Optional @language discriptor of the attribute.
+     * @type {string}
+     * @memberof AttributeValue
+     */
+    language?: string;
+    /**
+     * @description Optional @type discriptor of the attribute.
+     * @type {string}
+     * @memberof AttributeValue
+     */
+    type?: string;
+    /**
+     * @description The attribute value.
+     * @type {T}
+     * @memberof AttributeValue
+     */
+    value: T;
+}
+
+export interface SerializedVertex {
+    iri: string;
+    attributes: Record<string, AttributeValue[]>;
 }
 
 /**
- * @description Vertex filter type that can be used to match vertices based on a supplied filter.
- * @export
- * @class VertexFilter
- */
-export class VertexFilter {
-    private readonly _selector: string | VertexSelector;
-
-    /**
-     * @description Creates an instance of VertexFilter.
-     * @param {(string | types.VertexSelector)} selector The filter definition to use.
-     * @memberof VertexFilter
-     */
-    constructor(selector?: string | VertexSelector) {
-        this._selector = selector;
-    }
-
-    /**
-     * @description Checks if the filter matches the specified vertex.
-     * @param {Vertex} vertex The vertex to check.
-     * @returns {boolean} True if the vertex is a match, else false.
-     * @memberof VertexFilter
-     */
-    match(vertex: Vertex): boolean {
-        if (!this._selector) {
-            return true;
-        }
-
-        if (typeof this._selector === 'string') {
-            return vertex.id === this._selector;
-        }
-
-        return this._selector(vertex);
-    }
-}
-
-/**
- * @description Represents a vertex in the graph.
+ * @description Vertex in a graph.
  * @export
  * @class Vertex
  */
-export class Vertex {
-    private _node: IndexNode;
-    private readonly _index: GraphIndex;
+export default class Vertex {
+    private _iri: string;
+    private _attributes: Record<string, AttributeValue[]> = {};
+    private readonly _graph: JsonldGraph;
 
     /**
-     * @description Creates an instance of Vertex.
-     * @param {GraphNode} node The graph node this vertex wraps.
+     * Creates an instance of Vertex.
+     * @param {string} iri The IRI of the vertex.
+     * @param {JsonldGraph} graph The graph containng the vertex instance.
      * @memberof Vertex
      */
-    constructor(node: IndexNode, index: GraphIndex) {
-        if (!node) {
-            throw new ReferenceError(`Invalid node. node is ${node}`);
+    constructor(iri: string, graph: JsonldGraph) {
+        if (!iri) {
+            throw new ReferenceError(`Invalid id. id is '${iri}'`);
+        }
+        if (!graph) {
+            throw new ReferenceError(`Invalid graph. graph is '${graph}'`);
         }
 
-        if (!index) {
-            throw new ReferenceError(`Invalid index. index is ${index}`);
-        }
-
-        this._node = node;
-        this._index = index;
+        this._iri = iri;
+        this._graph = graph;
     }
 
     /**
-     * @description Gets the id of the vertex.
+     * @description Gets the fully qualified IRI of the vertex.
+     * @readonly
      * @type {string}
      * @memberof Vertex
      */
-    get id(): string {
-        return this._node.id;
+    get iri(): string {
+        return this._iri;
     }
 
     /**
-     * @description Sets the id of the vertex.
-     * @memberof Vertex
-     */
-    set id(id: string) {
-        this._node.id = id;
-    }
-
-    /**
-     * @description Gets all attributes defined in the vertex.
+     * @description Gets the compact id of the vertex. If no configured prefix is found, the full qualified IRI is returned.
      * @readonly
-     * @type {Iterable<[string, any]>}
-     * @memberof Vertex
+     * @type {string}
+     * @memberof Node
      */
-    get attributes(): Iterable<[string, AttributeValue[]]> {
-        return this._node.attributes;
+    get id(): string {
+        return this._graph.compactIRI(this._iri);
     }
 
     /**
-     * @description Returns true if the vertex is a blank node, else false.
+     * @description Returns true if the node is a blank node, else false.
      * @readonly
      * @type {boolean}
      * @memberof Vertex
      */
     get isBlankNode(): boolean {
-        return this._node.id.startsWith(BlankNodePrefix);
+        return this._iri.startsWith(BlankNodePrefix);
     }
 
     /**
-     * @description Gets all vertices that have a @type outgoing edge to this vertex.
+     * @description Returns the graph associated with the vertex.
      * @readonly
-     * @type {Iterable<Vertex>}
+     * @type {JsonldGraph}
      * @memberof Vertex
      */
-    get instances(): Iterable<Vertex> {
-        return this.getIncoming(JsonldKeywords.type).map(({ fromVertex }) => fromVertex);
+    get graph(): JsonldGraph {
+        return this._graph;
     }
 
     /**
-     * @description Gets metadata stored for the vertex.
-     * @readonly
-     * @type {*}
-     * @memberof Vertex
-     */
-    get metadata(): any {
-        return this._node.metadata;
-    }
-
-    /**
-     * @description Gets all vertices that this vertex is a @type of.
-     * @readonly
-     * @type {Iterable<Vertex>}
-     * @memberof Vertex
-     */
-    get types(): Iterable<Vertex> {
-        return this.getOutgoing(JsonldKeywords.type).map(({ toVertex }) => toVertex);
-    }
-
-    /**
-     * @description Adds an attribute value.
-     * @param {string} name The name of the attribute.
-     * @param {*} value The value to add.
-     * @param {string} language The language the add an attribute value.
+     * @description Appends an attribute vlaue.
+     * @param {string} name The name of the attribute to which the value is appended.
+     * @param {*} value The value to append.
+     * @param {string} [language] Optional language identifier for string values.
      * @returns {this}
      * @memberof Vertex
      */
-    addAttributeValue(name: string, value: any, language?: string): this {
-        this._node.addAttributeValue(name, value, language);
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    appendAttributeValue(name: string, value: any, language?: string, isJson: boolean = false): this {
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is '${name}'`);
+        }
+        if (value === null || value === undefined) {
+            throw new ReferenceError(`Invalid value. value is '${value}'`);
+        }
+
+        if (language && typeof value !== 'string') {
+            throw new TypeError(
+                `Invalid value. Language speciifc attribute values must be strings. Found type ${typeof value}`
+            );
+        }
+
+        const attributeIRI = this._graph.expandIRI(name);
+        const type = isJson || typeof value === 'object' ? '@json' : undefined;
+        if (!this._attributes[attributeIRI]) {
+            this._attributes[attributeIRI] = [
+                {
+                    value,
+                    language,
+                    type
+                }
+            ];
+        } else {
+            const values = this._attributes[attributeIRI]!;
+            if (language) {
+                const existing = values.find(x => x.language === language);
+                if (existing) {
+                    existing.value = value;
+                } else {
+                    values.push({ value, language });
+                }
+            } else {
+                values.push({ value });
+            }
+        }
+
         return this;
     }
 
     /**
-     * @description Deletes a specific attribute of the vertex.
-     * @param {string} name The attribute name to delete.
-     * @param {string} [language] The optional language whose value should be deleted.
+     * @description Deletes an attribute.
+     * @param {string} name The name of the attribute to delete.
      * @returns {this}
      * @memberof Vertex
      */
-    deleteAttribute(name: string, language?: string): this {
-        this._node.deleteAttribute(name, language);
+    deleteAttribute(name: string): this {
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is '${name}'`);
+        }
+
+        delete this._attributes[this._graph.expandIRI(name)];
         return this;
+    }
+
+    /**
+     * @description Deletes a specific value of an attribute.
+     * @param {string} name The attribute whose value should be deleted.
+     * @param {*} value The value to delete.
+     * @returns {this}
+     * @memberof Vertex
+     */
+    deleteAttributeValue(name: string, value: any): this;
+    deleteAttributeValue(name: string, value: string, language: string): this;
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    deleteAttributeValue(name: string, value: any, language?: string): this {
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is '${name}'`);
+        }
+        if (value === null || value === undefined) {
+            throw new ReferenceError(`Invalid value. value is '${value}'`);
+        }
+        if (language && typeof language !== 'string') {
+            throw new TypeError(
+                `Invalid value. Language speciifc attribute values must be strings. Found type ${typeof value}`
+            );
+        }
+
+        const attributeIRI = this._graph.expandIRI(name);
+        const values = this._attributes[attributeIRI];
+
+        if (!values || values.length === 0) {
+            return this;
+        }
+
+        if (language) {
+            const valueIndex = values.findIndex(x => x.value === value && x.language === language);
+            if (valueIndex > -1) {
+                values.splice(valueIndex, 1);
+            }
+        } else {
+            this._attributes[attributeIRI] = values.filter(x => x.value !== value);
+        }
+
+        return this;
+    }
+
+    /**
+     * @description Gets all attributes of the vertex.
+     * @returns {Iterable<[string, AttributeValue[]]>}
+     * @memberof Vertex
+     */
+    getAttributes(): Iterable<{ id: string, name: string; values: AttributeValue[] }> {
+        return new Iterable(Object.keys(this._attributes).map(key => {
+            return {
+                id: key,
+                name: this._graph.compactIRI(key),
+                values: this._attributes[key]
+            }
+        }));
     }
 
     /**
      * @description Gets the value of an attribute.
-     * @template T
-     * @param {string} name The attribute label to get.
-     * @param {string} [language] Optional localized language of the value.
-     * @returns {T}
+     * @template T The data type of the value.
+     * @param {string} name The name of the attribute whose value is fetched.
+     * @returns {T} The first value of the attribute.
      * @memberof Vertex
      */
-    getAttributeValue<T = string>(name: string, language?: string): T {
-        const values = this._node.getAttributeValues<T>(name);
-        if (!values || values.length === 0) {
+    getAttributeValue<T = any>(name: string): T;
+    /**
+     * @description Gets the value of an attribute.
+     * @param {string} name The name of the attribute whose value is retrieved.
+     * @param {string} language The language identifier of the value to get.
+     * @returns {string} The first value of the attribute.
+     * @memberof Vertex
+     */
+    getAttributeValue(name: string, language: string): string;
+    getAttributeValue<T = any>(name: string, language?: string): T | undefined {
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is '${name}'`);
+        }
+
+        const attributeIRI = this._graph.expandIRI(name);
+        if (!this._attributes[attributeIRI]) {
             return undefined;
         }
 
+        const values = this._attributes[attributeIRI]!;
         if (language) {
-            const localizedValue = values.find(x => x.language === language);
-            return localizedValue ? localizedValue.value : undefined;
+            return values.find(x => x.language === language)?.value;
         } else {
-            return values[0].value;
+            return values[0]?.value;
         }
     }
 
     /**
-     * @description Gets all values set for an attribute.
-     * @template T
+     * @description Gets all values of a specific attribute.
+     * @template T The data type of the attribute.
      * @param {string} name
-     * @param {string} [language]
-     * @returns {T[]}
+     * @returns {Iterable<AttributeValue<T>>}
      * @memberof Vertex
      */
-    getAttributeValues<T = string>(name: string): AttributeValue<T>[] {
-        return this._node.getAttributeValues<T>(name);
+    getAttributeValues<T = any>(name: string): Iterable<AttributeValue<T>> {
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is '${name}'`);
+        }
+
+        const attributeIRI = this._graph.expandIRI(name);
+        if (!this._attributes[attributeIRI]) {
+            return Iterable.empty();
+        }
+
+        return new Iterable(this._attributes[attributeIRI]!.values());
     }
 
     /**
-     * @description Gets all incoming vertices to this vertex.
-     * @param {string} [edgeLabel] Optional edge label used to filter matching vertices with incoming edges with the specified label.
-     * @returns {Iterable<{ label: string, fromVertex: Vertex }>}
+     * @description Gets all vertices that have an outgoing edge to this vertex.
+     * @param {string} [label] Optional edge label used to filter edges with the specifed label.
+     * @returns {Iterable<{ label: string; fromVertex: types.Vertex }>}
      * @memberof Vertex
      */
-    getIncoming(edgeLabel?: string): Iterable<{ label: string; fromVertex: Vertex }> {
-        return new Iterable(this._index.getNodeIncoming(this._node.id, edgeLabel)).map(({ edge, node }) => {
-            return {
-                label: edge.label,
-                fromVertex: new Vertex(node, this._index)
-            };
-        });
+    getIncoming(label?: string): Iterable<Edge> {
+        return this._graph.getIncomingEdges(this._iri, label);
     }
 
     /**
-     * @description Gets all outgoing vertices from this vertex.
-     * @param {string} [edgeLabel] Optional edge label used to filter matching vertices with outgoing edges with the specified label.
-     * @returns {Iterable<{ label: string, toVertex: Vertex }>}
+     * @description Gets all vertices that this vertex has an outgoing edge to.
+     * @param {string} [label] Optional edge label used to filter edges with the specified label.
+     * @returns {Iterable<{ label: string; toVertex: types.Vertex }>}
      * @memberof Vertex
      */
-    getOutgoing(edgeLabel?: string): Iterable<{ label: string; toVertex: Vertex }> {
-        return new Iterable(this._index.getNodeOutgoing(this._node.id, edgeLabel)).map(({ edge, node }) => {
-            return {
-                label: edge.label,
-                toVertex: new Vertex(node, this._index)
-            };
-        });
+    getOutgoing(label?: string): Iterable<Edge> {
+        return this._graph.getOutgoingEdges(this._iri, label);
+    }
+
+    /**
+     * @description Gets the type vertices of this vertex instnace.
+     * @returns {Iterable<Vertex>}
+     * @memberof Vertex
+     */
+    getTypes(): Iterable<Vertex> {
+        return this._graph.getOutgoingEdges(this._iri, JsonldKeywords.type).map(x => x.to);
     }
 
     /**
      * @description Checks if an attribute has been defined on the vertex.
-     * @param {string} name The name of the attribute to check.
-     * @returns {boolean} True if the attribute has been defined, else false.
+     * @param {string} name The name or IRI of the attribute to check.
+     * @returns {boolean} True if the attribute exists, else false.
      * @memberof Vertex
      */
     hasAttribute(name: string): boolean {
-        return this._node.hasAttribute(name);
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is '${name}'`);
+        }
+
+        return this._attributes[this._graph.expandIRI(name)] !== undefined;
     }
 
     /**
-     * @description Checks if an attribute exists and if has the specified value.
-     * @param {string} name The name of the attribute to check.
-     * @param {*} value The value of the attribute to check.
+     * @description Checks if an attribute with the specific value exists.
+     * @param {string} name The name or IRI of the attribute to check.
+     * @param {*} value The specific value to check.
+     * @param {string} [language] Optional locale when specified only checks if the value exists for the specified locale.
      * @returns {boolean} True if the value exists, else false.
      * @memberof Vertex
      */
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     hasAttributeValue(name: string, value: any, language?: string): boolean {
-        return this._node.hasAttributeValue(name, value, language);
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is '${name}'`);
+        }
+        if (value === null || value === undefined) {
+            throw new ReferenceError(`Invalid value. value is '${value}'`);
+        }
+        if (language && typeof value !== 'string') {
+            throw new TypeError(
+                `Invalid value. Language speciifc attribute values must be strings. Found type ${typeof value}`
+            );
+        }
+
+        const attributeIRI = this._graph.expandIRI(name);
+        const values = this._attributes[attributeIRI];
+        if (values) {
+            return language
+                ? values.some(x => x.language === language && x.value === value)
+                : values.some(x => x.value === value);
+        } else {
+            return false;
+        }
     }
 
     /**
-     * @description Checks if the vertex is of a specific @type.
-     * @param {string} typeId The type id to check for.
-     * @returns {boolean} True if the vertex has a @type outgoing edge to the specified type id, else false.
+     * @description Checks if the vertex has an incoming edge with the specified label.
+     * @param {string} label The label of the edge to check.
+     * @param {(Vertex | string)} [vertex] Optional. When specified only checks for incoming edges from the specified vertex instance or IRI.
+     * @returns {boolean} True if an edge is found, else false.
+     * @memberof Vertex
+     */
+    hasIncoming(label?: string, vertex?: Vertex | string): boolean {
+        if (!label) {
+            return !!this._graph.getIncomingEdges(this._iri).first();
+        } else {
+            let edges = this._graph.getIncomingEdges(this._iri, label);
+            if (vertex) {
+                const inIRI =
+                    typeof vertex === 'string'
+                        ? this._graph.expandIRI(vertex)
+                        : vertex.iri;
+
+                edges = edges.filter(x => x.from.iri === inIRI);
+            }
+            return !!edges.first();
+        }
+    }
+
+    /**
+     * @description Checks if the vertex has an outgoing edge with the specified label.
+     * @param {string} [label] The label of the edge to check.
+     * @param {(Vertex | string)} [vertex] Optional. When specified only checks for outgoing edges to the specified vertex instance or IRI.
+     * @returns {boolean}
+     * @memberof Vertex
+     */
+    hasOutgoing(label?: string, vertex?: Vertex | string): boolean {
+        if (!label) {
+            return !!this._graph.getOutgoingEdges(this._iri).first();
+        } else {
+            let edges = this._graph.getOutgoingEdges(this._iri, this._graph.expandIRI(label));
+            if (vertex) {
+                const outIRI =
+                    typeof vertex === 'string'
+                        ? this._graph.expandIRI(vertex)
+                        : vertex.iri;
+
+                edges = edges.filter(x => x.to.iri === outIRI);
+            }
+            return !!edges.first();
+        }
+    }
+
+    /**
+     * @description Checks if the vertex is of a specified type.
+     * @param {string} typeId The id of the type.
+     * @returns {boolean} True if the vertex has an outgoing @type relationship to the specified type vertex.
      * @memberof Vertex
      */
     isType(typeId: string): boolean {
         if (!typeId) {
-            throw new ReferenceError(`Invalid typeId. typeId is ${typeId}`);
+            throw new ReferenceError(`Invalid typeId. typeId is '${typeId}'`);
         }
 
-        return [...this.types.filter(x => x.id === typeId)].length === 1;
+        const typeIRI = this._graph.expandIRI(typeId);
+        return this.getTypes().some(x => x.iri === typeIRI);
     }
 
     /**
      * @description Removes incoming edges.
-     * @param {string} [edgeLabel] Optional edge label used to remove only matching edges.
-     * @param {(string | VertexSelector)} [selector] Optional vertex selector used to remove only matching vertices.
+     * @param {string} [label] Optional label filter to only remove edges with the specified label.
+     * @param {(string | types.VertexSelector<this>)} [filter] Optional vertex filter to only remove edges that satisfy the filter.
      * @returns {this}
      * @memberof Vertex
      */
-    removeIncoming(edgeLabel?: string, selector?: string | VertexSelector): this {
-        const filter = new VertexFilter(selector);
-        for (const { edge, node } of this._index.getNodeIncoming(this._node.id, edgeLabel)) {
-            const outgoingVertex = new Vertex(node, this._index);
-            if (filter.match(outgoingVertex)) {
-                this._index.removeEdge(edge);
-            }
+    removeIncoming(label?: string, filter?: string): this
+    removeIncoming(label?: string, filter?: VertexSelector): this
+    removeIncoming(label?: string, filter?: string | VertexSelector): this {
+        let edges = this._graph.getIncomingEdges(this._iri);
+        if (label) {
+            const edgeIRI = this._graph.expandIRI(label);
+            edges = edges.filter(x => x.iri === edgeIRI);
+        }
+
+        if (filter && typeof filter === 'string') {
+            const fromIRI = this._graph.expandIRI(filter);
+            edges = edges.filter(x => x.from.iri === fromIRI);
+        }
+
+        if (filter && typeof filter === 'function') {
+            edges = edges.filter(x => filter(x.from));
+        }
+
+        for (const edge of edges) {
+            this._graph.removeEdge(edge);
         }
 
         return this;
@@ -288,152 +456,287 @@ export class Vertex {
 
     /**
      * @description Removes outgoing edges.
-     * @param {string} [edgeLabel] Optional edge label used to remove only matching edges.
-     * @param {(string | VertexSelector)} [selector] Optional vertex selector used to remove only matching vertices.
+     * @param {string} [label] Optional label filter to only remove edges with the specified label.
+     * @param {(string | types.VertexSelector<this>)} [filter] Optional vertex filter to only remove edges that satisfy the filter.
      * @returns {this}
      * @memberof Vertex
      */
-    removeOutgoing(edgeLabel?: string, selector?: string | VertexSelector): this {
-        const filter = new VertexFilter(selector);
-        for (const { edge, node } of this._index.getNodeOutgoing(this._node.id, edgeLabel)) {
-            const incomingVertex = new Vertex(node, this._index);
-            if (filter.match(incomingVertex)) {
-                this._index.removeEdge(edge);
-            }
+    removeOutgoing(label?: string, filter?: string): this
+    removeOutgoing(label?: string, filter?: VertexSelector): this
+    removeOutgoing(label?: string, filter?: string | VertexSelector): this {
+        let edges = this._graph.getOutgoingEdges(this._iri);
+        if (label) {
+            const edgeIRI = this._graph.expandIRI(label);
+            edges = edges.filter(x => x.iri === edgeIRI);
+        }
+
+        if (filter && typeof filter === 'string') {
+            const fromIRI = this._graph.expandIRI(filter);
+            edges = edges.filter(x => x.to.iri === fromIRI);
+        }
+
+        if (filter && typeof filter === 'function') {
+            edges = edges.filter(x => filter(x.to));
+        }
+
+        for (const edge of edges) {
+            this._graph.removeEdge(edge);
         }
 
         return this;
     }
 
     /**
-     * @description Removes one or more @type edges.
-     * @param {...string[]} typeIds One or more type ids to remove.
+     * @description Removes type
+     * @param {...string[]} typeIds
      * @returns {this}
      * @memberof Vertex
      */
     removeType(...typeIds: string[]): this {
         if (!typeIds || typeIds.length === 0) {
-            for (const typeEdge of this.getOutgoing(JsonldKeywords.type)) {
-                this.removeOutgoing(JsonldKeywords.type, typeEdge.toVertex.id);
+            return this;
+        }
+
+        const typeIRIs = typeIds.map(x => this._graph.expandIRI(x));
+        const outgoingTypes = this._graph.getOutgoingEdges(this._iri, JsonldKeywords.type);
+        for (const typeEdge of outgoingTypes) {
+            if (typeIRIs.some(x => x === typeEdge.to.iri)) {
+                this._graph.removeEdge(typeEdge);
             }
-        } else {
-            for (const typeId of typeIds) {
-                this.removeOutgoing(JsonldKeywords.type, typeId);
+        }
+
+        return this;
+    }
+
+    /**
+     * @description Sets an attribute value, replacing any existing value(s)
+     * @param {string} name The name of the attribute to set.
+     * @param {*} value The value of the attribute to set.
+     * @returns {this}
+     * @memberof Vertex
+     */
+    setAttributeValue(name: string, value: any): this;
+    /**
+     * @description Sets an attribute value, replacing any existing value(s).
+     * @param {string} name The name of the attribute value
+     * @param {string} value The value to set.
+     * @param {string} language The locale of the value.
+     * @returns {this}
+     * @memberof Vertex
+     */
+    setAttributeValue(name: string, value: string, language: string): this;
+    setAttributeValue(name: string, value: any, language?: string | undefined, isJson?: boolean | undefined): this;
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    setAttributeValue(name: string, value: any, language?: string, isJson: boolean = false): this {
+        if (!name) {
+            throw new ReferenceError(`Invalid name. name is '${name}'`);
+        }
+
+        if (value === null || value === undefined) {
+            throw new ReferenceError(`Invalid value. value cannot be ${value}`);
+        }
+
+        if (language && value && typeof value !== 'string') {
+            throw new TypeError(
+                `Invalid value. Language speciifc attribute values must be strings. Found type ${typeof value}`
+            );
+        }
+
+        const attributeIRI = this._graph.expandIRI(name);
+        const values = this._attributes[attributeIRI];
+        const type = isJson || typeof value === 'object' ? '@json' : undefined;
+        if (!values || !language) {
+            this._attributes[attributeIRI] = [
+                {
+                    value,
+                    language,
+                    type
+                }
+            ];
+        } else if (language) {
+            const langValue = values.find(x => x.language === language);
+            if (langValue) {
+                langValue.value = value;
+            } else {
+                values.push({
+                    value,
+                    language,
+                    type
+                });
             }
         }
 
         return this;
     }
 
-    /**
-     * @description Replaces an attribute value.
-     * @param {string} name The attribute name whose value should be replaced.
-     * @param {*} value The value to replace.
-     * @returns {this}
-     * @memberof Vertex
-     */
-    replaceAttributeValue(name: string, value: any, language?: string): this {
-        this._node.setAttributeValue(name, value, language);
-        return this;
-    }
-
-    /**
-     * @description Removes an attribute value.
-     * @param {string} name The attribute name whose value should be removed.
-     * @param {*} value The value to remove.
-     * @returns {this}
-     * @memberof Vertex
-     */
-    removeAttributeValue(name: string, value: any): this {
-        this._node.removeAttributeValue(name, value);
-        return this;
-    }
-
-    /**
-     * @description Sets an incoming relationship to another vertex.
-     * @param {string} label The label of the incoming edge relationship.
-     * @param {string} fromVertexId Id of the vertex to set the incoming relationship from.
-     * @param {boolean} [createIfNotExists=false] True to create the incoming vertex if it doesn't exist. If false and the vertex is not found, a VertexNotFoundError is thrown.
-     * @returns {this}
-     * @memberof Vertex
-     */
-    setIncoming(label: string, fromVertexId: string, createIfNotExists: boolean = false): this {
+    setIncoming(label: string, fromVertex: Vertex): this;
+    setIncoming(label: string, fromVertex: string, createIfNotExists?: boolean): this;
+    setIncoming(label: string, fromVertex: string | Vertex, createIfNotExists = false): this {
         if (!label) {
-            throw new ReferenceError(`Invalid label. label is ${label}`);
+            throw new ReferenceError(`Invalid label. label is '${label}'`);
         }
 
-        if (!fromVertexId) {
-            throw new ReferenceError(`Invalid id. id is ${fromVertexId}`);
+        if (!fromVertex) {
+            throw new ReferenceError(`Invalid from vertex. fromVertex is ${fromVertex}`);
         }
 
-        if (!this._index.hasNode(fromVertexId) && createIfNotExists) {
-            this._index.createNode(fromVertexId);
+        const labelIRI = this._graph.expandIRI(label);
+        const sourceIRI =
+            typeof fromVertex === 'string'
+                ? this._graph.expandIRI(fromVertex)
+                : fromVertex.iri;
+
+        if (this._iri === sourceIRI) {
+            throw new errors.CyclicEdgeError(labelIRI, this._iri);
         }
 
-        this._index.createEdge(label, fromVertexId, this.id);
+        if (!this._graph.hasVertex(sourceIRI)) {
+            if (createIfNotExists) {
+                this._graph.createVertex(sourceIRI);
+            } else {
+                throw new errors.VertexNotFoundError(sourceIRI);
+            }
+        }
+
+        if (this._graph.hasEdge(labelIRI, sourceIRI, this._iri)) {
+            throw new errors.DuplicateEdgeError(labelIRI, sourceIRI, this._iri);
+        }
+
+        this._graph.createEdge(labelIRI, sourceIRI, this._iri);
         return this;
     }
 
-    /**
-     * @description Sets an outgoing relationship to another vertex.
-     * @param {string} label The label of the outgoing edge relationship.
-     * @param {string} toVertexId Id of the vertex to set the outgoing relationship to.
-     * @param {boolean} [createIfNotExists=false] True to create the outgoing vertex if not found. If false and the vertex does not exist, a VertexNotFoundError is thrown.
-     * @returns {this}
-     * @memberof Vertex
-     */
-    setOutgoing(label: string, toVertexId: string, createIfNotExists: boolean = false): this {
+    setOutgoing(label: string, toVertex: Vertex): this;
+    setOutgoing(label: string, toVertex: string, createIfNotExists?: boolean): this;
+    setOutgoing(label: string, toVertex: string | Vertex, createIfNotExists = false): this {
         if (!label) {
-            throw new ReferenceError(`Invalid label. label is ${label}`);
+            throw new ReferenceError(`Invalid label. label is '${label}'`);
+        }
+        if (!toVertex) {
+            throw new ReferenceError(`Invalid to vertex. toVertex is ${toVertex}`);
         }
 
-        if (!toVertexId) {
-            throw new ReferenceError(`Invalid toVertexId. id is ${toVertexId}`);
+        const labelIRI = this._graph.expandIRI(label);
+        const targetIRI =
+            typeof toVertex === 'string'
+                ? this._graph.expandIRI(toVertex)
+                : toVertex.iri;
+
+        if (this._iri === targetIRI) {
+            throw new errors.CyclicEdgeError(labelIRI, this._iri);
         }
 
-        if (!this._index.getNode(toVertexId) && createIfNotExists) {
-            this._index.createNode(toVertexId);
+        if (!this._graph.hasVertex(targetIRI)) {
+            if (createIfNotExists) {
+                this._graph.createVertex(targetIRI);
+            } else {
+                throw new errors.VertexNotFoundError(targetIRI);
+            }
         }
 
-        this._index.createEdge(label, this.id, toVertexId);
+        if (this._graph.hasEdge(labelIRI, this._iri, targetIRI)) {
+            throw new errors.DuplicateEdgeError(labelIRI, targetIRI, this._iri);
+        }
+
+        this._graph.createEdge(labelIRI, this._iri, targetIRI);
         return this;
     }
 
-    /**
-     * @description Sets the @type of the vertex to one more types.
-     * @param {...string[]} typeIds One more or type ids to set the @type of the vertex.
-     * @returns {this}
-     * @memberof Vertex
-     */
-    setType(...typeIds: string[]): this {
-        if (!typeIds || typeIds.length === 0) {
-            return;
+    setType(...types: string[] | Vertex[]): this {
+        if (!types || types.length === 0) {
+            return this;
         }
 
-        const existingTypes = new Set(this.getOutgoing(JsonldKeywords.type).map(({ toVertex }) => toVertex.id));
-        const typesToAdd = typeIds.filter(id => !existingTypes.has(id));
+        const typesToAdd = new Set<string>();
+        const existingTypes = new Set(
+            this.getOutgoing(JsonldKeywords.type).map(x => x.to.iri)
+        );
+
+        for (const type of types) {
+            const typeId =
+                typeof type === 'string'
+                    ? this._graph.expandIRI(type)
+                    : type.id;
+
+            if (!existingTypes.has(typeId)) {
+                typesToAdd.add(typeId);
+            }
+        }
+
         for (const typeId of typesToAdd) {
-            if (!this._index.hasNode(typeId)) {
-                this._index.createNode(typeId);
-            }
-
-            this.setOutgoing(JsonldKeywords.type, typeId);
+            this.setOutgoing(JsonldKeywords.type, typeId, true);
         }
 
         return this;
     }
 
     /**
-     * @description Returns a JSON representation of the vertex.
-     * @param {string[]} contexts Contexts to use for compaction.
-     * @param {any} [frame] Optional framing instruction for JSON formatting.
-     * @returns {Promise<any>}
+     * @description Formats the vertex to a JSON object.
+     * @template T
+     * @param {(string | string[] | object | object[])} contexts The context(s) to use for compacting and formatting the JSON output.
+     * @param {VertexFormatOptions} [options={}] Formatting options.
+     * @returns {Promise<T>}
      * @memberof Vertex
      */
-    /* tslint:disable:promise-function-async*/
-    toJson(options: JsonFormatOptions = {}): Promise<any> {
-        return this._node.toJson(options);
+    async toJson<T = any>(
+        contexts: string | string[] | any | any[],
+        options: formatter.JsonFormatOptions = {}): Promise<T> {
+
+        const contextLoader = async (url: string): Promise<any> => {
+            const normalizedUrl = url.toLowerCase();
+            const context = await this._graph.getContext(normalizedUrl);
+            if (context) {
+                return {
+                    contextUrl: undefined,
+                    documentUrl: url,
+                    document: context
+                };
+            } else {
+                throw new errors.ContextNotFoundError(url);
+            }
+        }
+
+        if (options.frame) {
+            const frame = Object.assign({}, options.frame);
+            frame['@id'] = this.iri;
+            return formatter.toJson([this], contexts, contextLoader, Object.assign({}, options, { frame }));
+        } else {
+            return formatter.toJson([this], contexts, contextLoader, options);
+        }
+    }
+
+    /**
+     * @description Gets a raw expanded representation of the vertex and its edges for diagnostic / debug purposes.
+     * @returns {*}
+     * @memberof Vertex
+     */
+    toRawExpanded(options?: formatter.ExpandFormatOptions): any {
+        return formatter.expand(this, options);
+    }
+
+    /**
+     * @description Serializes the vertex.
+     * @returns {SerializedVertex}
+     * @memberof Vertex
+     */
+    serialize(): SerializedVertex {
+        return {
+            iri: this._iri,
+            attributes: this._attributes
+        }
+    }
+
+    /**
+     * @description Creates a vertex from a serialized input.
+     * @static
+     * @param {SerializedVertex} serialized The serialized input to create a vertex from.
+     * @param {JsonldGraph} graph The graph to associate the vertex with.
+     * @returns {Vertex}
+     * @memberof Vertex
+     */
+    static deserialize(serialized: SerializedVertex, graph: JsonldGraph): Vertex {
+        const vertex = new Vertex(serialized.iri, graph);
+        vertex._attributes = serialized.attributes;
+        return vertex;
     }
 }
-
-export default Vertex;

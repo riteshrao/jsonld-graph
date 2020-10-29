@@ -8,6 +8,8 @@
         "moduleResolution": "node",
         "noImplicitAny": true,
         "noUnusedLocals": true,
+        "strictNullChecks": true,
+        "resolveJsonModule": true,
         "sourceMap": true,
         "suppressImplicitAnyIndexErrors": true,
         "removeComments": false,
@@ -15,13 +17,16 @@
         "outDir": "./lib",
         "baseUrl": ".",
         "paths": {
-            "jsonld": ["types/jsonld.d.ts"]
+            "jsonld": [
+                "types/jsonld.d.ts"
+            ]
         }
     },
     "exclude": [
         "node_modules",
         "lib",
-        "test"
+        "test",
+        "src/old"
     ],
     "compileOnSave": false,
     "buildOnSave": false

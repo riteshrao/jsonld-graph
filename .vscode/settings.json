@@ -1,6 +1,10 @@
 {
+    "cSpell.words": [
+        "Jsonld"
+    ],
     "files.exclude": {
         "lib/**/*.d.ts": true,
         "test/**/*.js": true
-    }
+    },
+    "mochaExplorer.optsFile": "mocha.spec.opts"
 }
