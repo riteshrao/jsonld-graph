@@ -1068,7 +1068,10 @@ export default class JsonldGraph {
         } else {
             if (options?.unique && idTracker.has(id) && Object.keys(entity).length > 1) {
                 const existing = this._vertices.get(id);
-                if (existing && existing.getTypes().first() && existing.getAttributes().first()) {
+                if (existing && (
+                    existing.getTypes().first() ||
+                    existing.getAttributes().first() ||
+                    existing.getOutgoing().first())) {
                     throw new errors.DuplicateEntityDefinition(id);
                 }
             } else {

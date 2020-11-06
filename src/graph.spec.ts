@@ -1400,39 +1400,8 @@ describe('JsonldGraph', () => {
             expect(graph.getVertex('hr:johnd')?.isType('vocab:NewEmployee')).toEqual(true);
             expect(graph.getVertex('hr:janed')?.isType('vocab:Manager')).toEqual(true);
         });
-    
+
         it('should throw duplicate entity error for unique mode', async () => {
-            const graph = new JsonldGraph();
-            graph.addContext('http://example.org/hr', context);
-            graph.setPrefix('vocab', 'http://example.org/hr/classes/');
-            graph.setPrefix('hr', 'http://example.org/hr/instances/');
-
-            try {
-                await graph.parse({
-                    '@context': [
-                        { '@base': 'http://example.org/hr/instances/' },
-                        'http://example.org/hr'
-                    ],
-                    '@graph': [
-                        {
-                            '@id': 'johnd',
-                            '@type': 'Employee',
-                            firstName: 'john'
-                        },
-                        {
-                            '@id': 'johnd',
-                            '@type': 'Employee',
-                            lastName: 'john'
-                        }
-                    ]
-                }, { unique: true });
-                fail('Expected DuplicateEntityDefinition to be thrown');
-            } catch (err) {
-                expect(err).toBeInstanceOf(errors.DuplicateEntityDefinition);
-            }
-        });
-
-        it('should not throw duplicate entity for entity reference', async () => {
             const graph = new JsonldGraph();
             graph.addContext('http://example.org/hr', context);
             graph.setPrefix('vocab', 'http://example.org/hr/classes/');
@@ -1454,16 +1423,16 @@ describe('JsonldGraph', () => {
                             '@id': 'janed',
                             '@type': 'Employee',
                             lastName: 'jane',
-                            manager: 'johnd'
+                            manager: {
+                                "@id": "http://example.org/hr/instances/johnd",
+                                "@type": "Employee"
+                            }
                         }
                     ]
                 }, { unique: true });
-
-                const janed = graph.getVertex('hr:janed')!;
-                expect(janed.hasOutgoing('vocab:Employee/manager', 'hr:johnd')).toEqual(true);
+                fail('Expected DuplicateEntityDefinition to be thrown');
             } catch (err) {
-                console.log(err);
-                fail('Expected no error to be thrown');
+                expect(err).toBeInstanceOf(errors.DuplicateEntityDefinition);
             }
         });
 
