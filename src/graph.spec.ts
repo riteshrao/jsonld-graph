@@ -1466,6 +1466,76 @@ describe('JsonldGraph', () => {
                 fail('Expected no error to be thrown');
             }
         });
+
+        it('should not throw duplicate entity for entity reference', async () => {
+            const graph = new JsonldGraph();
+            graph.addContext('http://example.org/hr', context);
+            graph.setPrefix('vocab', 'http://example.org/hr/classes/');
+            graph.setPrefix('hr', 'http://example.org/hr/instances/');
+
+            try {
+                await graph.parse({
+                    '@context': [
+                        { '@base': 'http://example.org/hr/instances/' },
+                        'http://example.org/hr'
+                    ],
+                    '@graph': [
+                        {
+                            '@id': 'johnd',
+                            '@type': 'Employee',
+                            firstName: 'john'
+                        },
+                        {
+                            '@id': 'janed',
+                            '@type': 'Employee',
+                            lastName: 'jane',
+                            manager: 'johnd'
+                        }
+                    ]
+                }, { unique: true });
+
+                const janed = graph.getVertex('hr:janed')!;
+                expect(janed.hasOutgoing('vocab:Employee/manager', 'hr:johnd')).toEqual(true);
+            } catch (err) {
+                console.log(err);
+                fail('Expected no error to be thrown');
+            }
+        });
+
+        it('should not throw duplicate entity for entity reference (reversed)', async () => {
+            const graph = new JsonldGraph();
+            graph.addContext('http://example.org/hr', context);
+            graph.setPrefix('vocab', 'http://example.org/hr/classes/');
+            graph.setPrefix('hr', 'http://example.org/hr/instances/');
+
+            try {
+                await graph.parse({
+                    '@context': [
+                        { '@base': 'http://example.org/hr/instances/' },
+                        'http://example.org/hr'
+                    ],
+                    '@graph': [
+                        {
+                            '@id': 'janed',
+                            '@type': 'Employee',
+                            lastName: 'jane',
+                            manager: 'johnd'
+                        },
+                        {
+                            '@id': 'johnd',
+                            '@type': 'Employee',
+                            firstName: 'john'
+                        }
+                    ]
+                }, { unique: true });
+
+                const janed = graph.getVertex('hr:janed')!;
+                expect(janed.hasOutgoing('vocab:Employee/manager', 'hr:johnd')).toEqual(true);
+            } catch (err) {
+                console.log(err);
+                fail('Expected no error to be thrown');
+            }
+        });
     });
 
     describe('.removeContext', () => {

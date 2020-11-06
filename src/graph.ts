@@ -949,7 +949,7 @@ export default class JsonldGraph {
             const vertex = Vertex.deserialize(item, graph);
             graph._vertices.set(vertex.iri, vertex);
         }
-        
+
         for (const item of serialized.edges) {
             const edge = Edge.deserialize(item, graph);
             const edgeId = graph._formatEdgeId(edge.iri, edge.from.iri, edge.to.iri);
@@ -1067,7 +1067,10 @@ export default class JsonldGraph {
             this._indexMap.get(JsonldGraph.IX_BLANK_NODES)?.add(id)
         } else {
             if (options?.unique && idTracker.has(id) && Object.keys(entity).length > 1) {
-                throw new errors.DuplicateEntityDefinition(id);
+                const existing = this._vertices.get(id);
+                if (existing && existing.getTypes().first() && existing.getAttributes().first()) {
+                    throw new errors.DuplicateEntityDefinition(id);
+                }
             } else {
                 idTracker.add(id);
             }
