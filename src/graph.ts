@@ -92,6 +92,12 @@ export interface GraphLoadOptions {
      * @memberof GraphLoadOptions
      */
     identityTranslator?: (id: string) => string;
+
+    /**
+     * @description Optional callback that validates explicit @ids found in the document being laoded.
+     * @memberof GraphLoadOptions
+     */
+    identityValidator?: (id: string) => boolean;
     /**
      * @description Set to true to only allow unique @id definitions.
      * @type {boolean}
@@ -1066,6 +1072,10 @@ export default class JsonldGraph {
         if (id.startsWith(BlankNodePrefix)) {
             this._indexMap.get(JsonldGraph.IX_BLANK_NODES)?.add(id)
         } else {
+            if (options?.identityValidator && !options.identityValidator(id)) {
+                throw new errors.InvalidIRIError(id, 'Identity is not valid identifier');
+            }
+
             if (options?.unique && idTracker.has(id) && Object.keys(entity).length > 1) {
                 const existing = this._vertices.get(id);
                 if (existing && (

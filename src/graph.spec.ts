@@ -607,7 +607,6 @@ describe('JsonldGraph', () => {
             expect(graph.hasEdge('http://example.org/hr/classes/Employee/manager', 'http://example.org/hr/instances/johnd', 'http://example.org/hr/instances/janed')).toEqual(true);
             expect(graph.hasEdge('http://example.org/hr/classes/Manager/manages', 'http://example.org/hr/instances/janed', 'http://example.org/hr/instances/johnd')).toEqual(true);
         });
-
     });
 
     describe('.parse', () => {
@@ -1505,6 +1504,41 @@ describe('JsonldGraph', () => {
                 fail('Expected no error to be thrown');
             }
         });
+
+        it('should throw invalid iri error for custom identity validation failures', async () => {
+            const graph = new JsonldGraph();
+            graph.addContext('http://example.org/hr', context);
+            graph.setPrefix('vocab', 'http://example.org/hr/classes/');
+            graph.setPrefix('hr', 'http://example.org/hr/instances/');
+
+            const validator = (id: string): boolean => {
+                return !id.includes('__');
+            }
+
+            try {
+                await graph.parse({
+                    '@context': [
+                        { '@base': 'http://example.org/hr/instances/' },
+                        'http://example.org/hr'
+                    ],
+                    '@graph': [
+                        {
+                            '@id': '__janed',
+                            '@type': 'Employee',
+                        },
+                        {
+                            '@id': 'johnd',
+                            '@type': 'Employee',
+                            firstName: 'john'
+                        }
+                    ]
+                }, { identityValidator: validator });
+                fail('Expected invalid IRI error');
+            } catch (err) {
+                expect(err).toBeInstanceOf(errors.InvalidIRIError);
+            }
+        });
+
     });
 
     describe('.removeContext', () => {
