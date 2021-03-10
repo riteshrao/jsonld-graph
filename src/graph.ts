@@ -1224,6 +1224,10 @@ export default class JsonldGraph {
                     for (const existingType of existingTypes) {
                         existing.setType(existingType);
                     }
+                } else if (existingTypes.length === 0 && incomingTypes.length > 0) {
+                    for (const incomingType of incomingTypes) {
+                        existing.setType(incomingType);
+                    }
                 }
 
 
