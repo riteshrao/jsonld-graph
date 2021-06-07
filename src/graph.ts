@@ -12,7 +12,7 @@ type Loader = (url: string) => Promise<RemoteDocument>;
 const PREFIX_REGEX = /^[a-zA-z][a-zA-Z0-9]*$/;
 
 /**
- * @description Factory interface for creating vertex intsances.
+ * @description Factory interface for creating vertex instances.
  * @export
  * @interface GraphVertexFactory
  */
@@ -709,7 +709,7 @@ export default class JsonldGraph {
         this.load(entities, options);
 
         if (options?.normalize) {
-            this.normalize()
+            this._normalize(options)
         }
     }
 
@@ -717,7 +717,7 @@ export default class JsonldGraph {
      * @description Normalizes blank type and id vertices in the graph.
      * @memberof JsonldGraph
      */
-    normalize(): void {
+    private _normalize(options: GraphLoadOptions): void {
         if (this._options?.blankTypeResolver) {
             const blankTypes = this._indexMap.get(JsonldGraph.IX_BLANK_TYPES)!;
             for (const id of blankTypes) {
@@ -743,7 +743,7 @@ export default class JsonldGraph {
             for (const id of blankNodes) {
                 const vertex = this.getVertex(id);
                 if (vertex) {
-                    this._normalizeBlankNode(vertex);
+                    this._normalizeBlankNode(vertex, options);
                 }
             }
         }
@@ -832,7 +832,7 @@ export default class JsonldGraph {
     }
 
     /**
-     * @description Renames the IRI of an existig vertex.
+     * @description Renames the IRI of an existing vertex.
      * @param {(string | V)} vertex The vertex to rename.
      * @param {string} id The new IRI of the vertex.
      * @returns {V} 
@@ -943,7 +943,7 @@ export default class JsonldGraph {
     }
 
     /**
-     * @description Deserializes a graph.
+     * @description De-serializes a graph.
      * @static
      * @param {SerializedGraph} serialized The serialized graph to deserialize.
      * @returns {JsonldGraph}
@@ -1184,17 +1184,20 @@ export default class JsonldGraph {
         }
     }
 
-    private _normalizeBlankNode(vertex: Vertex): void {
+    private _normalizeBlankNode(vertex: Vertex, options: GraphLoadOptions): void {
         for (const incoming of vertex.getIncoming().filter(x => x.from.id.startsWith(BlankNodePrefix))) {
-            this._normalizeBlankNode(incoming.from)
+            this._normalizeBlankNode(incoming.from, options)
         }
 
         const newIri = this._options.blankIriResolver!(vertex);
         if (newIri && newIri !== vertex.iri) {
             if (!this.hasVertex(newIri)) {
                 this.renameVertex(vertex, newIri);
+            }
+            else if (options.unique) {
+                throw new errors.DuplicateEntityDefinition(newIri);
             } else {
-                // Copy over all attriutes and references from the blank node to the existing node.
+                // Copy over all attributes and references from the blank node to the existing node.
                 const existing = this.getVertex(newIri)!;
                 const incomingTypes = vertex.getTypes().items();
                 const existingTypes = existing.getTypes().items();

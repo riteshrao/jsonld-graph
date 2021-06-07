@@ -1092,6 +1092,49 @@ describe('JsonldGraph', () => {
             expect(graph.blankNodes.count()).toEqual(0);
         });
 
+        it('can detect unique id violation on blank id normalization', async () => {
+            const document = {
+                '@context': [
+                    { '@base': 'http://example.org/hr/instances/' },
+                    'http://example.org/hr'
+                ],
+                '@graph': [
+                    {
+                        firstName: 'john',
+                        lastName: 'doe'
+                    },
+                    {
+                        firstName: 'john',
+                        lastName: 'doe'
+                    }
+                ]
+
+            };
+
+            const graph = new JsonldGraph({
+                blankIriResolver: (vertex): string => {
+                    const firstName = vertex.getAttributeValue("vocab:Employee/firstName");
+                    const lastName = vertex.getAttributeValue("vocab:Employee/lastName");
+                    if (firstName && lastName) {
+                        return `http://example.org/instances/${firstName}.${lastName}`;
+                    } else {
+                        return vertex.iri;
+                    }
+                }
+            });
+
+            graph.addContext('http://example.org/hr', context);
+            graph.setPrefix('vocab', 'http://example.org/hr/classes/');
+            graph.setPrefix('hr', 'http://example.org/hr/instances/');
+
+            try {
+                await graph.parse(document, { normalize: true, unique: true });
+                fail('Expected DuplicateEntityDefinition error');
+            } catch (err) {
+                expect(err).toBeInstanceOf(errors.DuplicateEntityDefinition);
+            }
+        });
+
         it('can resolve conflicts on blank id normalization', async () => {
             const document = {
                 '@context': [
