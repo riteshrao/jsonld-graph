@@ -151,10 +151,13 @@ export default class JsonldGraph {
             return new Vertex(iri, graph);
         }
 
-        this._remoteLoader =
-            typeof process !== undefined && process.versions && process.versions.node
-                ? (jsonld as any).documentLoaders.node()
-                : (jsonld as any).documentLoaders.xhr();
+        if (options.remoteContexts) {
+            this._remoteLoader =
+                typeof process !== undefined && process.versions && process.versions.node
+                    ? (jsonld as any).documentLoaders.node()
+                    : (jsonld as any).documentLoaders.xhr();
+        }
+
 
         this._documentLoader = async (url: string): Promise<any> => {
             const normalizedUrl = url.toLowerCase();
@@ -166,7 +169,7 @@ export default class JsonldGraph {
                 });
             }
 
-            if (this._options?.remoteContexts) {
+            if (this._options?.remoteContexts && this._remoteLoader) {
                 return this._remoteLoader(url);
             }
 
