@@ -840,7 +840,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
      * @returns {V} 
      * @memberof JsonldGraph
      */
-    renameVertex(vertex: string | V, id: string): Vertex {
+    renameVertex(vertex: string | V, id: string): V {
         if (!vertex) {
             throw new ReferenceError(`Invalid vertex. vertex is '${vertex}'`);
         }
