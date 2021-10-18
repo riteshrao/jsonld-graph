@@ -103,7 +103,7 @@ export default class Vertex {
      * @type {JsonldGraph}
      * @memberof Vertex
      */
-    get graph(): JsonldGraph {
+    get graph(): JsonldGraph<this> {
         return this._graph;
     }
 
