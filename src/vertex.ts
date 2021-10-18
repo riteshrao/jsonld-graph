@@ -47,7 +47,7 @@ export interface SerializedVertex {
 export default class Vertex {
     private _iri: string;
     private _attributes: Record<string, AttributeValue[]> = {};
-    private readonly _graph: JsonldGraph;
+    private readonly _graph: JsonldGraph<this>;
 
     /**
      * Creates an instance of Vertex.
@@ -55,7 +55,7 @@ export default class Vertex {
      * @param {JsonldGraph} graph The graph containng the vertex instance.
      * @memberof Vertex
      */
-    constructor(iri: string, graph: JsonldGraph) {
+    constructor(iri: string, graph: JsonldGraph<any>) {
         if (!iri) {
             throw new ReferenceError(`Invalid id. id is '${iri}'`);
         }
@@ -289,7 +289,7 @@ export default class Vertex {
      * @returns {Iterable<{ label: string; fromVertex: types.Vertex }>}
      * @memberof Vertex
      */
-    getIncoming(label?: string): Iterable<Edge> {
+    getIncoming(label?: string): Iterable<Edge<this>> {
         return this._graph.getIncomingEdges(this._iri, label);
     }
 
@@ -299,7 +299,7 @@ export default class Vertex {
      * @returns {Iterable<{ label: string; toVertex: types.Vertex }>}
      * @memberof Vertex
      */
-    getOutgoing(label?: string): Iterable<Edge> {
+    getOutgoing(label?: string): Iterable<Edge<this>> {
         return this._graph.getOutgoingEdges(this._iri, label);
     }
 

@@ -392,6 +392,22 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
     });
 });
 
+describe('Custom vertex', () => {
+    class CustomVertex extends Vertex { }
+
+    it('should create custom vertices', () => {
+        const graph = new JsonldGraph({
+            vertexFactory: (iri, types, graph) => new CustomVertex(iri, graph)
+        });
+
+        const vertex = graph.createVertex('urn:foo:bar');
+        const outgoingV = vertex.setOutgoing('urn:related', 'urn:related:foo', true);
+
+        expect(vertex).toBeInstanceOf(CustomVertex);
+        expect(outgoingV).toBeInstanceOf(CustomVertex);
+    });
+});
+
 async function graphCreator(): Promise<JsonldGraph> {
     const graph = new JsonldGraph();
     graph.addContext('urn:example:org:hr', context);

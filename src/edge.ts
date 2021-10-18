@@ -12,7 +12,7 @@ export interface SerializedEdge {
  * @export
  * @class GraphEdge
  */
-export default class Edge {
+export default class Edge<V extends Vertex = Vertex> {
     private readonly _iri: string;
     private readonly _graph: JsonldGraph;
 
@@ -25,8 +25,8 @@ export default class Edge {
      */
     constructor(
         iri: string,
-        public readonly from: Vertex,
-        public readonly to: Vertex,
+        public readonly from: V,
+        public readonly to: V,
         graph: JsonldGraph) {
         if (!iri) {
             throw new ReferenceError(`Invalid label. label is '${iri}'`);
