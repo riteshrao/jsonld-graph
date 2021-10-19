@@ -85,7 +85,7 @@ export default class Edge<V extends Vertex = Vertex> {
      * @param {JsonldGraph} graph The graph to associate the edge with.
      * @memberof Edge
      */
-    static deserialize(serialized: SerializedEdge, graph: JsonldGraph) {
+    static deserialize<V extends Vertex = Vertex>(serialized: SerializedEdge, graph: JsonldGraph<V>) {
         const fromV = graph.getVertex(serialized.from)!;
         const toV = graph.getVertex(serialized.to)!;
         return new Edge(serialized.iri, fromV, toV, graph);

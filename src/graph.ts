@@ -951,11 +951,10 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
      * @returns {JsonldGraph}
      * @memberof JsonldGraph
      */
-    static deserialize(serialized: SerializedGraph, options?: GraphOptions): JsonldGraph {
+    static deserialize<V extends Vertex = Vertex>(serialized: SerializedGraph, options?: GraphOptions<V>): JsonldGraph<V> {
         const graph = new JsonldGraph(options);
         for (const item of serialized.vertices) {
-            const vertex = Vertex.deserialize(item, graph);
-            graph._vertices.set(vertex.iri, vertex);
+            Vertex.deserialize(item, graph);
         }
 
         for (const item of serialized.edges) {

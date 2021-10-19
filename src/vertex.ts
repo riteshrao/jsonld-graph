@@ -734,8 +734,8 @@ export default class Vertex {
      * @returns {Vertex}
      * @memberof Vertex
      */
-    static deserialize(serialized: SerializedVertex, graph: JsonldGraph): Vertex {
-        const vertex = new Vertex(serialized.iri, graph);
+    static deserialize<V extends Vertex = Vertex>(serialized: SerializedVertex, graph: JsonldGraph<V>): V {
+        const vertex = graph.createVertex(serialized.iri);
         vertex._attributes = serialized.attributes;
         return vertex;
     }
