@@ -17,7 +17,7 @@ const PREFIX_REGEX = /^[a-zA-z][a-zA-Z0-9]*$/;
  * @interface GraphVertexFactory
  */
 export interface GraphVertexFactory<V extends Vertex = Vertex> {
-    (iri: string, types: string[], graph: JsonldGraph): V;
+    (iri: string, types: string[], graph: JsonldGraph<V>): V;
 }
 
 /**
