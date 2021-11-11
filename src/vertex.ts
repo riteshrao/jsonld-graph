@@ -5,7 +5,7 @@ import * as errors from './errors';
 import * as formatter from './formatter';
 import JsonldGraph from './graph';
 
-type VertexSelector = (v: Vertex) => boolean;
+type VertexSelector<T extends Vertex> = (v: T) => boolean;
 
 /**
  * @description Attribute value type.
@@ -305,10 +305,10 @@ export default class Vertex {
 
     /**
      * @description Gets the type vertices of this vertex instnace.
-     * @returns {Iterable<Vertex>}
+     * @returns {Iterable<this>}
      * @memberof Vertex
      */
-    getTypes(): Iterable<Vertex> {
+    getTypes(): Iterable<this> {
         return this._graph.getOutgoingEdges(this._iri, JsonldKeywords.type).map(x => x.to);
     }
 
@@ -366,7 +366,7 @@ export default class Vertex {
      * @returns {boolean} True if an edge is found, else false.
      * @memberof Vertex
      */
-    hasIncoming(label?: string, vertex?: Vertex | string): boolean {
+    hasIncoming(label?: string, vertex?: this | string): boolean {
         if (!label) {
             return !!this._graph.getIncomingEdges(this._iri).first();
         } else {
@@ -390,7 +390,7 @@ export default class Vertex {
      * @returns {boolean}
      * @memberof Vertex
      */
-    hasOutgoing(label?: string, vertex?: Vertex | string): boolean {
+    hasOutgoing(label?: string, vertex?: this | string): boolean {
         if (!label) {
             return !!this._graph.getOutgoingEdges(this._iri).first();
         } else {
@@ -430,8 +430,8 @@ export default class Vertex {
      * @memberof Vertex
      */
     removeIncoming(label?: string, filter?: string): this
-    removeIncoming(label?: string, filter?: VertexSelector): this
-    removeIncoming(label?: string, filter?: string | VertexSelector): this {
+    removeIncoming(label?: string, filter?: VertexSelector<this>): this
+    removeIncoming(label?: string, filter?: string | VertexSelector<this>): this {
         let edges = this._graph.getIncomingEdges(this._iri);
         if (label) {
             const edgeIRI = this._graph.expandIRI(label);
@@ -462,8 +462,8 @@ export default class Vertex {
      * @memberof Vertex
      */
     removeOutgoing(label?: string, filter?: string): this
-    removeOutgoing(label?: string, filter?: VertexSelector): this
-    removeOutgoing(label?: string, filter?: string | VertexSelector): this {
+    removeOutgoing(label?: string, filter?: VertexSelector<this>): this
+    removeOutgoing(label?: string, filter?: string | VertexSelector<this>): this {
         let edges = this._graph.getOutgoingEdges(this._iri);
         if (label) {
             const edgeIRI = this._graph.expandIRI(label);
