@@ -347,7 +347,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
             throw new errors.DuplicateEdgeError(label, outgoingV.id, incomingV!.id);
         }
 
-        const edge = new Edge<V>(edgeIRI, outgoingV, incomingV!, this);
+        const edge = new Edge<V>(edgeIRI, outgoingV!, incomingV!, this);
         this._edges.set(edgeId, edge);
         this._addEdgeIndices(edge);
         return edge;

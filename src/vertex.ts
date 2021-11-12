@@ -569,9 +569,9 @@ export default class Vertex {
         return this;
     }
 
-    setIncoming(label: string, fromVertex: Vertex): this;
+    setIncoming(label: string, fromVertex: this): this;
     setIncoming(label: string, fromVertex: string, createIfNotExists?: boolean): this;
-    setIncoming(label: string, fromVertex: string | Vertex, createIfNotExists = false): this {
+    setIncoming(label: string, fromVertex: string | this, createIfNotExists = false): this {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is '${label}'`);
         }
@@ -606,9 +606,9 @@ export default class Vertex {
         return this;
     }
 
-    setOutgoing(label: string, toVertex: Vertex): this;
+    setOutgoing(label: string, toVertex: this): this;
     setOutgoing(label: string, toVertex: string, createIfNotExists?: boolean): this;
-    setOutgoing(label: string, toVertex: string | Vertex, createIfNotExists = false): this {
+    setOutgoing(label: string, toVertex: string | this, createIfNotExists = false): this {
         if (!label) {
             throw new ReferenceError(`Invalid label. label is '${label}'`);
         }
