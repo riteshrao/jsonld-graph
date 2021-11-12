@@ -12,7 +12,7 @@ export interface SerializedEdge {
  * @export
  * @class GraphEdge
  */
-export default class Edge<V extends Vertex> {
+export default class Edge<V extends Vertex = Vertex> {
     private readonly _iri: string;
     private readonly _graph: JsonldGraph;
 
