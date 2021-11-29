@@ -7,6 +7,7 @@ jest.mock('./graph');
 
 describe('Vertex', () => {
     let graph: JsonldGraph;
+    const context = ['urn:test:context'];
 
     beforeEach(() => {
         graph = new JsonldGraph();
@@ -34,27 +35,27 @@ describe('Vertex', () => {
     describe('.ctor', () => {
         it('should throw when constructor arguments is invalid', () => {
             const args = [
-                [null as any, graph],
-                [undefined as any, graph],
-                ['', graph],
+                [null as any, context, graph],
+                [undefined as any, context, graph],
+                ['', context, graph],
                 ['urn:test:instance', null],
                 ['urn:test:instance', undefined]
             ]
 
-            for (const [id, graph] of args) {
-                expect(() => new Vertex(id, graph)).toThrow(ReferenceError);
+            for (const [id, context, graph] of args) {
+                expect(() => new Vertex(id, context, graph)).toThrow(ReferenceError);
             }
         });
     })
 
     describe('.isBlankNode', () => {
         it('should return true when id starts with a blank node prefix', () => {
-            const vertex = new Vertex('_:b1', {} as any);
+            const vertex = new Vertex('_:b1', context, {} as any);
             expect(vertex.isBlankNode).toEqual(true);
         });
 
         it('should return false when id does not start with blank node prefix', () => {
-            const vertex = new Vertex('test:1', {} as any);
+            const vertex = new Vertex('test:1', context, {} as any);
             expect(vertex.isBlankNode).toEqual(false);
         });
     });
@@ -63,7 +64,7 @@ describe('Vertex', () => {
         let vertex: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/instace/a', graph);
+            vertex = new Vertex('http://example.org/instace/a', context, graph);
         });
 
         it('should throw reference error when arguments are invalid', () => {
@@ -154,7 +155,7 @@ describe('Vertex', () => {
         let vertex: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/instance/a', graph);
+            vertex = new Vertex('http://example.org/instance/a', context, graph);
             vertex.appendAttributeValue('test:attribute', 'a');
             vertex.appendAttributeValue('test:attribute', 'b');
         });
@@ -181,7 +182,7 @@ describe('Vertex', () => {
         let vertex: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/instances/a', graph);
+            vertex = new Vertex('http://example.org/instances/a', context, graph);
             vertex.appendAttributeValue('test:simple', 'a');
             vertex.appendAttributeValue('test:simple', 'b');
             vertex.appendAttributeValue('test:simple', 'a', 'en');
@@ -231,7 +232,7 @@ describe('Vertex', () => {
         let vertex: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/instance/a', graph);
+            vertex = new Vertex('http://example.org/instance/a', context, graph);
             vertex.appendAttributeValue('test:a', 1);
             vertex.appendAttributeValue('test:b', 2);
             vertex.appendAttributeValue('test:lang', 'a', 'en');
@@ -262,7 +263,7 @@ describe('Vertex', () => {
         let vertex: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/instance/a', graph);
+            vertex = new Vertex('http://example.org/instance/a', context, graph);
             vertex.appendAttributeValue('test:a', 1);
             vertex.appendAttributeValue('test:a', 2);
             vertex.appendAttributeValue('test:lang', 'a', 'en');
@@ -302,9 +303,9 @@ describe('Vertex', () => {
         let outgoingV: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/instance/a', graph);
-            typeV = new Vertex('http://example.org/instance/type', graph);
-            outgoingV = new Vertex('http://example.org/instance/outgoing', graph);
+            vertex = new Vertex('http://example.org/instance/a', context, graph);
+            typeV = new Vertex('http://example.org/instance/type', context, graph);
+            outgoingV = new Vertex('http://example.org/instance/outgoing', context, graph);
             jest.spyOn(graph, 'getIncomingEdges').mockImplementation((vertex, label) => {
                 const labelIRI = label?.replace('test:', 'http://example.org/test/');
                 if (vertex !== 'http://example.org/instance/a') {
@@ -368,9 +369,9 @@ describe('Vertex', () => {
         let outgoingV: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instance/a', graph);
-            typeV = new Vertex('http://example.org/test/instance/type', graph);
-            outgoingV = new Vertex('http://example.org/test/instance/outgoing', graph);
+            vertex = new Vertex('http://example.org/test/instance/a', context, graph);
+            typeV = new Vertex('http://example.org/test/instance/type', context, graph);
+            outgoingV = new Vertex('http://example.org/test/instance/outgoing', context, graph);
             jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id, label) => {
                 const labelIRI = label?.replace('test:', 'http://example.org/test/');
                 if (id !== 'http://example.org/test/instance/a') {
@@ -430,10 +431,10 @@ describe('Vertex', () => {
         let nonTypeV: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instance/a', graph);
-            typeAV = new Vertex('http://example.org/test/type/a', graph);
-            typeBV = new Vertex('http://example.org/test/type/b', graph);
-            nonTypeV = new Vertex('http://example.org/test/instance/b', graph);
+            vertex = new Vertex('http://example.org/test/instance/a', context, graph);
+            typeAV = new Vertex('http://example.org/test/type/a', context, graph);
+            typeBV = new Vertex('http://example.org/test/type/b', context, graph);
+            nonTypeV = new Vertex('http://example.org/test/instance/b', context, graph);
             jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id, label) => {
                 if (id !== 'http://example.org/test/instance/a') {
                     return Iterable.empty();
@@ -486,7 +487,7 @@ describe('Vertex', () => {
         let vertex: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instances/a', graph);
+            vertex = new Vertex('http://example.org/test/instances/a', context, graph);
             vertex.setAttributeValue('test:fname', 'John');
             vertex.setAttributeValue('http://example.org/test/lname', 'Doe');
         });
@@ -511,7 +512,7 @@ describe('Vertex', () => {
         let vertex: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instances/a', graph);
+            vertex = new Vertex('http://example.org/test/instances/a', context, graph);
             vertex.appendAttributeValue('test:name', 'John');
             vertex.appendAttributeValue('test:name', 'Doe');
             vertex.appendAttributeValue('test:alias', 'jdoe', 'en');
@@ -565,9 +566,9 @@ describe('Vertex', () => {
         let incomingB: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instances/target', graph);
-            incomingA = new Vertex('http://example.org/test/instances/inA', graph);
-            incomingB = new Vertex('http://example.org/test/instances/inB', graph);
+            vertex = new Vertex('http://example.org/test/instances/target', context, graph);
+            incomingA = new Vertex('http://example.org/test/instances/inA', context, graph);
+            incomingB = new Vertex('http://example.org/test/instances/inB', context, graph);
 
             jest.spyOn(graph, 'getIncomingEdges').mockImplementation((v, label): Iterable<any> => {
                 if (v !== 'http://example.org/test/instances/target') {
@@ -621,9 +622,9 @@ describe('Vertex', () => {
         let targetB: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instances/source', graph);
-            targetA = new Vertex('http://example.org/test/instances/outA', graph);
-            targetB = new Vertex('http://example.org/test/instances/outB', graph);
+            vertex = new Vertex('http://example.org/test/instances/source', context, graph);
+            targetA = new Vertex('http://example.org/test/instances/outA', context, graph);
+            targetB = new Vertex('http://example.org/test/instances/outB', context, graph);
 
             jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((v, label): Iterable<any> => {
                 if (v !== 'http://example.org/test/instances/source') {
@@ -677,8 +678,8 @@ describe('Vertex', () => {
         let typeV: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instance/a', graph);
-            typeV = new Vertex('http://example.org/test/type/a', graph);
+            vertex = new Vertex('http://example.org/test/instance/a', context, graph);
+            typeV = new Vertex('http://example.org/test/type/a', context, graph);
             jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id) => {
                 if (id !== 'http://example.org/test/instance/a') {
                     return Iterable.empty();
@@ -713,10 +714,10 @@ describe('Vertex', () => {
         let outC: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instance/target', graph);
-            outA = new Vertex('http://example.org/test/instance/outA', graph);
-            outB = new Vertex('http://example.org/test/instance/outB', graph);
-            outC = new Vertex('http://example.org/test/instance/outC', graph);
+            vertex = new Vertex('http://example.org/test/instance/target', context, graph);
+            outA = new Vertex('http://example.org/test/instance/outA', context, graph);
+            outB = new Vertex('http://example.org/test/instance/outB', context, graph);
+            outC = new Vertex('http://example.org/test/instance/outC', context, graph);
             jest.spyOn(graph, 'getIncomingEdges').mockImplementation((id) => {
                 if (id !== 'http://example.org/test/instance/target') {
                     return Iterable.empty()
@@ -795,10 +796,10 @@ describe('Vertex', () => {
         let inC: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instance/source', graph);
-            inA = new Vertex('http://example.org/test/instance/inA', graph);
-            inB = new Vertex('http://example.org/test/instance/inB', graph);
-            inC = new Vertex('http://example.org/test/instance/inC', graph);
+            vertex = new Vertex('http://example.org/test/instance/source', context, graph);
+            inA = new Vertex('http://example.org/test/instance/inA', context, graph);
+            inB = new Vertex('http://example.org/test/instance/inB', context, graph);
+            inC = new Vertex('http://example.org/test/instance/inC', context, graph);
             jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id) => {
                 if (id !== 'http://example.org/test/instance/source') {
                     return Iterable.empty()
@@ -877,9 +878,9 @@ describe('Vertex', () => {
         let typeB: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instance/a', graph);
-            typeA = new Vertex('http://example.org/test/type/a', graph);
-            typeB = new Vertex('http://example.org/test/type/b', graph);
+            vertex = new Vertex('http://example.org/test/instance/a', context, graph);
+            typeA = new Vertex('http://example.org/test/type/a', context, graph);
+            typeB = new Vertex('http://example.org/test/type/b', context, graph);
             jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((id, label) => {
                 if (id !== 'http://example.org/test/instance/a' || label !== '@type') {
                     return Iterable.empty();
@@ -931,7 +932,7 @@ describe('Vertex', () => {
         let vertex: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instance/a', graph);
+            vertex = new Vertex('http://example.org/test/instance/a', context, graph);
             vertex.appendAttributeValue('test:aliases', 'john');
             vertex.appendAttributeValue('test:aliases', 'jake');
             vertex.appendAttributeValue('test:languages', 'English', 'en');
@@ -998,8 +999,8 @@ describe('Vertex', () => {
         let sourceV: Vertex;
 
         beforeEach(() => {
-            targetV = new Vertex('http://example.org/test/instance/target', graph);
-            sourceV = new Vertex('http://example.org/test/instance/source', graph);
+            targetV = new Vertex('http://example.org/test/instance/target', context, graph);
+            sourceV = new Vertex('http://example.org/test/instance/source', context, graph);
             jest.spyOn(graph, 'hasVertex')
                 .mockImplementation((id) => {
                     switch (id) {
@@ -1031,7 +1032,7 @@ describe('Vertex', () => {
             expect(() => targetV.setIncoming('test:incoming', 'test:instance/foo')).toThrow(errors.VertexNotFoundError);
         });
 
-        it('should throw duplicate edge error when incoming already exisst', () => {
+        it('should throw duplicate edge error when incoming already exists', () => {
             jest.spyOn(graph, 'hasEdge').mockReturnValue(true);
 
             expect(() => targetV.setIncoming('test:incoming', 'test:instance/source')).toThrow(errors.DuplicateEdgeError);
@@ -1060,7 +1061,7 @@ describe('Vertex', () => {
 
             targetV.setIncoming('test:incoming', 'test:instance/foo', true);
             expect(createVertexStub).toHaveBeenCalledTimes(1);
-            expect(createVertexStub).toHaveBeenCalledWith('http://example.org/test/instance/foo');
+            expect(createVertexStub).toHaveBeenCalledWith('http://example.org/test/instance/foo', context);
             expect(createEdgeStub).toHaveBeenCalledWith(
                 'http://example.org/test/incoming',
                 'http://example.org/test/instance/foo',
@@ -1073,8 +1074,8 @@ describe('Vertex', () => {
         let sourceV: Vertex;
 
         beforeEach(() => {
-            targetV = new Vertex('http://example.org/test/instance/target', graph);
-            sourceV = new Vertex('http://example.org/test/instance/source', graph);
+            targetV = new Vertex('http://example.org/test/instance/target', context, graph);
+            sourceV = new Vertex('http://example.org/test/instance/source', context, graph);
             jest.spyOn(graph, 'hasVertex').mockImplementation((id) => {
                 switch (id) {
                     case 'http://example.org/test/instance/target':
@@ -1105,7 +1106,7 @@ describe('Vertex', () => {
             expect(() => sourceV.setOutgoing('test:outgoing', 'test:instance/foo')).toThrow(errors.VertexNotFoundError);
         });
 
-        it('should throw duplicate edge error when incoming already exisst', () => {
+        it('should throw duplicate edge error when incoming already exists', () => {
             jest.spyOn(graph, 'hasEdge').mockReturnValue(true);
             expect(() => sourceV.setOutgoing('test:outgoing', 'test:instance/target')).toThrow(errors.DuplicateEdgeError);
             expect(() => sourceV.setOutgoing('test:outgoing', targetV)).toThrow(errors.DuplicateEdgeError);
@@ -1133,7 +1134,7 @@ describe('Vertex', () => {
             const createVertexStub = jest.spyOn(graph, 'createVertex');
 
             sourceV.setOutgoing('test:outgoing', 'test:instance/foo', true);
-            expect(createVertexStub).toHaveBeenCalledWith('http://example.org/test/instance/foo');
+            expect(createVertexStub).toHaveBeenCalledWith('http://example.org/test/instance/foo', context);
             expect(createEdgeStub).toHaveBeenCalledTimes(1);
             expect(createEdgeStub).toHaveBeenCalledWith(
                 'http://example.org/test/outgoing',
@@ -1149,9 +1150,9 @@ describe('Vertex', () => {
         let typeBV: Vertex;
 
         beforeEach(() => {
-            vertex = new Vertex('http://example.org/test/instance/a', graph);
-            typeAV = new Vertex('http://example.org/test/typeA', graph);
-            typeBV = new Vertex('http://example.org/test/typeB', graph);
+            vertex = new Vertex('http://example.org/test/instance/a', context, graph);
+            typeAV = new Vertex('http://example.org/test/typeA', context, graph);
+            typeBV = new Vertex('http://example.org/test/typeB', context, graph);
             jest.spyOn(graph, 'getOutgoingEdges').mockImplementation((v, label) => {
                 if (v === 'http://example.org/test/instance/a' && label === '@type') {
                     return new Iterable([
@@ -1192,7 +1193,7 @@ describe('Vertex', () => {
 
             vertex.setType('test:typeC');
             expect(createVertexStub).toHaveBeenCalledTimes(1);
-            expect(createVertexStub).toHaveBeenCalledWith('http://example.org/test/typeC');
+            expect(createVertexStub).toHaveBeenCalledWith('http://example.org/test/typeC', context);
             expect(createEdgeStub).toHaveBeenCalledTimes(1);
             expect(createEdgeStub).toHaveBeenCalledWith(
                 '@type',

@@ -44,8 +44,8 @@ describe('JsonldGraph', () => {
 
         beforeEach(() => {
             graph = new JsonldGraph();
-            graph.createVertex('urn:test:instance:A');
-            graph.createVertex('urn:test:instance:B');
+            graph.createVertex('urn:test:instance:A', ['urn:test:context']);
+            graph.createVertex('urn:test:instance:B', ['urn:test:context']);
             graph.setPrefix('instance', 'urn:test:instance:');
             graph.setPrefix('test', 'urn:test:');
         });
@@ -130,26 +130,27 @@ describe('JsonldGraph', () => {
         });
 
         it('should throw when id is null, undefined or empty', () => {
-            expect(() => graph.createVertex(null as any)).toThrow(ReferenceError);
-            expect(() => graph.createVertex(undefined as any)).toThrow(ReferenceError);
-            expect(() => graph.createVertex('')).toThrow(ReferenceError);
+            expect(() => graph.createVertex(null as any, ['urn:test:context'])).toThrow(ReferenceError);
+            expect(() => graph.createVertex(undefined as any, ['urn:test:context'])).toThrow(ReferenceError);
+            expect(() => graph.createVertex('', ['urn:test:context'])).toThrow(ReferenceError);
         });
 
         it('should throw invalid iri when vertex iri is not valid', () => {
-            expect(() => graph.createVertex('foo')).toThrow(errors.InvalidIRIError);
-            expect(() => graph.createVertex('urn:')).toThrow(errors.InvalidIRIError);
-            expect(() => graph.createVertex(':fake:id')).toThrow(errors.InvalidIRIError);
+            expect(() => graph.createVertex('foo', ['urn:test:context'])).toThrow(errors.InvalidIRIError);
+            expect(() => graph.createVertex('urn:', ['urn:test:context'])).toThrow(errors.InvalidIRIError);
+            expect(() => graph.createVertex(':fake:id', ['urn:test:context'])).toThrow(errors.InvalidIRIError);
         });
 
         it('should create vertex', () => {
-            const vertex = graph.createVertex('urn:test:vertex');
+            const vertex = graph.createVertex('urn:test:vertex', ['urn:test:context']);
             expect(vertex).toBeTruthy()
+            expect(vertex.contexts).toEqual(['urn:test:context']);
             expect(graph.vertexCount).toEqual(1);
         });
 
         it('should throw duplicate error when another vertex with same id exists', () => {
-            graph.createVertex('urn:test:foo:1');
-            expect(() => graph.createVertex('urn:test:foo:1')).toThrow(errors.DuplicateVertexError);
+            graph.createVertex('urn:test:foo:1', ['urn:test:context']);
+            expect(() => graph.createVertex('urn:test:foo:1', ['urn:test:context'])).toThrow(errors.DuplicateVertexError);
         });
 
         it('should throw reference error when factory returns null or undefined', () => {
@@ -159,7 +160,7 @@ describe('JsonldGraph', () => {
                 }
             });
 
-            expect(() => graph.createVertex('urn:test:foo')).toThrow(ReferenceError);
+            expect(() => graph.createVertex('urn:test:foo', ['urn:test:context'])).toThrow(ReferenceError);
         });
     });
 
@@ -218,8 +219,8 @@ describe('JsonldGraph', () => {
             graph = new JsonldGraph();
 
             graph.setPrefix('i', 'urn:test:instances:');
-            graph.createVertex('i:instance:a');
-            graph.createVertex('i:instance:b');
+            graph.createVertex('i:instance:a', ['urn:test:context']);
+            graph.createVertex('i:instance:b', ['urn:test:context']);
             graph.createEdge('i:edge:1', 'i:instance:a', 'i:instance:b');
             graph.createEdge('i:edge:2', 'i:instance:a', 'i:instance:b');
         });
@@ -261,7 +262,7 @@ describe('JsonldGraph', () => {
 
         beforeEach(() => {
             graph = new JsonldGraph();
-            graph.createVertex('http://example.org/test/instanceA');
+            graph.createVertex('http://example.org/test/instanceA', ['urn:test:context']);
             graph.setPrefix('test', 'http://example.org/test/');
         });
 
@@ -296,8 +297,8 @@ describe('JsonldGraph', () => {
 
             beforeEach(() => {
                 graph = new JsonldGraph();
-                graph.createVertex('urn:test:test:A');
-                graph.createVertex('urn:test:test:B');
+                graph.createVertex('urn:test:test:A', ['urn:test:context']);
+                graph.createVertex('urn:test:test:B', ['urn:test:context']);
                 graph.setPrefix('instance', 'urn:test:');
             });
 
@@ -316,9 +317,9 @@ describe('JsonldGraph', () => {
             graph = new JsonldGraph();
 
             graph.setPrefix('i', 'urn:test:');
-            graph.createVertex('i:instance:a');
-            graph.createVertex('i:instance:b');
-            graph.createVertex('i:instance:c');
+            graph.createVertex('i:instance:a', ['urn:test:context']);
+            graph.createVertex('i:instance:b', ['urn:test:context']);
+            graph.createVertex('i:instance:c', ['urn:test:context']);
             graph.createEdge('i:edge:1', 'i:instance:a', 'i:instance:b');
             graph.createEdge('i:edge:1', 'i:instance:a', 'i:instance:c');
             graph.createEdge('i:edge:2', 'i:instance:a', 'i:instance:c');
@@ -359,9 +360,9 @@ describe('JsonldGraph', () => {
             graph = new JsonldGraph();
 
             graph.setPrefix('i', 'urn:test:');
-            graph.createVertex('i:instance:a');
-            graph.createVertex('i:instance:b');
-            graph.createVertex('i:instance:c');
+            graph.createVertex('i:instance:a', ['urn:test:context']);
+            graph.createVertex('i:instance:b', ['urn:test:context']);
+            graph.createVertex('i:instance:c', ['urn:test:context']);
             graph.createEdge('i:edge:1', 'i:instance:a', 'i:instance:b');
             graph.createEdge('i:edge:1', 'i:instance:a', 'i:instance:c');
             graph.createEdge('i:edge:2', 'i:instance:a', 'i:instance:c');
@@ -395,9 +396,9 @@ describe('JsonldGraph', () => {
             graph = new JsonldGraph();
 
             graph.setPrefix('i', 'urn:test:');
-            graph.createVertex('i:instance:a');
-            graph.createVertex('i:instance:b');
-            graph.createVertex('i:instance:c');
+            graph.createVertex('i:instance:a', ['urn:test:context']);
+            graph.createVertex('i:instance:b', ['urn:test:context']);
+            graph.createVertex('i:instance:c', ['urn:test:context']);
             graph.createEdge('i:edge:1', 'i:instance:a', 'i:instance:b');
             graph.createEdge('i:edge:1', 'i:instance:a', 'i:instance:c');
             graph.createEdge('i:edge:2', 'i:instance:a', 'i:instance:c');
@@ -437,9 +438,9 @@ describe('JsonldGraph', () => {
             graph = new JsonldGraph();
 
             graph.setPrefix('i', 'urn:instances');
-            graph.createVertex('i:instance:a');
-            graph.createVertex('i:instance:b');
-            graph.createVertex('i:instance:c');
+            graph.createVertex('i:instance:a', ['urn:test:context']);
+            graph.createVertex('i:instance:b', ['urn:test:context']);
+            graph.createVertex('i:instance:c', ['urn:test:context']);
 
             graph.createEdge('i:edge:1', 'i:instance:a', 'i:instance:b');
             graph.createEdge('i:edge:1', 'i:instance:b', 'i:instance:c');
@@ -473,8 +474,8 @@ describe('JsonldGraph', () => {
             graph = new JsonldGraph();
 
             graph.setPrefix('i', 'urn:test:');
-            graph.createVertex('i:instance:a');
-            graph.createVertex('i:instance:b');
+            graph.createVertex('i:instance:a', ['urn:test:context']);
+            graph.createVertex('i:instance:b', ['urn:test:context']);
             graph.createEdge('i:edge:1', 'i:instance:a', 'i:instance:b')
         });
 
@@ -518,7 +519,7 @@ describe('JsonldGraph', () => {
             graph = new JsonldGraph();
 
             graph.setPrefix('i', 'urn:test:');
-            graph.createVertex('urn:test:instance:a');
+            graph.createVertex('urn:test:instance:a', ['urn:test:context']);
         });
 
         it('should throw when vertex id is null, undefined or empty', () => {
@@ -594,7 +595,7 @@ describe('JsonldGraph', () => {
 
         it('should work', async () => {
             const graph = new JsonldGraph();
-            await graph.load(expanded);
+            await graph.load(expanded, ['urn:test:context']);
 
             expect(graph.hasVertex('http://example.org/hr/classes/Employee')).toEqual(true);
             expect(graph.hasVertex('http://example.org/hr/classes/Manager')).toEqual(true);
@@ -1619,8 +1620,8 @@ describe('JsonldGraph', () => {
             graph = new JsonldGraph();
 
             graph.setPrefix('i', 'urn:test:');
-            outgoingV = graph.createVertex('i:incoming:a');
-            incomingV = graph.createVertex('i:outgoing:a');
+            outgoingV = graph.createVertex('i:incoming:a', ['urn:test:context']);
+            incomingV = graph.createVertex('i:outgoing:a', ['urn:test:context']);
             edge = graph.createEdge('i:edge:1', outgoingV, incomingV);
         });
 
@@ -1647,9 +1648,9 @@ describe('JsonldGraph', () => {
             graph = new JsonldGraph();
 
             graph.setPrefix('i', 'urn:test:');
-            vertex = graph.createVertex('i:instance:a');
+            vertex = graph.createVertex('i:instance:a', ['urn:test:context']);
 
-            graph.createVertex('i:instance:b');
+            graph.createVertex('i:instance:b', ['urn:test:context']);
             graph.createEdge('i:edge:1', vertex, 'i:instance:b');
             graph.createEdge('i:edge:2', 'i:instance:b', vertex);
         });
@@ -1677,8 +1678,8 @@ describe('JsonldGraph', () => {
             graph = new JsonldGraph();
 
             graph.setPrefix('i', 'urn:test:');
-            graph.createVertex('i:instance:a');
-            graph.createVertex('i:instance:b');
+            graph.createVertex('i:instance:a', ['urn:test:context']);
+            graph.createVertex('i:instance:b', ['urn:test:context']);
             graph.createEdge('i:edge:1', 'i:instance:a', 'i:instance:b');
         });
 
@@ -1703,9 +1704,9 @@ describe('JsonldGraph', () => {
         beforeEach(() => {
             graph = new JsonldGraph();
             graph.setPrefix('test', 'urn:test:');
-            graph.createVertex('test:instanceA');
+            graph.createVertex('test:instanceA', ['urn:test:context']);
 
-            const instanceB = graph.createVertex('test:instanceB');
+            const instanceB = graph.createVertex('test:instanceB', ['urn:test:context']);
             instanceB.setOutgoing('test:out', 'test:instanceC', true);
             instanceB.setIncoming('test:in', 'test:instanceA');
             instanceB.appendAttributeValue('test:displayName', 'first');

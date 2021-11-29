@@ -44,6 +44,9 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
             expect(graph.hasVertex('i:jilld')).toEqual(true);
             expect(graph.hasVertex('i:johnd:contact:primary')).toEqual(true);
             expect(graph.hasVertex('i:johnd:contact:secondary')).toEqual(true);
+
+            expect(graph.getVertex('i:johnd')!.contexts).toEqual(['urn:example:org:hr']);
+            expect(graph.getVertex('i:johnd:contact:primary')!.contexts).toEqual(['urn:example:org:hr']);
         });
 
         it('can query for all vertex of type', () => {
@@ -397,10 +400,10 @@ describe('Custom vertex', () => {
 
     it('should create custom vertices', () => {
         const graph = new JsonldGraph({
-            vertexFactory: (iri, types, graph) => new CustomVertex(iri, graph)
+            vertexFactory: (iri, context, graph) => new CustomVertex(iri, context, graph)
         });
 
-        const vertex = graph.createVertex('urn:foo:bar');
+        const vertex = graph.createVertex('urn:foo:bar', ['urn:example:foo']);
         const outgoingV = vertex.setOutgoing('urn:related', 'urn:related:foo', true);
 
         expect(vertex).toBeInstanceOf(CustomVertex);
@@ -413,7 +416,7 @@ async function graphCreator(): Promise<JsonldGraph> {
     graph.addContext('urn:example:org:hr', context);
     graph.setPrefix('class', 'urn:example:org:hr:classes:');
     graph.setPrefix('i', 'urn:example:org:hr:');
-    graph.createVertex('urn:example:org:hr:johnd')
+    graph.createVertex('urn:example:org:hr:johnd', ['urn:example:org:hr'])
         .setType('class:Person')
         .setAttributeValue('class:entity:first_name', 'John')
         .setAttributeValue('class:entity:last_name', 'Doe')
@@ -425,7 +428,7 @@ async function graphCreator(): Promise<JsonldGraph> {
             lastUdate: '2002=02-03'
         });
 
-    graph.createVertex('urn:example:org:hr:johnd:contact:primary')
+    graph.createVertex('urn:example:org:hr:johnd:contact:primary', ['urn:example:org:hr'])
         .setType('class:Contact:Address')
         .setAttributeValue('class:entity:contact:type', 'primary')
         .setAttributeValue('class:entity:contact:street', '123 Sunshine Street')
@@ -433,7 +436,7 @@ async function graphCreator(): Promise<JsonldGraph> {
         .setAttributeValue('class:entity:contact:state', 'CA')
         .setAttributeValue('class:entity:contact:zip', 102992);
 
-    graph.createVertex('urn:example:org:hr:johnd:contact:secondary')
+    graph.createVertex('urn:example:org:hr:johnd:contact:secondary', ['urn:example:org:hr'])
         .setType('class:Contact:Address')
         .setAttributeValue('class:entity:contact:type', 'secondary')
         .setAttributeValue('class:entity:contact:street', '123 Sunshine Street')
@@ -441,7 +444,7 @@ async function graphCreator(): Promise<JsonldGraph> {
         .setAttributeValue('class:entity:contact:state', 'CA')
         .setAttributeValue('class:entity:contact:zip', 102992);
 
-    graph.createVertex('urn:example:org:hr:janed:contact:primary')
+    graph.createVertex('urn:example:org:hr:janed:contact:primary', ['urn:example:org:hr'])
         .setType('class:Contact:Address')
         .setAttributeValue('class:entity:contact:type', 'primary')
         .setAttributeValue('class:entity:contact:street', '123 Sunshine Street')
@@ -449,14 +452,14 @@ async function graphCreator(): Promise<JsonldGraph> {
         .setAttributeValue('class:entity:contact:state', 'CA')
         .setAttributeValue('class:entity:contact:zip', 102992);
 
-    graph.createVertex('urn:example:org:hr:janed')
+    graph.createVertex('urn:example:org:hr:janed', ['urn:example:org:hr'])
         .setType('class:Person', 'class:Manager')
         .setAttributeValue('class:entity:first_name', 'Jane')
         .setAttributeValue('class:entity:last_name', 'Doe')
         .setAttributeValue('class:entity:disp_name', 'Jane Doe', 'en')
         .setAttributeValue('class:employee:level', 2);
 
-    graph.createVertex('urn:example:org:hr:jilld')
+    graph.createVertex('urn:example:org:hr:jilld', ['urn:example:org:hr'])
         .setType('class:Person')
         .setAttributeValue('class:entity:first_name', 'Jill')
         .setAttributeValue('class:entity:last_name', 'Doe')

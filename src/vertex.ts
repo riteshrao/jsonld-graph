@@ -36,6 +36,7 @@ export interface AttributeValue<T = any> {
 
 export interface SerializedVertex {
     iri: string;
+    contexts: string[];
     attributes: Record<string, AttributeValue[]>;
 }
 
@@ -47,6 +48,7 @@ export interface SerializedVertex {
 export default class Vertex {
     private _iri: string;
     private _attributes: Record<string, AttributeValue[]> = {};
+    private _contexts: string[];
     private readonly _graph: JsonldGraph<this>;
 
     /**
@@ -55,7 +57,7 @@ export default class Vertex {
      * @param {JsonldGraph} graph The graph containng the vertex instance.
      * @memberof Vertex
      */
-    constructor(iri: string, graph: JsonldGraph<any>) {
+    constructor(iri: string, contexts: string[], graph: JsonldGraph<any>) {
         if (!iri) {
             throw new ReferenceError(`Invalid id. id is '${iri}'`);
         }
@@ -64,7 +66,18 @@ export default class Vertex {
         }
 
         this._iri = iri;
+        this._contexts = contexts;
         this._graph = graph;
+    }
+
+    /**
+     * @description Gets the contexts associated with the vertex.
+     * @readonly
+     * @type {string[]}
+     * @memberof Vertex
+     */
+    get contexts(): string[] {
+        return this._contexts;
     }
 
     /**
@@ -592,7 +605,7 @@ export default class Vertex {
 
         if (!this._graph.hasVertex(sourceIRI)) {
             if (createIfNotExists) {
-                this._graph.createVertex(sourceIRI);
+                this._graph.createVertex(sourceIRI, this._contexts);
             } else {
                 throw new errors.VertexNotFoundError(sourceIRI);
             }
@@ -628,7 +641,7 @@ export default class Vertex {
 
         if (!this._graph.hasVertex(targetIRI)) {
             if (createIfNotExists) {
-                this._graph.createVertex(targetIRI);
+                this._graph.createVertex(targetIRI, this._contexts);
             } else {
                 throw new errors.VertexNotFoundError(targetIRI);
             }
@@ -722,6 +735,7 @@ export default class Vertex {
     serialize(): SerializedVertex {
         return {
             iri: this._iri,
+            contexts: this._contexts,
             attributes: this._attributes
         }
     }
@@ -735,7 +749,7 @@ export default class Vertex {
      * @memberof Vertex
      */
     static deserialize<V extends Vertex = Vertex>(serialized: SerializedVertex, graph: JsonldGraph<V>): V {
-        const vertex = graph.createVertex(serialized.iri);
+        const vertex = graph.createVertex(serialized.iri, serialized.contexts);
         vertex._attributes = serialized.attributes;
         return vertex;
     }

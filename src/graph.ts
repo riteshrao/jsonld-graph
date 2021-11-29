@@ -17,7 +17,7 @@ const PREFIX_REGEX = /^[a-zA-z][a-zA-Z0-9]*$/;
  * @interface GraphVertexFactory
  */
 export interface GraphVertexFactory<V extends Vertex = Vertex> {
-    (iri: string, types: string[], graph: JsonldGraph<V>): V;
+    (iri: string, contexts: string[], graph: JsonldGraph<V>): V;
 }
 
 /**
@@ -147,8 +147,8 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
      */
     constructor(options: GraphOptions<V> = {}) {
         this._options = options;
-        this._vertexFactory = options.vertexFactory || function (iri: string, _: string[], graph: JsonldGraph): Vertex {
-            return new Vertex(iri, graph);
+        this._vertexFactory = options.vertexFactory || function (iri: string, contexts: string[], graph: JsonldGraph): Vertex {
+            return new Vertex(iri, contexts, graph);
         } as any
 
         if (options.remoteContexts) {
@@ -157,7 +157,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
                     ? (jsonld as any).documentLoaders.node()
                     : (jsonld as any).documentLoaders.xhr();
         }
-        
+
         this._documentLoader = async (url: string): Promise<any> => {
             const normalizedUrl = url.toLowerCase();
             if (this._contexts.has(normalizedUrl)) {
@@ -360,7 +360,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
      * @returns {V}
      * @memberof JsonldGraph
      */
-    createVertex(id: string, ...types: string[]): V {
+    createVertex(id: string, contexts: string[], ...types: string[]): V {
         if (!id) {
             throw new ReferenceError(`Invalid id. id is '${id}'`);
         }
@@ -372,7 +372,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
             throw new errors.DuplicateVertexError(id);
         }
 
-        const vertex = this._vertexFactory(expandedId, types, this);
+        const vertex = this._vertexFactory(expandedId, contexts, this);
 
         if (!vertex) {
             throw new ReferenceError(`Invalid vertex returned from factory. vertex is ${vertex}`);
@@ -654,7 +654,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
      * @param {(any | any[])} inputs The inputs to load into the graph.
      * @memberof JsonldGraph
      */
-    load(entities: any | any[], options?: GraphLoadOptions): void {
+    load(entities: any | any[], contexts: string[], options?: GraphLoadOptions): void {
         if (!entities) {
             throw new TypeError(`Invalid entities. entities is ${entities}`);
         }
@@ -664,35 +664,41 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
             for (const entity of entities) {
                 if (entity['@graph']) {
                     for (const item of entity['@graph']) {
-                        this._loadVertex(item, idTracker, options);
+                        this._loadVertex(item, contexts, idTracker, options);
                     }
                 } else {
-                    this._loadVertex(entity, idTracker, options);
+                    this._loadVertex(entity, contexts, idTracker, options);
                 }
             }
         } else {
             if (entities['@graph']) {
                 for (const item of entities['@graph']) {
-                    this._loadVertex(item, idTracker, options);
+                    this._loadVertex(item, contexts, idTracker, options);
                 }
             } else {
-                this._loadVertex(entities, idTracker, options);
+                this._loadVertex(entities, contexts, idTracker, options);
             }
         }
     }
 
     /**
      * @description Parses and loads JSON-LD inputs into the graph.
-     * @param {(any | any[])} inputs A JSON object or an array of JSON objects to load.
-     * @param {types.GraphLoadOptions} [options] Optons used to load inputs.
+     * @param {(any)} input A JSON object or an array of JSON objects to load.
+     * @param {types.GraphLoadOptions} [options] Options used to load inputs.
      * @memberof JsonldGraph
      */
-    async parse(inputs: any | any[], options?: GraphLoadOptions): Promise<void> {
-        if (!inputs || (inputs instanceof Array && inputs.length === 0)) {
-            throw new ReferenceError(`Invalid inputs. inputs is '${inputs}'`);
+    async parse(input: any, options?: GraphLoadOptions): Promise<void> {
+        if (!input || (input instanceof Array && input.length === 0)) {
+            throw new ReferenceError(`Invalid inputs. inputs is '${input}'`);
         }
 
         const expandOptions: jsonld.Options.Expand = { documentLoader: this._documentLoader };
+        
+        let targetContexts = options?.contexts || input['@context'];
+        if (typeof targetContexts === 'string') {
+            targetContexts = [targetContexts];
+        }
+
         if (options?.base) {
             expandOptions.base = options.base;
         }
@@ -703,12 +709,12 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
 
         let entities: any;
         try {
-            entities = (await jsonld.expand(inputs, expandOptions)) as any[];
+            entities = (await jsonld.expand(input, expandOptions)) as any[];
         } catch (err) {
             throw new errors.DocumentParseError(err);
         }
 
-        this.load(entities, options);
+        this.load(entities, targetContexts, options);
 
         if (options?.normalize) {
             this._normalize(options)
@@ -863,7 +869,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
             throw new errors.DuplicateVertexError(id);
         }
 
-        const renamed = this.createVertex(id);
+        const renamed = this.createVertex(id, target.contexts);
         for (const attrib of target.getAttributes()) {
             for (const val of attrib.values) {
                 renamed.appendAttributeValue(attrib.name, val.value, val.language, val.type === '@json')
@@ -1066,7 +1072,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
         ];
     }
 
-    private _loadVertex(entity: any, idTracker: Set<string>, options?: GraphLoadOptions): V {
+    private _loadVertex(entity: any, contexts: string[], idTracker: Set<string>, options?: GraphLoadOptions): V {
         let id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${shortid()}`;
         const types: string[] = entity[JsonldKeywords.type] || [];
 
@@ -1100,7 +1106,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
             }
         }
 
-        const vertex = this._getOrCreateVertex(id);
+        const vertex = this._getOrCreateVertex(id, contexts);
         if (vertex.getTypes().count() > 0 && types.length > 0 && this._options.typeConflictResolver) {
             // Existing type found with @types and new vertex also has types. Resolve the conflict.
             const resolvedTypes = this._options.typeConflictResolver(
@@ -1126,19 +1132,19 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
         }
 
         for (const key of Object.keys(entity).filter(x => x !== JsonldKeywords.id && x !== JsonldKeywords.type)) {
-            this._loadPredicate(key, entity[key], vertex, idTracker, options);
+            this._loadPredicate(key, entity[key], vertex, contexts, idTracker, options);
         }
 
         return vertex;
     }
 
-    private _getOrCreateVertex(id: string, ...types: string[]): V {
+    private _getOrCreateVertex(id: string, contexts: string[], ...types: string[]): V {
         if (this.hasVertex(id)) {
             const vertex = this.getVertex(id)!;
             vertex.setType(...types);
             return vertex;
         } else {
-            return this.createVertex(id, ...types);
+            return this.createVertex(id, contexts, ...types);
         }
     }
 
@@ -1146,13 +1152,14 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
         predicate: string,
         values: any[],
         vertex: V,
+        contexts: string[],
         idTracker: Set<string>,
         options?: GraphLoadOptions
     ): void {
         for (const value of values) {
             if (value[JsonldKeywords.list]) {
                 // Value is a list. Recurse over list and load individual values
-                this._loadPredicate(predicate, value[JsonldKeywords.list], vertex, idTracker, options);
+                this._loadPredicate(predicate, value[JsonldKeywords.list], vertex, contexts, idTracker, options);
                 return;
             } else if (
                 value[JsonldKeywords.value] !== null &&
@@ -1177,7 +1184,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
             } else {
                 // Either the value is an inline anonymous entity or a reference to another entity.
                 // In either case a vertex is created for the object and loaded.
-                const reference = this._loadVertex(value, idTracker, options);
+                const reference = this._loadVertex(value, contexts, idTracker, options);
                 if (!this.hasEdge(predicate, vertex, reference)) {
                     this.createEdge(predicate, vertex, reference);
                 }
