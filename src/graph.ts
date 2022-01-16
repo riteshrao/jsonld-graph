@@ -1008,7 +1008,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
      * @param {GraphVertexFactory} factory
      * @memberof JsonldGraph
      */
-    useFactory(factory: GraphVertexFactory): void {
+    useFactory(factory: GraphVertexFactory<V>): void {
         this._vertexFactory = factory;
     }
 
