@@ -135,10 +135,10 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
     private _indexMap = new Map<string, Set<string>>();
     private _prefixes = new Map<string, string>();
     private _contexts = new Map<string, any>();
+    private _vertexFactory: GraphVertexFactory<V>;
     private readonly _options: GraphOptions;
     private readonly _remoteLoader: Loader;
     private readonly _documentLoader: Loader;
-    private readonly _vertexFactory: GraphVertexFactory<V>;
 
     /**
      * Creates an instance of JsonldGraph.
@@ -1009,7 +1009,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
      * @memberof JsonldGraph
      */
     useFactory(factory: GraphVertexFactory): void {
-        this._options.vertexFactory = factory;
+        this._vertexFactory = factory;
     }
 
     /**
