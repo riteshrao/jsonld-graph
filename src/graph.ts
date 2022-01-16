@@ -1004,6 +1004,15 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
     }
 
     /**
+     * @description Sets and overrides the default vertex factory to use create vertex instances.
+     * @param {GraphVertexFactory} factory
+     * @memberof JsonldGraph
+     */
+    useFactory(factory: GraphVertexFactory): void {
+        this._options.vertexFactory = factory;
+    }
+
+    /**
     * @description Validates an IRI.
     * @param {string} iri The IRI to validate.
     * @returns {void}
