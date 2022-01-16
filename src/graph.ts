@@ -693,7 +693,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
         }
 
         const expandOptions: jsonld.Options.Expand = { documentLoader: this._documentLoader };
-        
+
         let targetContexts = options?.contexts || input['@context'];
         if (typeof targetContexts === 'string') {
             targetContexts = [targetContexts];
@@ -957,24 +957,21 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
      * @returns {JsonldGraph}
      * @memberof JsonldGraph
      */
-    static deserialize<V extends Vertex = Vertex>(serialized: SerializedGraph, options?: GraphOptions<V>): JsonldGraph<V> {
-        const graph = new JsonldGraph(options);
+    deserialize(serialized: SerializedGraph): void {
         for (const item of serialized.vertices) {
-            Vertex.deserialize(item, graph);
+            Vertex.deserialize(item, this);
         }
 
         for (const item of serialized.edges) {
-            const edge = Edge.deserialize(item, graph);
-            const edgeId = graph._formatEdgeId(edge.iri, edge.from.iri, edge.to.iri);
-            graph._edges.set(edgeId, edge);
+            const edge = Edge.deserialize(item, this);
+            const edgeId = this._formatEdgeId(edge.iri, edge.from.iri, edge.to.iri);
+            this._edges.set(edgeId, edge);
         }
 
         for (const key of Object.keys(serialized.indices)) {
             const entries = new Set<string>(serialized.indices[key]);
-            graph._indexMap.set(key, entries);
+            this._indexMap.set(key, entries);
         }
-
-        return graph;
     }
 
     toExpanded(): any {
