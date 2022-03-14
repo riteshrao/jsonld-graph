@@ -1,4 +1,4 @@
-import shortid from 'shortid';
+import { nanoid } from 'nanoid';
 import Edge from './edge';
 import * as errors from './errors';
 import JsonldGraph from './graph';
@@ -1060,7 +1060,7 @@ describe('JsonldGraph', () => {
 
             const graph = new JsonldGraph({
                 blankIriResolver: (vertex): string => {
-                    const name = vertex.getAttributeValue("vocab:Entity/name") || shortid();
+                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid();
                     const parent = vertex.getIncoming().first();
                     if (!parent) {
                         return name;
@@ -1175,7 +1175,7 @@ describe('JsonldGraph', () => {
 
             const graph = new JsonldGraph({
                 blankIriResolver: (vertex): string | undefined => {
-                    const name = vertex.getAttributeValue("vocab:Entity/name") || shortid();
+                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid();
                     return 'http://example.org/hr/instances/' + name;
                 }
             });
@@ -1203,7 +1203,7 @@ describe('JsonldGraph', () => {
                 ],
                 '@graph': [
                     {
-                        '@id': 'johnd',
+                        // '@id': 'johnd',
                         firstName: 'John',
                         lastName: 'Doe',
                         address: {
@@ -1235,7 +1235,7 @@ describe('JsonldGraph', () => {
 
             const graph = new JsonldGraph({
                 blankIriResolver: (vertex): string | undefined => {
-                    const name = vertex.getAttributeValue("vocab:Entity/name") || shortid();
+                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid();
                     return 'http://example.org/hr/instances/' + name;
                 },
                 typeConflictResolver: (source: string[], target: string[]) => {

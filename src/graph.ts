@@ -1,7 +1,7 @@
 import Iterable from 'jsiterable';
 import * as jsonld from 'jsonld';
 import { RemoteDocument } from 'jsonld/jsonld-spec';
-import shortid from 'shortid';
+import { nanoid } from 'nanoid';
 import { BlankNodePrefix, JsonldKeywords } from './constants';
 import Edge, { SerializedEdge } from './edge';
 import * as errors from './errors';
@@ -1070,7 +1070,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
     }
 
     private _loadVertex(entity: any, contexts: string[], idTracker: Set<string>, options?: GraphLoadOptions): V {
-        let id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${shortid()}`;
+        let id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${nanoid()}`;
         const types: string[] = entity[JsonldKeywords.type] || [];
 
         if (id.startsWith(BlankNodePrefix)) {

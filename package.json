@@ -33,7 +33,6 @@
         "@types/jsonld": "^1.5.5",
         "@types/lodash.clonedeep": "^4.5.6",
         "@types/node": "^15.12.1",
-        "@types/shortid": "0.0.29",
         "@typescript-eslint/eslint-plugin": "^4.26.0",
         "@typescript-eslint/parser": "^4.26.0",
         "eslint": "^7.28.0",
@@ -49,7 +48,7 @@
         "@types/uuid": "^8.3.0",
         "jsiterable": "^3.0.5",
         "jsonld": "^5.2.0",
-        "shortid": "^2.2.16",
+        "nanoid": "^3.3.1",
         "uuid": "^8.3.2"
     },
     "jest": {
