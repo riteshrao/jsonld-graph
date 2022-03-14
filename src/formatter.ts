@@ -25,6 +25,12 @@ export interface ExpandFormatOptions {
      */
     anonymousTypes?: boolean | ((source: Vertex, predicate?: string, target?: Vertex) => boolean);
     /**
+     * @description Compact locale specific predicates when only one locale is specified.
+     * @type {boolean}
+     * @memberof ExpandFormatOptions
+     */
+    compactLocale?: string;
+    /**
      * @description Set to true or pass a custom filter to embed references as compact @ids rather then embedding the reference.
      * @memberof ExpandFormatOptions
      */
@@ -33,7 +39,6 @@ export interface ExpandFormatOptions {
      * @description Set to true or pass a custom filter to filter out references.
      */
     excludeReferences?: boolean | ((source: Vertex, predicate: string, target: Vertex) => boolean);
-
     /**
      * @description Optional filter to filter out attribute values.
      */
@@ -111,8 +116,8 @@ export function expand(vertex: Vertex, options: ExpandFormatOptions = {}): any {
 }
 
 function _expand(vertex: Vertex, options: ExpandFormatOptions = {}) {
-    const id = options.identityTranslator 
-        ? options.identityTranslator(vertex.iri) || vertex.iri 
+    const id = options.identityTranslator
+        ? options.identityTranslator(vertex.iri) || vertex.iri
         : vertex.iri
 
     const expanded: any = { [JsonldKeywords.id]: id };
@@ -138,15 +143,22 @@ function _expand(vertex: Vertex, options: ExpandFormatOptions = {}) {
         }
 
         expanded[id] = [];
-        for (const attribValue of values) {
-            const value = { [JsonldKeywords.value]: attribValue.value }
-            if (attribValue.language) {
-                value[JsonldKeywords.language] = attribValue.language;
+        if (options.compactLocale &&
+            values.length === 1 &&
+            values[0].language === options.compactLocale) {
+            // expanded[id].push({ [JsonldKeywords.value]: values[0].value, '@language': null });
+            expanded[id].push(values[0].value);
+        } else {
+            for (const attribValue of values) {
+                const value = { [JsonldKeywords.value]: attribValue.value }
+                if (attribValue.language) {
+                    value[JsonldKeywords.language] = attribValue.language;
+                }
+                if (attribValue.type) {
+                    value[JsonldKeywords.type] = attribValue.type;
+                }
+                expanded[id].push(value);
             }
-            if (attribValue.type) {
-                value[JsonldKeywords.type] = attribValue.type;
-            }
-            expanded[id].push(value);
         }
     }
 
@@ -168,7 +180,7 @@ function _expand(vertex: Vertex, options: ExpandFormatOptions = {}) {
                     : outgoing.to.iri;
 
                 expanded[outgoing.iri].push({ '@id': referenceIri });
-                
+
             } else {
                 const expandedOut = _expand(outgoing.to, options);
                 if (expandedOut[JsonldKeywords.id] &&

@@ -377,7 +377,7 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
             expect(johnd.mgr[0].contact).not.toBeNull();
         });
 
-        it('can translate referneces', async () => {
+        it('can translate references', async () => {
             const json = await graph.toJson('urn:example:org:hr', {
                 identityTranslator: (id) => {
                     if (id === 'urn:example:org:hr:janed') {
@@ -391,6 +391,11 @@ describe.each([graphCreator, graphParser])('E2E', (source) => {
             const jilld = json['@graph'].find((x: any) => x['@id'] === 'urn:example:org:hr:jilld');
             expect(johnd.mgr[0]['@id']).toEqual('urn:example:org:hr:newjaned');
             expect(jilld.mgr[0]['@id']).toEqual('urn:example:org:hr:newjaned');
+        });
+
+        it('can compact locale attributes', async () => {
+            const json = await graph.toJson('urn:example:org:hr', { compactLocale: 'en' })
+            console.log(JSON.stringify(json));
         });
     });
 });

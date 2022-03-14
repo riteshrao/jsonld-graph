@@ -27,11 +27,10 @@ export interface GraphVertexFactory<V extends Vertex = Vertex> {
  */
 export interface GraphOptions<V extends Vertex = Vertex> {
     /**
-     * @description True to enable loading contexts from remote sources, else false.
-     * @type {boolean}
+     * @description Custom resolver function to use for resolving unknown contexts.
      * @memberof GraphOptions
      */
-    remoteContexts?: boolean;
+    contextResolver?: (id: string) => Promise<any>;
     /**
      * @description Factory used to create graph edges and vertices.
      * @type {types.GraphTypesFactory}
@@ -82,7 +81,7 @@ export interface GraphLoadOptions {
      */
     merge?: boolean;
     /**
-     * @description Normalize all blank id and blank type vetices after load.
+     * @description Normalize all blank id and blank type vertices after load.
      * @type {boolean}
      * @memberof GraphLoadOptions
      */
@@ -137,7 +136,6 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
     private _contexts = new Map<string, any>();
     private _vertexFactory: GraphVertexFactory<V>;
     private readonly _options: GraphOptions;
-    private readonly _remoteLoader: Loader;
     private readonly _documentLoader: Loader;
 
     /**
@@ -151,25 +149,23 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
             return new Vertex(iri, contexts, graph);
         } as any
 
-        if (options.remoteContexts) {
-            this._remoteLoader =
-                typeof process !== undefined && process.versions && process.versions.node
-                    ? (jsonld as any).documentLoaders.node()
-                    : (jsonld as any).documentLoaders.xhr();
-        }
-
         this._documentLoader = async (url: string): Promise<any> => {
             const normalizedUrl = url.toLowerCase();
             if (this._contexts.has(normalizedUrl)) {
-                return Promise.resolve<RemoteDocument>({
+                return {
                     contextUrl: undefined,
                     documentUrl: url,
                     document: this._contexts.get(normalizedUrl)
-                });
+                };
             }
 
-            if (this._options?.remoteContexts && this._remoteLoader) {
-                return this._remoteLoader(url);
+            if (this._options?.contextResolver) {
+                const context = await this._options.contextResolver(normalizedUrl);
+                return {
+                    contextUrl: undefined,
+                    documentUrl: url,
+                    document: context || {}
+                }
             }
 
             throw new errors.ContextNotFoundError(url);
@@ -430,11 +426,6 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
         const context = this._contexts.get(contextUri);
         if (context) {
             return Promise.resolve(context);
-        }
-
-        if (this._options?.remoteContexts) {
-            const result = await this._remoteLoader(contextUri);
-            return result.document;
         }
 
         return undefined;
@@ -974,11 +965,11 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
         }
     }
 
-    toExpanded(): any {
+    toExpanded(options: formatter.ExpandFormatOptions = {}): any {
         const expanded = []
 
         for (const v of this.getVertices()) {
-            expanded.push(formatter.expand(v, { compactReferences: true }));
+            expanded.push(formatter.expand(v, { compactReferences: true, ...options }));
         }
 
         return {
