@@ -48,7 +48,7 @@
     "dependencies": {
         "@types/uuid": "^8.3.0",
         "jsiterable": "^3.0.5",
-        "jsonld": "^6.0.0",
+        "jsonld": "^8.1.0",
         "shortid": "^2.2.16",
         "uuid": "^8.3.2"
     },
