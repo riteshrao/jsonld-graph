@@ -1,6 +1,6 @@
 {
     "name": "jsonld-to-graph",
-    "version": "5.0.3",
+    "version": "5.1.0",
     "description": "Library to parse, inspect and mutate JSON-LD documents as an in-memory graph.",
     "keywords": [
         "jsonld",
