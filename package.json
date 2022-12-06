@@ -49,6 +49,7 @@
         "@types/uuid": "^8.3.0",
         "jsiterable": "^3.0.5",
         "jsonld": "^5.2.0",
+        "node-fetch": "^2.6.7",
         "shortid": "^2.2.16",
         "uuid": "^8.3.2"
     },
