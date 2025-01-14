@@ -1,6 +1,6 @@
 {
     "name": "jsonld-graph",
-    "version": "5.0.11",
+    "version": "6.0.0",
     "description": "Library to parse, inspect and mutate JSON-LD documents as an in-memory graph.",
     "keywords": [
         "jsonld",
@@ -28,29 +28,27 @@
     },
     "homepage": "https://github.com/riteshrao/jsonld-graph#readme",
     "devDependencies": {
-        "@types/debug": "^4.1.5",
-        "@types/jest": "^26.0.23",
+        "@types/jest": "^29.5.14",
         "@types/jsonld": "^1.5.5",
-        "@types/lodash.clonedeep": "^4.5.6",
-        "@types/node": "^15.12.1",
-        "@types/shortid": "0.0.29",
+        "@types/node": "^18.17.1",
         "@typescript-eslint/eslint-plugin": "^4.26.0",
         "@typescript-eslint/parser": "^4.26.0",
         "eslint": "^7.28.0",
         "eslint-plugin-prefer-arrow": "^1.2.3",
         "eslint-plugin-unicorn": "^33.0.1",
-        "jest": "^27.0.4",
+        "jest": "^29.7.0",
         "opener": "^1.5.2",
         "rimraf": "^3.0.2",
-        "ts-jest": "^27.0.3",
+        "ts-jest": "^29.2.5",
         "typescript": "^4.3.2"
     },
     "dependencies": {
-        "@types/uuid": "^8.3.0",
         "jsiterable": "^3.0.5",
         "jsonld": "^5.2.0",
-        "shortid": "^2.2.16",
-        "uuid": "^8.3.2"
+        "nanoid": "^3.3.8"
+    },
+    "engines": {
+        "node": "^18.0.0"
     },
     "jest": {
         "testEnvironment": "node",
