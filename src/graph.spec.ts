@@ -1059,7 +1059,7 @@ describe('JsonldGraph', () => {
 
             const graph = new JsonldGraph({
                 blankIriResolver: (vertex): string => {
-                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid();
+                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid(8);
                     const parent = vertex.getIncoming().first();
                     if (!parent) {
                         return name;
@@ -1174,7 +1174,7 @@ describe('JsonldGraph', () => {
 
             const graph = new JsonldGraph({
                 blankIriResolver: (vertex): string | undefined => {
-                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid();
+                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid(8);
                     return 'http://example.org/hr/instances/' + name;
                 }
             });
@@ -1234,7 +1234,7 @@ describe('JsonldGraph', () => {
 
             const graph = new JsonldGraph({
                 blankIriResolver: (vertex): string | undefined => {
-                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid();
+                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid(8);
                     return 'http://example.org/hr/instances/' + name;
                 },
                 typeConflictResolver: (source: string[], target: string[]) => {

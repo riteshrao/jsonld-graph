@@ -1076,7 +1076,7 @@ export default class JsonldGraph<V extends Vertex = Vertex> {
     }
 
     private _loadVertex(entity: any, idTracker: Set<string>, options?: GraphLoadOptions): V {
-        let id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${nanoid()}`;
+        let id: string = entity[JsonldKeywords.id] || `${BlankNodePrefix}-${nanoid(8)}`;
         const types: string[] = entity[JsonldKeywords.type] || [];
 
         if (id.startsWith(BlankNodePrefix)) {
