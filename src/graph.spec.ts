@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid';
+import shortid from 'shortid';
 import Edge from './edge';
 import * as errors from './errors';
 import JsonldGraph from './graph';
@@ -1059,7 +1059,7 @@ describe('JsonldGraph', () => {
 
             const graph = new JsonldGraph({
                 blankIriResolver: (vertex): string => {
-                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid(8);
+                    const name = vertex.getAttributeValue("vocab:Entity/name") || shortid();
                     const parent = vertex.getIncoming().first();
                     if (!parent) {
                         return name;
@@ -1174,7 +1174,7 @@ describe('JsonldGraph', () => {
 
             const graph = new JsonldGraph({
                 blankIriResolver: (vertex): string | undefined => {
-                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid(8);
+                    const name = vertex.getAttributeValue("vocab:Entity/name") || shortid();
                     return 'http://example.org/hr/instances/' + name;
                 }
             });
@@ -1234,7 +1234,7 @@ describe('JsonldGraph', () => {
 
             const graph = new JsonldGraph({
                 blankIriResolver: (vertex): string | undefined => {
-                    const name = vertex.getAttributeValue("vocab:Entity/name") || nanoid(8);
+                    const name = vertex.getAttributeValue("vocab:Entity/name") || shortid();
                     return 'http://example.org/hr/instances/' + name;
                 },
                 typeConflictResolver: (source: string[], target: string[]) => {
